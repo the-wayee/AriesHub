@@ -2,14 +2,59 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { authRequest, type CurrentUser } from "@/lib/auth";
+
+interface CodeDispatchResult {
+  expiresInSeconds: number;
+  resendAfterSeconds: number;
+}
 
 export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
+  const [codePending, setCodePending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [codeMessage, setCodeMessage] = useState("");
   const [error, setError] = useState("");
+  const emailRef = useRef<HTMLInputElement>(null);
   const isRegister = mode === "register";
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setInterval(() => {
+      setCooldown((seconds) => (seconds > 0 ? seconds - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [cooldown]);
+
+  async function sendCode() {
+    const emailInput = emailRef.current;
+    if (
+      !emailInput ||
+      !emailInput.reportValidity() ||
+      codePending ||
+      cooldown > 0
+    )
+      return;
+    setCodePending(true);
+    setError("");
+    setCodeMessage("");
+    const result = await authRequest<CodeDispatchResult>("/email-codes", {
+      method: "POST",
+      body: JSON.stringify({
+        email: emailInput.value.trim(),
+        purpose: isRegister ? "REGISTER" : "LOGIN",
+      }),
+    });
+    setCodePending(false);
+    if (!result.ok) {
+      setError(result.error.message);
+      return;
+    }
+    setCooldown(result.data.resendAfterSeconds);
+    setCodeMessage("验证码已发送，请检查邮箱；10 分钟内有效。");
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -20,6 +65,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     const body = {
       email: String(values.get("email") ?? "").trim(),
       password: String(values.get("password") ?? ""),
+      code: String(values.get("code") ?? "").trim(),
       ...(isRegister
         ? { nickname: String(values.get("nickname") ?? "").trim() }
         : {}),
@@ -57,6 +103,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         <label htmlFor="email">邮箱</label>
         <input
           id="email"
+          ref={emailRef}
           name="email"
           type="email"
           autoComplete="email"
@@ -64,6 +111,36 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           required
           placeholder="you@example.com"
         />
+      </div>
+      <div className="form-field">
+        <label htmlFor="code">邮箱验证码</label>
+        <div className="code-field">
+          <input
+            id="code"
+            name="code"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]{6}"
+            minLength={6}
+            maxLength={6}
+            required
+            placeholder="6 位验证码"
+          />
+          <button
+            className="code-button"
+            type="button"
+            disabled={codePending || cooldown > 0}
+            onClick={sendCode}
+          >
+            {codePending
+              ? "发送中…"
+              : cooldown > 0
+                ? `${cooldown}s 后重发`
+                : "获取验证码"}
+          </button>
+        </div>
+        {codeMessage && <small className="form-success">{codeMessage}</small>}
       </div>
       <div className="form-field">
         <label htmlFor="password">密码</label>

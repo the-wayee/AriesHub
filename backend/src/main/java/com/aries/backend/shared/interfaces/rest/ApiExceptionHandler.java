@@ -33,6 +33,13 @@ public class ApiExceptionHandler {
             case EMAIL_ALREADY_REGISTERED -> HttpStatus.CONFLICT;
             case INVALID_CREDENTIALS, USER_NOT_FOUND -> HttpStatus.UNAUTHORIZED;
             case ACCOUNT_DISABLED -> HttpStatus.FORBIDDEN;
+            case VERIFICATION_CODE_TOO_FREQUENT -> HttpStatus.TOO_MANY_REQUESTS;
+            case VERIFICATION_CODE_EXPIRED, VERIFICATION_CODE_INVALID,
+                    VERIFICATION_CODE_ATTEMPTS_EXCEEDED -> HttpStatus.BAD_REQUEST;
+            case EMAIL_DELIVERY_FAILED -> HttpStatus.SERVICE_UNAVAILABLE;
+            case ADMIN_CASE_NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case CATEGORY_NOT_FOUND -> HttpStatus.BAD_REQUEST;
+            case CASE_SLUG_CONFLICT -> HttpStatus.CONFLICT;
         };
         return response(status, error.getCode().name(), error.getMessage(), request);
     }

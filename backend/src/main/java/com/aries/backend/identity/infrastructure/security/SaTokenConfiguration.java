@@ -7,6 +7,7 @@ import com.aries.backend.identity.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -15,6 +16,7 @@ import java.util.List;
 /** Sa-Token 路由鉴权与角色读取配置。 */
 @Configuration
 @RequiredArgsConstructor
+@EnableConfigurationProperties(AdminEmailProperties.class)
 public class SaTokenConfiguration implements WebMvcConfigurer {
     private final UserRepository users;
 
@@ -22,6 +24,11 @@ public class SaTokenConfiguration implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new SaInterceptor(handle -> StpUtil.checkLogin()))
                 .addPathPatterns("/api/v1/auth/me", "/api/v1/auth/logout");
+        registry.addInterceptor(new SaInterceptor(handle -> {
+                    StpUtil.checkLogin();
+                    StpUtil.checkRole("ADMIN");
+                }))
+                .addPathPatterns("/api/v1/admin/**");
     }
 
     @Bean

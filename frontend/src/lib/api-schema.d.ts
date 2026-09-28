@@ -21,6 +21,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/auth/email-codes": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Sends a purpose-bound six-digit code through Resend */
+    post: operations["sendEmailCode"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/auth/register": {
     parameters: {
       query?: never;
@@ -47,7 +64,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Signs in with email and password */
+    /** Signs in with email, password and email verification code */
     post: operations["login"];
     delete?: never;
     options?: never;
@@ -83,6 +100,95 @@ export interface paths {
     put?: never;
     /** Invalidates the current session */
     post: operations["logout"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/categories": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Lists category options for the content editor */
+    get: operations["getAdminCategories"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/cases": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Lists cases in every publication state */
+    get: operations["getAdminCases"];
+    put?: never;
+    /** Creates a draft case and its content */
+    post: operations["createAdminCase"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/cases/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: components["parameters"]["CaseId"];
+      };
+      cookie?: never;
+    };
+    /** Returns the complete editable case */
+    get: operations["getAdminCase"];
+    /** Replaces the editable case fields and content */
+    put: operations["updateAdminCase"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/cases/{id}/publish": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Publishes a case to the public catalog */
+    post: operations["publishAdminCase"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/cases/{id}/archive": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Archives a case and removes it from the public catalog */
+    post: operations["archiveAdminCase"];
     delete?: never;
     options?: never;
     head?: never;
@@ -217,6 +323,18 @@ export interface components {
       /** Format: int64 */
       totalPages: number;
     };
+    EmailCodeRequest: {
+      /** Format: email */
+      email: string;
+      /** @enum {string} */
+      purpose: "REGISTER" | "LOGIN";
+    };
+    EmailCodeDispatch: {
+      /** Format: int64 */
+      expiresInSeconds: number;
+      /** Format: int64 */
+      resendAfterSeconds: number;
+    };
     RegisterRequest: {
       /** Format: email */
       email: string;
@@ -226,12 +344,65 @@ export interface components {
        */
       password: string;
       nickname: string;
+      code: string;
     };
     LoginRequest: {
       /** Format: email */
       email: string;
       /** Format: password */
       password: string;
+      code: string;
+    };
+    AdminCategory: {
+      id: string;
+      slug: string;
+      name: string;
+    };
+    AdminCaseRequest: {
+      /** Format: int64 */
+      categoryId: number;
+      slug: string;
+      title: string;
+      summary: string;
+      accessType: components["schemas"]["AccessType"];
+      /** Format: int64 */
+      priceMinor: number;
+      previewMarkdown: string;
+      fullMarkdown: string;
+      requirements: string;
+      deliverables: string;
+      version: string;
+    };
+    AdminCaseSummary: {
+      id: string;
+      slug: string;
+      title: string;
+      categoryName: string;
+      accessType: components["schemas"]["AccessType"];
+      /** Format: int64 */
+      priceMinor: number;
+      /** @enum {string} */
+      status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+      /** @enum {string} */
+      deliveryStatus: "AVAILABLE" | "SUSPENDED";
+      /** Format: date-time */
+      publishedAt: string | null;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    AdminCaseDetail: components["schemas"]["AdminCaseSummary"] & {
+      categoryId: string;
+      summary: string;
+      /** @enum {string} */
+      currency: "CNY";
+      isDemo: boolean;
+      previewMarkdown: string;
+      fullMarkdown: string;
+      requirements: string;
+      deliverables: string;
+      version: string;
+      /** Format: date-time */
+      createdAt: string;
     };
     CurrentUser: {
       /** @description PostgreSQL bigint ID serialized as a string. */
@@ -257,8 +428,56 @@ export interface components {
       database: "UP";
     };
   };
-  responses: never;
-  parameters: never;
+  responses: {
+    /** @description Invalid request */
+    BadRequest: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description Not signed in */
+    Unauthorized: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description Signed in without the ADMIN role */
+    Forbidden: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description Case not found */
+    NotFound: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+    /** @description Case slug already exists */
+    Conflict: {
+      headers: {
+        [name: string]: unknown;
+      };
+      content: {
+        "application/json": components["schemas"]["Error"];
+      };
+    };
+  };
+  parameters: {
+    CaseId: number;
+  };
   requestBodies: never;
   headers: never;
   pathItems: never;
@@ -309,6 +528,57 @@ export interface operations {
       };
     };
   };
+  sendEmailCode: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EmailCodeRequest"];
+      };
+    };
+    responses: {
+      /** @description Request accepted; login requests do not reveal account existence */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["EmailCodeDispatch"];
+        };
+      };
+      /** @description Invalid email or purpose */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description A code was requested during the resend cooldown */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Email delivery failed */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
   register: {
     parameters: {
       query?: never;
@@ -331,7 +601,7 @@ export interface operations {
           "application/json": components["schemas"]["CurrentUser"];
         };
       };
-      /** @description Invalid email, nickname or password */
+      /** @description Invalid input or verification code */
       400: {
         headers: {
           [name: string]: unknown;
@@ -447,6 +717,184 @@ export interface operations {
           "application/json": components["schemas"]["Error"];
         };
       };
+    };
+  };
+  getAdminCategories: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Category options */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminCategory"][];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+    };
+  };
+  getAdminCases: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description All cases */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminCaseSummary"][];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+    };
+  };
+  createAdminCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdminCaseRequest"];
+      };
+    };
+    responses: {
+      /** @description Draft created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminCaseDetail"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      409: components["responses"]["Conflict"];
+    };
+  };
+  getAdminCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: components["parameters"]["CaseId"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Editable case */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminCaseDetail"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  updateAdminCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: components["parameters"]["CaseId"];
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdminCaseRequest"];
+      };
+    };
+    responses: {
+      /** @description Case updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminCaseDetail"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+    };
+  };
+  publishAdminCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: components["parameters"]["CaseId"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Published case */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminCaseDetail"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  archiveAdminCase: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: components["parameters"]["CaseId"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Archived case */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminCaseDetail"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
     };
   };
   getCategories: {

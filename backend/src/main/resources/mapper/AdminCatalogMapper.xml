@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aries.backend.catalog.infrastructure.persistence.mapper.AdminCatalogMapper">
+    <select id="categories" resultType="com.aries.backend.catalog.application.view.AdminCatalogViews$CategoryOption">
+        SELECT id::text AS id, slug, name
+        FROM categories
+        WHERE is_deleted = false
+        ORDER BY sort_order, id
+    </select>
+
+    <select id="cases" resultType="com.aries.backend.catalog.application.view.AdminCatalogViews$CaseSummary">
+        SELECT c.id::text AS id, c.slug, c.title, cat.name AS category_name,
+               c.access_type, c.price_minor, c.status, c.delivery_status,
+               c.published_at, c.updated_at
+        FROM cases c
+        JOIN categories cat ON cat.id = c.category_id AND cat.is_deleted = false
+        WHERE c.is_deleted = false
+        ORDER BY c.updated_at DESC, c.id DESC
+    </select>
+
+    <select id="find" resultType="com.aries.backend.catalog.application.view.AdminCatalogViews$CaseDetail">
+        SELECT c.id::text AS id, c.category_id::text AS category_id, c.slug, c.title, c.summary,
+               c.access_type, c.price_minor, c.currency, c.status, c.delivery_status,
+               c.is_demo, c.published_at, body.preview_markdown, body.full_markdown,
+               body.requirements, body.deliverables, body.version, c.created_at, c.updated_at
+        FROM cases c
+        JOIN categories cat ON cat.id = c.category_id AND cat.is_deleted = false
+        JOIN case_contents body ON body.case_id = c.id AND body.is_deleted = false
+        WHERE c.is_deleted = false AND c.id = #{id}
+    </select>
+</mapper>

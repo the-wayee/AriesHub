@@ -2,9 +2,11 @@ package com.aries.backend.identity.interfaces.rest;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.aries.backend.identity.application.service.AuthApplicationService;
+import com.aries.backend.identity.application.service.EmailVerificationService;
 import com.aries.backend.identity.application.view.IdentityViews.CurrentUser;
 import com.aries.backend.identity.interfaces.rest.request.LoginRequest;
 import com.aries.backend.identity.interfaces.rest.request.RegisterRequest;
+import com.aries.backend.identity.interfaces.rest.request.EmailCodeRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,16 +19,23 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
     private final AuthApplicationService service;
+    private final EmailVerificationService verification;
+
+    @PostMapping("/email-codes")
+    public ResponseEntity<EmailVerificationService.DispatchResult> emailCode(
+            @Valid @RequestBody EmailCodeRequest request) {
+        return ResponseEntity.accepted().body(verification.dispatch(request.email(), request.purpose()));
+    }
 
     @PostMapping("/register")
     public ResponseEntity<CurrentUser> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.register(request.email(), request.password(), request.nickname()));
+                .body(service.register(request.email(), request.password(), request.nickname(), request.code()));
     }
 
     @PostMapping("/login")
     public CurrentUser login(@Valid @RequestBody LoginRequest request) {
-        return service.login(request.email(), request.password());
+        return service.login(request.email(), request.password(), request.code());
     }
 
     @GetMapping("/me")

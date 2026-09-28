@@ -11,6 +11,13 @@ spring:
   flyway:
     locations: classpath:db/migration
     clean-disabled: true
+  data:
+    redis:
+      host: ${REDIS_HOST:127.0.0.1}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:root}
+      connect-timeout: 2s
+      timeout: 2s
 server:
   port: ${SERVER_PORT:8080}
   error:
@@ -41,3 +48,15 @@ sa-token:
     http-only: true
     secure: ${AUTH_COOKIE_SECURE:false}
     same-site: Lax
+app:
+  email:
+    provider: resend
+    resend:
+      api-key: ${RESEND_API_KEY:}
+      from: ${RESEND_FROM:}
+  verification-code:
+    ttl: 10m
+    resend-cooldown: 60s
+    max-attempts: 5
+  security:
+    admin-emails: ${ADMIN_EMAILS:}

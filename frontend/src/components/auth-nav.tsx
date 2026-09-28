@@ -37,9 +37,12 @@ export function AuthNav() {
     );
   }
   return (
-    <Link className="member-link" href="/account" title={user.email}>
-      <span>{user.nickname.slice(0, 1)}</span>
-      {user.nickname}
-    </Link>
+    <div className="signed-in-nav">
+      {user.role === "ADMIN" && <Link href="/admin">内容后台</Link>}
+      <Link className="member-link" href="/account" title={user.email}>
+        <span>{user.nickname.slice(0, 1)}</span>
+        {user.nickname}
+      </Link>
+    </div>
   );
 }

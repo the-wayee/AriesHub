@@ -1,8 +1,10 @@
 package com.aries.backend.identity.application.service;
 
 import cn.dev33.satoken.stp.StpUtil;
+import com.aries.backend.identity.application.port.RegistrationRolePolicy;
 import com.aries.backend.identity.application.view.IdentityViews.CurrentUser;
 import com.aries.backend.identity.domain.model.UserAccount;
+import com.aries.backend.identity.domain.model.VerificationPurpose;
 import com.aries.backend.identity.domain.repository.UserRepository;
 import com.aries.backend.shared.application.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
@@ -23,20 +25,24 @@ import static com.aries.backend.shared.application.exception.BusinessException.C
 public class AuthApplicationService {
     private final UserRepository users;
     private final PasswordEncoder passwordEncoder;
+    private final EmailVerificationService verification;
+    private final RegistrationRolePolicy registrationRolePolicy;
 
     @Transactional
-    public CurrentUser register(String email, String password, String nickname) {
+    public CurrentUser register(String email, String password, String nickname, String code) {
         String normalizedEmail = normalizeEmail(email);
         if (users.findByEmail(normalizedEmail).isPresent()) {
             throw new BusinessException(EMAIL_ALREADY_REGISTERED);
         }
+        verification.verify(normalizedEmail, VerificationPurpose.REGISTER, code);
         UserAccount pending = UserAccount.builder()
                 .email(normalizedEmail)
                 .passwordHash(passwordEncoder.encode(password))
                 .nickname(nickname.trim())
-                .role(UserAccount.Role.USER)
+                .role(registrationRolePolicy.isAdmin(normalizedEmail)
+                        ? UserAccount.Role.ADMIN : UserAccount.Role.USER)
                 .status(UserAccount.Status.ACTIVE)
-                .emailVerified(false)
+                .emailVerified(true)
                 .build();
         try {
             UserAccount user = users.save(pending);
@@ -48,7 +54,7 @@ public class AuthApplicationService {
     }
 
     @Transactional
-    public CurrentUser login(String email, String password) {
+    public CurrentUser login(String email, String password, String code) {
         UserAccount user = users.findByEmail(normalizeEmail(email))
                 .orElseThrow(() -> new BusinessException(INVALID_CREDENTIALS));
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
@@ -57,6 +63,7 @@ public class AuthApplicationService {
         if (!user.canLogin()) {
             throw new BusinessException(ACCOUNT_DISABLED);
         }
+        verification.verify(user.getEmail(), VerificationPurpose.LOGIN, code);
         users.updateLastLoginAt(user.getId(), OffsetDateTime.now(ZoneOffset.UTC));
         StpUtil.login(user.getId());
         return CurrentUser.from(user);

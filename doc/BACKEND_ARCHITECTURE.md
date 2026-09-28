@@ -40,7 +40,7 @@ com.aries.backend
 - `shared` 只放跨模块技术能力，不变成所有业务的杂物目录。健康检查是技术接口，允许直接调用技术探针，不人为建立健康领域。
 - PO 不离开基础设施层。公开 API 返回经过选择的只读投影。
 
-身份用例：Controller → `AuthApplicationService` → `UserRepository`。密码由 BCrypt 校验，Sa-Token 只负责登录态和鉴权；密码摘要不进入接口视图。`SaInterceptor` 保护当前用户和退出接口，未登录统一返回 401。
+身份用例：Controller → `AuthApplicationService` → `UserRepository`。`EmailVerificationService` 通过端口协调 Resend 与 Redis，明文验证码只存在于单次发送调用链，Redis 只保存 BCrypt 摘要。密码由 BCrypt 校验，Sa-Token 只负责登录态和鉴权；密码摘要不进入接口视图。`SaInterceptor` 保护当前用户、退出和管理员接口，未登录统一返回 401，非管理员返回 403。
 
 ## 当前用例
 
@@ -48,7 +48,7 @@ com.aries.backend
 
 免费正文：应用层先调用聚合的 `allowsPublicReading()`，然后调用受限正文查询。数据库 SQL 再检查已发布、交付可用、免费类型。两道检查共同保护正文；M1 对所有付费正文请求返回 403。
 
-列表属于查询用例，通过只读投影查询端口获取分页数据，不为展示列表重复组装全部聚合。发布、编辑等写用例尚未实现；未来状态变化应通过聚合行为表达，再由仓储保存。
+列表属于查询用例，通过只读投影查询端口获取分页数据，不为展示列表重复组装全部聚合。管理员写用例由 `AdminCatalogService` 编排案例与正文的事务性保存，并显式执行发布和下架；公开查询仍独立检查发布与交付状态。
 
 ## Lombok 约定
 
@@ -78,7 +78,7 @@ com.aries.backend
 
 ## 验证
 
-执行 `cd backend && ./mvnw clean test`。测试使用 Testcontainers 创建独立 PostgreSQL，验证真实约束、SQL、MyBatis-Plus 仓储和 HTTP 响应，不接触开发数据库。
+执行 `cd backend && ./mvnw clean test`。测试使用 Testcontainers 创建独立 PostgreSQL 和 Redis，验证真实约束、SQL、MyBatis-Plus 仓储、验证码生命周期、管理员权限和 HTTP 响应，不接触开发服务。
 
 包迁移、类重命名或 XML 重命名后使用 `clean` 清除旧 class 与资源，避免旧 Mapper 残留影响 Spring 启动。
 

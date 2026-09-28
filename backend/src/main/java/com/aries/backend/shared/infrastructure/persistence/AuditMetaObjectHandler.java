@@ -20,7 +20,7 @@ public class AuditMetaObjectHandler implements MetaObjectHandler {
 
     @Override
     public void updateFill(MetaObject metaObject) {
-        strictUpdateFill(metaObject, "updatedAt", OffsetDateTime.class,
-                OffsetDateTime.now(ZoneOffset.UTC));
+        // 更新对象通常由数据库读取，旧值非空；这里必须覆盖，不能使用仅填充 null 的 strictUpdateFill。
+        setFieldValByName("updatedAt", OffsetDateTime.now(ZoneOffset.UTC), metaObject);
     }
 }
