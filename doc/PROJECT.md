@@ -1,10 +1,10 @@
 # AriesHub 项目文档
 
-版本：v0.2
+版本：v0.4
 
 日期：2026-09-28
 
-状态：Java、Next.js、Sa-Token、PostgreSQL 为已确定方向；后端已有初始工程，前端完成基础初始化。业务模块尚未实现。
+状态：已实现落地页、PostgreSQL 驱动的案例浏览，以及基于 Sa-Token 的邮箱注册、登录、退出和账号页。后台及交易按后续阶段接入。
 
 ## 1. 项目背景与目标
 
@@ -139,23 +139,25 @@
 | --- | --- | --- |
 | 后端语言 | Java | 已确定，便于运营者审查和维护 |
 | 前端框架 | Next.js | 已确定 |
-| Java 基线 | Java 27 | 沿用现有 `backend/pom.xml`；本机 JDK 也是 27，框架及插件兼容性在后端验证阶段确认 |
-| 后端框架 | Spring Boot 4.1.1 / Spring MVC | 已有后端工程，Bean Validation 待接入 |
-| 认证与授权 | Sa-Token | 用户已确定，M2 接入；选用对应 Boot 4 的 starter |
+| Java 基线 | Java 27 | 沿用现有配置；已通过真实 PostgreSQL 集成测试 |
+| 后端框架 | Spring Boot 4.1.1 / Spring MVC | 已接入 MVC 与 Bean Validation |
+| 认证与授权 | Sa-Token 1.46.0 | 已接入 Boot 4 starter，使用 HttpOnly Cookie 和路由拦截器 |
 | 后端构建 | Maven Wrapper | 已在 backend 初始化 |
 | 前端 | Next.js 16.3.6、React 19.2.8、TypeScript、App Router | 已初始化，使用 npm 与 package-lock.json |
 | 样式 | Tailwind CSS 4 + 全局样式变量 | 已初始化；组件库待实际需求出现后选择 |
-| 数据库 | PostgreSQL | 用户已确定；后端已有 JDBC 驱动，数据源和迁移尚未配置 |
-| 数据访问 | MyBatis + Flyway | 建议，显式 SQL 和版本化数据库迁移 |
-| API 契约 | REST + OpenAPI | 建议，从 Java 契约生成前端类型 |
+| 数据库 | PostgreSQL | 已配置数据源与迁移，复用本机 5432 实例中的独立 `arieshub` 数据库 |
+| 数据访问 | MyBatis-Plus 3.5.17 + Flyway | 已接入，简单查询使用 Lambda Wrapper，联表及敏感投影使用 XML |
+| 样板代码 | Lombok 1.18.48 | 已接入并验证 Java 27，生成访问器、构造器与日志字段 |
+| 后端结构 | 按业务模块划分的 DDD 四层 | 已应用于 catalog，详见后端架构文档 |
+| API 契约 | REST + OpenAPI 3.1 | 已提供公开查询契约，并生成前端类型；变更需同步契约与实现 |
 | 文件 | 私有对象存储，封面等公开资源单独管理 | 建议，下载需要授权 |
-| 本地运行与部署 | Docker Compose | 建议，首版按单体部署 |
-| 会话存储 | 开发用 Sa-Token 内存实现；生产建议 Redis | M2 确定并验证；Redis 不替代 PostgreSQL 业务数据库 |
+| 本地运行与部署 | 本机 PostgreSQL + Maven + npm | 开发环境已运行，完整生产部署待实现 |
+| 会话存储 | 开发用 Sa-Token 内存实现；生产建议 Redis | 注册、登录和退出已验证；Redis 不替代 PostgreSQL 业务数据库 |
 | 消息队列、搜索集群 | 首版不引入 | 暂无必要复杂度 |
 
 现有版本以 `backend/pom.xml` 与 `frontend/package-lock.json` 为准。前端本次使用 Node.js 26.5.0、npm 11.17.0 初始化；新环境用 `npm ci` 恢复依赖。不要因为文档中记录了版本就跳过兼容性验证。
 
-后端目前仅包含 MVC、PostgreSQL 驱动、Lombok 和基础测试。Sa-Token、MyBatis、Flyway 尚未安装，不能把设计方案当作已接入能力。现有 Java 27 配置予以保留，后端依赖解析、编译及运行兼容性将在后端基础工作中验证。
+后端现已包含案例目录和身份用例、MyBatis-Plus、Flyway、PostgreSQL 数据源、Lombok、Sa-Token 和集成测试。Java 27 搭配 Lombok 1.18.48 已通过构建验证；领域对象不依赖 Web 或 ORM。
 
 ### 6.2 Java 与 Next.js 的职责
 
@@ -182,55 +184,52 @@ Next.js 的页面布局和公开内容优先使用服务端组件；搜索交互
 
 ### 6.3 Sa-Token 认证、授权与缓存
 
-本节为接入约定，当前工程尚未实现登录。
+本节记录已实现的认证方案和上线前仍需完成的安全工作。
 
-- 登录方式默认邮箱与密码，配套邮箱验证和找回密码。用户及密码哈希保存在 PostgreSQL。
+- 登录方式为邮箱与密码；用户及 BCrypt 密码摘要保存在 PostgreSQL。邮箱验证和找回密码尚未实现。
 - 登录接口先校验密码与账号状态，再使用 `StpUtil.login(userId)` 创建登录态；退出调用 `StpUtil.logout()`。密码哈希使用独立的成熟 BCrypt 或 Argon2 实现，Sa-Token 登录态管理不代替密码校验。
 - 使用 `SaInterceptor` 统一保护个人及后台 API；公开案例接口和支付通知明确列入放行规则，支付通知独立验签。角色和操作权限由 `StpInterface` 提供，通过 `StpUtil` 或鉴权注解校验。
 - 用户 ID 只从 Java 验证后的登录态取得。管理员角色和 `case:write`、`order:read` 等权限控制运营操作；付费内容仍按 PostgreSQL 中的有效权益逐案例判断，不能用“已登录”或一个全局 VIP 角色替代。
 - 未登录返回 HTTP 401，已登录但缺少权限返回 HTTP 403；资源不可用和业务状态异常使用独立错误码。接口不重定向为 HTML 登录页面。
 - 浏览器默认使用后端设置的 `arieshub_token` Cookie，明确配置 `HttpOnly`、生产 `Secure`、`SameSite=Lax`、`Path=/`；Cookie 不指定跨子域 Domain。开发 HTTP 环境单独关闭 Secure，生产必须启用。
 - 只开启约定的 Cookie 令牌读取方式，关闭从请求参数等非必要位置读取令牌；不把登录 token 放入 URL、localStorage 或可公开页面数据。Cookie 的生命周期与服务端登录态保持一致。
-- Cookie 认证需要单独实现 CSRF 防护：修改类请求校验可信 Origin 和与会话关联的 CSRF token；注册、登录和找回密码也要限制来源和请求频率。SameSite 和 Sa-Token 登录检查不能替代这项防护。支付通知不使用浏览器 CSRF token，依赖渠道验签。
+- Cookie 当前启用 `SameSite=Lax`。公开部署前仍需为修改类请求增加可信 Origin/CSRF 校验，并为注册、登录和找回密码增加频率限制。支付通知不使用浏览器 CSRF token，依赖渠道验签。
 - 当前 Boot 4 工程接入时选择 `cn.dev33:sa-token-spring-boot4-starter`，所有 Sa-Token 模块版本保持一致，锁定版本后做集成测试。参考 [官方集成说明](https://sa-token.com/start/example.html)。
 
 **会话存储：** Sa-Token 默认使用内存，重启会失去登录态，也不能跨进程共享。开发阶段可以接受重启后重新登录；生产建议接入官方 Redis 适配模块，并配置 TTL、访问隔离和持久化策略。PostgreSQL 仍是用户、商品、订单和权益的持久事实来源。安装 PostgreSQL 驱动不会自动让 Sa-Token 将会话写入数据库。参考 [官方 Redis 集成说明](https://sa-token.com/up/integ-redis.html)。
 
-生产会话方案在 M2 落实：若不采用 Redis，应明确接受单实例重启后重新登录，或另行评估并测试 `SaTokenDao` 扩展；首版不默认自研数据库会话适配器。
+生产会话方案在部署阶段落实：若不采用 Redis，应明确接受单实例重启后重新登录，或另行评估并测试 `SaTokenDao` 扩展；首版不默认自研数据库会话适配器。
 
 **Next.js 与缓存：** 页面和 API 使用同域入口。开发通过 rewrites 将 `/api/v1/*` 转发至 Java；生产由反向代理转发。Next.js 服务端读取私有数据时，只向固定可信 Java 地址转发所需 Cookie，不转发给任意 URL。私有数据请求显式使用 `cache: "no-store"`，响应禁止共享缓存；公开页面和用户权益分开获取。前端不自行解析或签发第二套登录 token。
 
-### 6.4 建议目录
+### 6.4 目录与 DDD 约定
 
 ```text
 AriesHub/
-├── README.md
-├── doc/                   # 产品、架构、接口与阶段验收记录
-├── backend/               # Java 单体应用，按业务模块分包
-│   └── src/main/java/com/aries/backend/
-│       ├── identity/      # 用户、会话、权限
-│       ├── catalog/       # 案例、分类、正文
-│       ├── asset/         # 资源、版本、下载
-│       ├── trade/         # 订单、支付、退款
-│       ├── entitlement/   # 访问权益
-│       └── common/        # 少量共享基础设施
-├── frontend/              # Next.js，用户端和后台共享工程
-│   └── src/
-│       ├── app/
-│       ├── components/
-│       └── lib/           # API 客户端及通用工具
-└── deploy/                # Compose、反向代理和环境变量示例
+├── doc/                          # 产品、架构、接口契约
+├── backend/src/main/java/com/aries/backend/
+│   ├── catalog/
+│   │   ├── interfaces/rest       # HTTP 适配和入参
+│   │   ├── application           # 用例、查询端口和只读投影
+│   │   ├── domain                # 案例聚合、业务规则、仓储契约
+│   │   └── infrastructure        # PO、Mapper、转换、仓储实现
+│   ├── identity/                 # 用户注册、登录、角色与会话
+│   └── shared/                   # 审计字段、异常、追踪、健康检查等横切能力
+└── frontend/src/
+    ├── app/                      # 页面及路由状态
+    ├── components/               # 共享界面组件
+    └── lib/                      # API 类型、服务端请求、筛选处理
 ```
 
-`backend` 已有入口类 `com.aries.backend.BackendApplication`；`frontend` 已有 `src/app`、Next.js 配置和依赖锁文件。其余业务包、`components`、`lib`、`deploy` 随任务创建，不为占位建立空模块。后端采用模块化单体，模块内按接口、业务和持久化职责组织。
+资源、交易和权益模块在对应阶段创建，每个业务模块遵循相同分层。Controller 不直接访问 Mapper，领域层不依赖 Spring 或数据库注解，简单 SQL 通过 MyBatis-Plus 构造。详细职责、Lombok 使用和中文注释规则见 [后端架构文档](BACKEND_ARCHITECTURE.md)。
 
 ## 7. 核心数据设计
 
-以下为逻辑模型，建表时再落实字段类型、索引和外键策略。
+以下为完整产品的逻辑模型。目前已创建 `users`、`categories`、`cases`、`case_contents`，其他表随对应阶段实现。
 
 | 实体 | 核心数据与约束 |
 | --- | --- |
-| `users` | 唯一邮箱、密码哈希、角色、状态、验证时间 |
+| `users` | 唯一规范化邮箱、BCrypt 密码摘要、昵称、角色、状态、验证状态、最近登录时间及审计字段 |
 | `categories` | 名称、唯一 slug、排序 |
 | `cases` | 唯一 slug、标题、摘要、分类、封面、售卖类型、价格、币种、发布状态、交付状态 |
 | `case_contents` | 案例 ID、免费介绍、完整正文、版本、工具要求、交付及支持说明 |
@@ -259,7 +258,7 @@ AriesHub/
 - 使用 PostgreSQL 事务和条件更新保证支付状态及权益变更原子性，并测试回调与查单补偿并发。
 - 迁移使用 Flyway SQL，并接入对应 PostgreSQL 支持模块；禁止用自动建表更新生产数据库。开发与集成测试使用 PostgreSQL，不能用 H2 通过测试就认定方言和约束兼容。
 - 首版关键词搜索采用参数化查询和分页；中文检索效果不足时再评估分词与索引方案，不假定内置全文检索自动满足中文需求。
-- 数据源地址形如 `jdbc:postgresql://localhost:5432/arieshub`，用户名、密码来自环境变量，不提交真实凭证。
+- 开发默认数据源为 `jdbc:postgresql://localhost:5432/arieshub`，用户名与密码均为 `postgres`；其他环境通过环境变量覆盖。
 
 数据类型参考 [PostgreSQL 官方文档](https://www.postgresql.org/docs/current/datatype.html)。
 
@@ -310,7 +309,7 @@ PENDING_PAYMENT → PAID → REFUNDING → REFUNDED
 | --- | --- | --- |
 | 身份 | `POST /auth/register`、`POST /auth/login`、`POST /auth/logout` | 注册、登录、退出 |
 | 身份 | `POST /auth/verify-email`、`POST /auth/password-reset-requests`、`POST /auth/password-resets` | 验证及密码重置，令牌一次性且有期限 |
-| 当前用户 | `GET /me` | 用户基本信息 |
+| 当前用户 | `GET /auth/me` | 根据 Sa-Token 登录态返回用户基本信息 |
 | 案例 | `GET /cases`、`GET /cases/{slug}` | 筛选分页、公开详情 |
 | 正文 | `GET /cases/{id}/content` | 后端按售卖类型、交付状态和权益判断 |
 | 订单 | `POST /orders`、`GET /orders/{orderNo}` | 后端定价；只能查看本人订单 |
@@ -323,7 +322,7 @@ PENDING_PAYMENT → PAID → REFUNDING → REFUNDED
 
 接口以正确 HTTP 状态表达结果，错误体包含稳定业务错误码、可展示信息及 `requestId`。列表接口限制最大分页大小。订单创建和退款使用幂等请求标识，并校验同一标识不能对应不同请求内容。
 
-OpenAPI 是前后端约定的入口。AI 生成前端前先读取契约，不凭页面自行编造接口字段。
+OpenAPI 是前后端约定的入口。当前公开查询契约见 [openapi.json](openapi.json)，前端通过 `npm run generate:api` 生成 TypeScript 类型。AI 生成前端前先读取契约，不凭页面自行编造接口字段。表中账号、交易和后台接口仍为后续草案。
 
 ## 10. 分阶段开发与验收
 
@@ -345,7 +344,7 @@ OpenAPI 是前后端约定的入口。AI 生成前端前先读取契约，不凭
 
 ### M2：账号与内容后台
 
-- 接入 Sa-Token，完成注册登录、验证邮件、密码找回、角色和权限拦截；实现 Cookie 与 CSRF 策略并确定生产会话存储。
+- 已接入 Sa-Token，完成邮箱注册登录、退出、账号状态检查、基础角色读取和 HttpOnly Cookie；后续补验证邮件、密码找回、完整 CSRF 策略及生产会话存储。
 - 后台草稿编辑、预览、发布、下架、资源上传与版本管理。
 - 验收：运营者不改代码也能发布案例；普通用户无法调用后台接口；过期、退出及禁用后的令牌不可访问受保护接口；CSRF 验证生效；过期或已使用重置令牌失效；上传文件私有。
 
@@ -418,7 +417,8 @@ OpenAPI 是前后端约定的入口。AI 生成前端前先读取契约，不凭
 ### 13.1 本轮已确定
 
 - 使用 Java 与 Next.js，认证授权采用 Sa-Token，业务数据库采用 PostgreSQL。
-- 保留用户已初始化的 backend，前端采用 npm、TypeScript、App Router、Tailwind CSS。
+- 保留 Java 27 与 Spring Boot 4.1.1，后端使用 Lombok、DDD 分层、MyBatis-Plus，并编写中文职责与规则注释。
+- 前端采用 npm、TypeScript、App Router、Tailwind CSS。
 - 以学习、作品、自媒体内容和数字产品相互积累为方向。
 - 希望尽量减少逐个客户服务，并将项目作为长期作品。
 
@@ -428,51 +428,45 @@ OpenAPI 是前后端约定的入口。AI 生成前端前先读取契约，不凭
 - 先做案例库和单次购买，社区功能后置。
 - 模块化 Java 单体 + 一个 Next.js 工程，用户端与管理端共用工程。
 - 默认人民币定价、邮箱密码登录、单案例订单、私有资源下载。
-- MyBatis、Flyway、生产 Redis 会话存储仍是待实施的建议；Sa-Token 和 PostgreSQL 已由用户确认。
+- MyBatis-Plus、Lombok、PostgreSQL、DDD 已由用户确定；Flyway 已实施。生产 Redis 会话存储仍是建议。
 
 ### 13.3 到对应阶段前需确定
 
 | 事项 | 何时需要 | 不影响当前工作的部分 |
 | --- | --- | --- |
-| 首批用户与三个案例主题 | M1 展示内容确定前 | M0 工程基础 |
+| 首批正式用户与案例主题 | 替换开发演示内容、真实运营前 | 当前三个演示案例用于验证流程 |
 | 首批资源的授权、支持范围、定价 | M3 商品流程确定前 | 浏览和内容管理 |
 | 邮件与对象存储服务商 | M2 外部服务接入前 | 本地适配器与接口开发 |
-| Sa-Token 精确版本与生产会话存储 | M2 接入前 | 前端及内容模型开发 |
+| 生产会话是否使用 Redis | 对外部署前 | 本地内容管理开发 |
 | 经营主体、支付渠道与结算条件 | M4 前 | 模拟交易开发 |
 | 部署地区、域名、预算及上线条件 | M4 前 | 本地开发和测试 |
 | 中文名称、配色和视觉偏好 | M1 页面定稿前 | 内容结构和基础布局 |
 
 ## 14. 当前进度与下一次任务
 
-### 已完成
+### 已实现
 
-- 用户初始化 backend：Spring Boot 4.1.1、Java 27、MVC、PostgreSQL JDBC 驱动、Lombok、Maven Wrapper。
-- 初始化 frontend：Next.js 16.3.6、React 19.2.8、TypeScript、App Router、Tailwind CSS 4、ESLint、npm 锁文件。
-- 提供中文响应式筹备首页、站点图标、元信息和基础样式，不依赖构建时下载外部字体。
-- 配置开发环境 `/api/v1/*` 到 Java 的同域转发，提供 `BACKEND_ORIGIN` 示例和启动说明。
-- 本轮没有修改 backend 的代码和依赖。
+- M0 必要基础：兼容 Java 27 的 Lombok、PostgreSQL 数据源、Flyway 迁移、本机实例内的独立数据库、真实健康接口、结构化错误及请求编号。
+- 后端 DDD 四层分工：案例聚合控制公开可见和免费阅读，应用用例编排，基础设施通过 MyBatis-Plus 和 XML 实现查询。
+- M1 浏览：分类、关键词、免费/付费筛选、分页、详情预览和独立免费正文 API。
+- Next.js 首页和案例页面连接真实 Java API，提供加载、空数据、错误、404、手机布局及 Markdown 阅读。
+- 草稿、下架和暂停交付内容不公开；付费全文不进入列表或详情响应，正文 API 始终拒绝付费访问。
+- 开发配置提供三条演示案例；默认迁移只建表，演示内容明确标注且不开放交易。
+- 提供 OpenAPI 契约、生成的前端类型及后端/浏览器测试。
+- 身份模块完成 `users` 表、BCrypt 密码摘要、注册、登录、退出、当前用户接口，以及 Next.js 登录、注册、账号页面。
+- `BasePO`、`MetaObjectHandler` 和 `@TableLogic` 统一处理 `created_at`、`updated_at` 与 `is_deleted`；数据库迁移同时保留默认值和约束。
 
-### 本轮验证结果
+### 验证与边界
 
-- `npm run lint`、`npm run typecheck`、`npm run build` 均通过。
-- 生产服务器首页返回 HTTP 200；站内锚点和 FAQ 展开正常。
-- Chromium 下检查 1440px 桌面与 390px 手机视口，未出现横向溢出或页面运行错误，并查看了完整页面截图。
-- 文档本地链接及依赖锁文件一致性检查通过。
-- 尚未验证真实后端接口、数据库或登录流程；这些能力尚未实现。
+案例验收结果见 [M1 验收记录](M1_ACCEPTANCE.md)。M0 中基础 CI、生产网关和部署仍未完成；当前是本地可运行的社区与案例基础版本，不代表生产付费运营已就绪。
 
-### 尚未完成
-
-- PostgreSQL 数据源、建表迁移、Sa-Token 接入、账号与任何业务 API。
-- 前端和真实 Java API 联调、登录、订单、支付、下载及后台页面。
-- 生产反向代理、CI、邮件、存储和部署。
-
-当前仅完成 M0 的一部分，首页为筹备页，不代表 M1 案例浏览闭环已经完成。开发转发配置也不代表后端 API 已存在。
+管理后台、资源上传、订单、支付、购买权益、下载、邮件验证、找回密码和生产部署尚未实现。
 
 ### 下一次开发
 
-继续 M0：验证现有后端构建，配置 PostgreSQL 与 Flyway，增加真实健康检查接口和统一错误响应，通过 Next.js 开发代理验证前后端联通。随后进入 M1 的案例模型和页面开发；Sa-Token 按 M2 接入。
+继续 M2：先实现管理员权限和案例草稿的新建、编辑、预览、发布与下架，再接资源上传。沿用 DDD 分层，不让 Controller、数据库对象或前端承载业务规则。
 
-启动方式与脚本见 [仓库 README](../README.md) 和 [前端 README](../frontend/README.md)。
+启动方式见 [仓库 README](../README.md) 和 [前端 README](../frontend/README.md)。
 
 ## 15. 官方技术参考
 
@@ -488,3 +482,6 @@ OpenAPI 是前后端约定的入口。AI 生成前端前先读取契约，不凭
 - [Sa-Token Redis 集成](https://sa-token.com/up/integ-redis.html)：会话存储。
 - [PostgreSQL 数据类型](https://www.postgresql.org/docs/current/datatype.html)：数据建模。
 - [Next.js rewrites](https://nextjs.org/docs/app/api-reference/config/next-config-js/rewrites)：开发 API 转发。
+
+- [Lombok 更新记录](https://projectlombok.org/changelog)：1.18.48 对 Java 27 的支持。
+- [MyBatis-Plus 安装](https://baomidou.com/getting-started/install/)：Boot 4 starter。

@@ -1,54 +1,60 @@
 # AriesHub 前端
 
-Next.js 16.3.6 + React 19.2.8 + TypeScript + App Router + Tailwind CSS 4，使用 npm 管理依赖。用户页面与后续管理后台共用此工程。
+Next.js 16.3.6 + React 19.2.8 + TypeScript + App Router + Tailwind CSS 4，使用 npm 管理依赖。
 
 ## 启动
 
-要求 Node.js 20.9+；本次使用 Node.js 26.5.0、npm 11.17.0。进入此目录后执行：
+从本目录运行 `npm ci`、`npm run dev`，访问 http://localhost:3000。后端与数据库启动方式见 [仓库说明](../README.md)。本次验证 Node.js 26.5.0 / npm 11.17.0，团队建议使用 Node.js 24 或更高版本。
 
-```bash
-npm ci
-npm run dev
-```
+页面已连接真实 Java API；没有后端时显示内容服务暂不可用，不返回模拟成功数据。
 
-浏览器访问 http://localhost:3000。初始页面为中文筹备首页，包含站内锚点和可展开的说明；没有模拟商品销售、登录或购买行为，也不要求后端已启动。
+## 页面
+
+- `/`：社区落地页，从数据库获取最近发布的三个案例，并说明使用流程。
+- `/cases`：关键词、分类、免费或付费筛选，分页和空结果提示。
+- `/cases/[slug]`：公开预览、适用条件和交付说明；免费案例显示完整正文，付费案例显示尚未开放。
+- `/register`、`/login`：调用 Java 身份接口，成功后由 Sa-Token 写入 HttpOnly Cookie。
+- `/account`：显示当前账号，支持退出登录，并预留收藏、购买与学习记录入口。
+- 不存在或未公开案例显示 404 页面；提供加载态与错误重试。
 
 ## 脚本
 
 | 命令 | 作用 |
 | --- | --- |
 | `npm run dev` | 开发服务器与热更新 |
-| `npm run lint` | ESLint 检查，警告也视为失败 |
-| `npm run typecheck` | 生成 Next.js 路由类型并检查 TypeScript |
-| `npm run build` | 生产构建 |
-| `npm start` | 运行已生成的生产构建 |
+| `npm run generate:api` | 从 `doc/openapi.json` 生成并格式化接口类型 |
+| `npm run format` / `format:check` | 格式化 / 检查源文件格式 |
+| `npm run lint` | ESLint 检查 |
+| `npm run typecheck` | 生成路由类型并检查 TypeScript |
+| `npm run build` | 生产构建，构建时不依赖 Java 服务在线 |
+| `npm start` | 运行生产构建 |
+| `npm run test:e2e` | 桌面与手机浏览器流程检查 |
 
-类型检查与生产构建均会生成 `.next` 类型文件，按顺序运行，避免同时写入。
+类型检查与构建按顺序执行，避免同时写入 `.next`。接口调整时先修改 OpenAPI，再重新生成 `api-schema.d.ts`，不要手工修改生成文件。
 
-## 对接 Java
+## 与 Java 的边界
 
-浏览器请求使用相对路径 `/api/v1/...`。开发服务器通过 `next.config.ts` 的 rewrites 转发至 `BACKEND_ORIGIN`，默认 `http://127.0.0.1:8080`。
+- `BACKEND_ORIGIN` 是可信 Java 服务的 origin，默认 `http://127.0.0.1:8080`。修改时复制 `.env.example` 为 `.env.local`。
+- `src/lib/catalog.ts` 仅在服务端使用，统一超时和错误返回，显式 `no-store` 避免下架后继续使用缓存。
+- 页面通过服务端组件读取 Java；浏览器直接调用 API 时用相对 `/api/v1/...`，开发 rewrites 负责转发。
+- 生产同域 API 代理交给部署网关；`npm start` 下服务端页面仍通过 `BACKEND_ORIGIN` 读取 Java。
+- 前端不访问数据库，不读取或自行签发 token。Sa-Token 登录态由 Java 判断，浏览器只自动携带同域 HttpOnly Cookie。
+- `react-markdown` 禁止原始 HTML，保留安全 URL 协议处理，并将远程图片显示为文字占位。
 
-需要更改时：
+## 测试
+
+启动真实 dev 后端后执行：
 
 ```bash
-cp .env.example .env.local
+npx playwright install chromium
+npm run test:e2e
 ```
 
-修改 `.env.local` 后重启开发服务器。此变量仅用于服务端配置，不使用 `NEXT_PUBLIC_` 前缀。目标必须为可信 HTTP(S) origin，不包含路径或账户凭证。
-
-目前 backend 没有业务 API，因此代理目标的业务请求尚不能成功；不要将前端筹备页视为已完成联调。
-
-生产模式不启用开发转发，由部署反向代理将同域 `/api/v1/*` 路由到 Java。生产代理配置将在上线阶段提供；`npm start` 当前只用于验证前端页面。
-
-后续登录使用 Java Sa-Token 签发的 HttpOnly Cookie。前端不保存 localStorage token、不直连 PostgreSQL、不实现另一套业务鉴权。Cookie 认证的写请求还需后端提供 CSRF 防护，详见 [项目文档](../doc/PROJECT.md)。
+测试默认复用或启动 3000 端口前端，已有前端使用其他端口时设置 `E2E_PORT`。使用已有 Chromium 时可设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` 指向可执行文件；不在仓库中写死本机路径。测试生成目录已加入 Git 忽略。
 
 ## 目录
 
-- `src/app/layout.tsx`：中文语言、站点标题和描述。
-- `src/app/page.tsx`：筹备首页；计划方向为静态介绍，不是业务数据。
-- `src/app/globals.css`：颜色、字体、布局与移动端适配。
-- `src/app/icon.svg`：站点图标。
-- `next.config.ts`：开发 API 代理。
-
-页面默认使用服务端组件，出现状态或事件处理需求时再加入客户端组件。当前不加载外部字体，不依赖图片远程服务。新增业务接口后先定义契约，再扩展 API 客户端和页面。
+- `src/app`：首页、案例、身份、账号、加载和错误页面。
+- `src/components`：站点外壳、身份表单、账号面板、案例卡片、Markdown、统一提示。
+- `src/lib`：API 类型、服务端案例请求、浏览器身份请求和筛选条件处理。
+- `e2e`：真实后端驱动的浏览器流程测试。
