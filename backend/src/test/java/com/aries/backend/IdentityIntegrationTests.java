@@ -147,7 +147,9 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
                         {"email":"limit@example.com","password":"limit1234"}
                         """))
                 .andExpect(status().isTooManyRequests())
-                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"));
+                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"))
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(jsonPath("$.retryAfterSeconds").isNumber());
         assertThat(redisTemplate.keys("arieshub:auth:rate:login-email:*")).hasSize(1)
                 .allMatch(key -> !key.contains("limit@example.com"));
     }
@@ -163,7 +165,9 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
                         .header("X-Forwarded-For", "203.0.113.200")
                         .contentType("application/json").content("{}"))
                 .andExpect(status().isTooManyRequests())
-                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"));
+                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"))
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(jsonPath("$.retryAfterSeconds").isNumber());
         mvc.perform(post("/api/v1/auth/login")
                         .with(request -> {
                             request.setRemoteAddr("198.51.100.10");
@@ -178,7 +182,9 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
         }
         mvc.perform(post("/api/v1/auth/register").contentType("application/json").content("{}"))
                 .andExpect(status().isTooManyRequests())
-                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"));
+                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"))
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(jsonPath("$.retryAfterSeconds").isNumber());
     }
 
     @Test void registrationCodesAreOnlyIssuedForRegistrationAndHaveSourceLimit() throws Exception {
@@ -192,7 +198,9 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
         }
         mvc.perform(post("/api/v1/auth/email-codes").contentType("application/json").content("{}"))
                 .andExpect(status().isTooManyRequests())
-                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"));
+                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"))
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(jsonPath("$.retryAfterSeconds").isNumber());
     }
 
     @Test void registrationAttemptsAreAlsoLimitedByNormalizedEmail() throws Exception {
@@ -207,6 +215,8 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
                         {"email":"new@example.com","password":"member1234","nickname":"新成员","code":"000000"}
                         """))
                 .andExpect(status().isTooManyRequests())
-                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"));
+                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"))
+                .andExpect(header().exists("Retry-After"))
+                .andExpect(jsonPath("$.retryAfterSeconds").isNumber());
     }
 }

@@ -11,6 +11,7 @@ export interface ApiError {
   code: string;
   message: string;
   requestId?: string;
+  retryAfterSeconds?: number;
 }
 
 export async function authRequest<T>(
@@ -35,6 +36,19 @@ export async function authRequest<T>(
       code: "REQUEST_FAILED",
       message: "请求没有成功，请稍后再试",
     }))) as ApiError;
+    const retryHeader = response.headers.get("Retry-After");
+    const retrySeconds = retryHeader
+      ? /^\d+$/.test(retryHeader)
+        ? Number(retryHeader)
+        : Math.ceil((Date.parse(retryHeader) - Date.now()) / 1000)
+      : error.retryAfterSeconds;
+    if (
+      typeof retrySeconds === "number" &&
+      Number.isFinite(retrySeconds) &&
+      retrySeconds > 0
+    ) {
+      error.retryAfterSeconds = Math.ceil(retrySeconds);
+    }
     return { ok: false, error };
   } catch {
     return {

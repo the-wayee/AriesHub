@@ -1,0 +1,107 @@
+[
+  {
+    "file": "claude-color.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/claude-color.svg",
+    "sha256": "a3101f3047a119aa11825ad9369510f0c472428c8c52d420e31bc62db44a8364"
+  },
+  {
+    "file": "cursor.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/cursor.svg",
+    "sha256": "0cb51bddf264ae108926fd554c063ef40fc1aac3c5c921ddb39ad184e4e5d0ef"
+  },
+  {
+    "file": "deepseek-color.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/deepseek-color.svg",
+    "sha256": "deba5f98a5c1796e20fcac3149bcd7eb8a32f0bdd04d048819400b1f28bd1439"
+  },
+  {
+    "file": "doubao-color.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/doubao-color.svg",
+    "sha256": "3cd31ba03ae44b8c29561597a3b863809efecb13fcdfd08407a086df86a69b55"
+  },
+  {
+    "file": "figma.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/figma.svg",
+    "sha256": "0a943167b139b7c6540b87e0902a2d2b9fc77056ae97a6e01fe66cd1434651a5"
+  },
+  {
+    "file": "gemini-color.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/gemini-color.svg",
+    "sha256": "8ab0a9bafec11f7e69bcb9fc4ffd8f1bc927d1ddcbbb6ff36dee5ae8b5a9d602"
+  },
+  {
+    "file": "github.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/github.svg",
+    "sha256": "1bd763b5d53ab1618e0afce72aacffc7e93d1249c395f713b3b055c087526625"
+  },
+  {
+    "file": "kimi-color.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/kimi-color.svg",
+    "sha256": "74a7292aeb0220445d14c5d397d75760e2e8c6ed6a9e5fe4f3023471bf62a9ff"
+  },
+  {
+    "file": "kling-color.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/kling-color.svg",
+    "sha256": "a8aa4def0eb1c3ca0f0528597d28fa495249aa710aa403d3c571c47c81c6150c"
+  },
+  {
+    "file": "midjourney.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/midjourney.svg",
+    "sha256": "e09640ccbf6f643b4624e540f198cd704a6bf3d75dc43b0938628caf4e98c30b"
+  },
+  {
+    "file": "minimax-color.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/minimax-color.svg",
+    "sha256": "7f7187fa6d9b341ac5f22f6c5a970523afb439dc45566d64eb4f4b9b604d6b01"
+  },
+  {
+    "file": "notion.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/notion.svg",
+    "sha256": "8ada8628489d6e2900ebf21d3643fe5d4566d0e59aba95a3df15b710caa00743"
+  },
+  {
+    "file": "ollama.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/ollama.svg",
+    "sha256": "3a268218fb2e6e81fa31df70f70b51331625047794db81db21d35359428fae7a"
+  },
+  {
+    "file": "openai.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/openai.svg",
+    "sha256": "a595df6b423920c67a7f8f73c063e4bfb72d415948097b6cac063a2366bb5186"
+  },
+  {
+    "file": "perplexity-color.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/perplexity-color.svg",
+    "sha256": "8353f3ab20822f1a933224b0ea32cc39f0c32d5740f4af8c254b0f418e0a3a70"
+  },
+  {
+    "file": "qwen-color.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/qwen-color.svg",
+    "sha256": "77f5768c66d08ce1d3d14e73373975c1bc0454be88c81523ddd0ffd7e2974029"
+  },
+  {
+    "file": "runway.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/runway.svg",
+    "sha256": "dba3459264af7b4fffb5c4bfc909748e1ec1f122ffcaf0a8fbb626781888eaf2"
+  },
+  {
+    "file": "suno.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/suno.svg",
+    "sha256": "591debb0ed912ff6cb89fc66a05f58e3291eb383c691c9dbf717927559d4eafc"
+  },
+  {
+    "file": "tiktok.svg",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/tiktok.svg",
+    "sha256": "6f54ac8d325faacea8935bdc44cbed60206a6b408641799e5fea1cba7c1a0af7"
+  },
+  {
+    "file": "v0.svg",
+    "source": "https://raw.githubusercontent.com/lobehub/lobe-icons/master/packages/static-svg/icons/v0.svg",
+    "sha256": "fc253b71563a3a4db26ebc5a7b5402b30fb52d3f1f600025381e4f734ef1a2c3"
+  },
+  {
+    "file": "xiaohongshu.svg",
+    "source": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/xiaohongshu.svg",
+    "sha256": "847cacc807f5c236031a7477381daa67fd829d89f3f80c16a547ff2efe050794"
+  }
+]

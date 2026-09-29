@@ -19,18 +19,26 @@ import java.util.List;
 public class RedisAuthRateCounter implements AuthRateCounter {
     private static final DefaultRedisScript<Long> CONSUME = new DefaultRedisScript<>("""
             local current = tonumber(redis.call('GET', KEYS[1]) or '0')
-            if current >= tonumber(ARGV[1]) then return 0 end
+            if current >= tonumber(ARGV[1]) then
+                local ttl = redis.call('PTTL', KEYS[1])
+                if ttl < 0 then
+                    redis.call('PEXPIRE', KEYS[1], ARGV[2])
+                    ttl = tonumber(ARGV[2])
+                end
+                return math.max(1, math.ceil(ttl / 1000))
+            end
             current = redis.call('INCR', KEYS[1])
             if current == 1 then redis.call('PEXPIRE', KEYS[1], ARGV[2]) end
-            return 1
+            return 0
             """, Long.class);
     private final StringRedisTemplate redis;
 
     @Override
-    public boolean tryConsume(String scope, String subject, int limit, Duration window) {
-        Long allowed = redis.execute(CONSUME, List.of(key(scope, subject)),
+    public long consumeRetryAfterSeconds(String scope, String subject, int limit, Duration window) {
+        Long retryAfter = redis.execute(CONSUME, List.of(key(scope, subject)),
                 String.valueOf(limit), String.valueOf(window.toMillis()));
-        return Long.valueOf(1).equals(allowed);
+        if (retryAfter == null) throw new IllegalStateException("Redis 未返回限流结果");
+        return retryAfter;
     }
 
     @Override

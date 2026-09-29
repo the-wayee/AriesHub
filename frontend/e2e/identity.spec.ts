@@ -41,7 +41,7 @@ test("header keeps the signed-in entry stable while a refresh checks the session
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "登录", exact: true }),
+    page.locator("header").getByRole("link", { name: "登录", exact: true }),
   ).toHaveCount(0);
   await expect(
     page.getByRole("link", { name: "注册", exact: true }),
@@ -97,7 +97,7 @@ test("login shows the server rate-limit message without asking for a code", asyn
   await page.goto("/login");
   await expect(page.getByLabel("邮箱验证码")).toHaveCount(0);
   await page.getByLabel("邮箱", { exact: true }).fill("reader@example.com");
-  await page.getByLabel("密码").fill("reader1234");
+  await page.getByLabel("密码", { exact: true }).fill("reader1234");
   await page.getByRole("button", { name: "登录 AriesHub" }).click();
   await expect(page.locator(".form-error")).toContainText("操作过于频繁");
   await expect(page.locator(".form-error")).toContainText(
@@ -167,13 +167,20 @@ test("member can request codes, register, log out and log back in", async ({
   });
 
   await page.goto("/register");
-  await page.getByLabel("怎么称呼你").fill(nickname);
   await page.getByLabel("邮箱", { exact: true }).fill(email);
   await page.getByRole("button", { name: "获取验证码" }).click();
-  await expect(page.getByText("验证码已发送")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "查看你的收件箱" }),
+  ).toBeVisible();
   await page.getByLabel("邮箱验证码").fill("123456");
-  await page.getByLabel("密码").fill("arieshub2026");
-  await page.getByRole("button", { name: "创建账号" }).click();
+  await page.getByRole("button", { name: "继续", exact: true }).click();
+  await page.getByLabel("密码", { exact: true }).fill("arieshub2026");
+  await page.getByRole("button", { name: "继续", exact: true }).click();
+  await page.getByLabel("怎么称呼你").fill(nickname);
+  await page.getByRole("button", { name: "继续", exact: true }).click();
+  await page
+    .getByRole("button", { name: "加入 AriesHub", exact: true })
+    .click();
   expect(codeRequestCount).toBe(1);
 
   await expect(page).toHaveURL(/\/account$/, { timeout: 15_000 });
@@ -183,15 +190,116 @@ test("member can request codes, register, log out and log back in", async ({
   await page.getByRole("button", { name: "退出登录" }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(
-    page.getByRole("link", { name: "登录", exact: true }),
+    page.locator("header").getByRole("link", { name: "登录", exact: true }),
   ).toBeVisible();
 
-  await page.getByRole("link", { name: "登录", exact: true }).click();
+  await page
+    .locator("header")
+    .getByRole("link", { name: "登录", exact: true })
+    .click();
   await page.getByLabel("邮箱", { exact: true }).fill(email);
   await expect(page.getByLabel("邮箱验证码")).toHaveCount(0);
-  await page.getByLabel("密码").fill("arieshub2026");
+  await page.getByLabel("密码", { exact: true }).fill("arieshub2026");
   await page.getByRole("button", { name: "登录 AriesHub" }).click();
   await expect(page).toHaveURL(/\/account$/, { timeout: 15_000 });
   await expect(page.getByText(email, { exact: true })).toBeVisible();
   expect(codeRequestCount).toBe(1);
 });
+
+for (const conflictAt of ["email-codes", "register"]) {
+  test(`existing email redirects to login when ${conflictAt} reports a conflict`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.route("**/api/v1/auth/email-codes", (route) =>
+      route.fulfill(
+        conflictAt === "email-codes"
+          ? {
+              status: 409,
+              json: {
+                code: "EMAIL_ALREADY_REGISTERED",
+                message: "该邮箱已注册，请直接登录",
+              },
+            }
+          : { status: 202, json: { resendAfterSeconds: 60 } },
+      ),
+    );
+    await page.route("**/api/v1/auth/register", (route) =>
+      route.fulfill({
+        status: 409,
+        json: {
+          code: "EMAIL_ALREADY_REGISTERED",
+          message: "该邮箱已注册，请直接登录",
+        },
+      }),
+    );
+    const email = "reader+existing@example.com";
+    await page.goto("/register");
+    await page.getByLabel("邮箱", { exact: true }).fill(email);
+    await page.getByRole("button", { name: "获取验证码" }).click();
+    if (conflictAt === "register") {
+      await page.getByLabel("邮箱验证码").fill("123456");
+      await page.getByRole("button", { name: "继续", exact: true }).click();
+      await page.getByLabel("密码", { exact: true }).fill("arieshub2026");
+      await page.getByRole("button", { name: "继续", exact: true }).click();
+      await page.getByLabel("怎么称呼你").fill("测试成员");
+      await page.getByRole("button", { name: "继续", exact: true }).click();
+      await page
+        .getByRole("button", { name: "加入 AriesHub", exact: true })
+        .click();
+    }
+    await expect(page).toHaveURL(/\/login\?email=/);
+    await expect(page.getByLabel("邮箱", { exact: true })).toHaveValue(email);
+    await expect(page.getByLabel("密码", { exact: true })).toHaveValue("");
+    await expect(page.locator(".form-error")).toHaveCount(0);
+    await page.getByLabel("密码", { exact: true }).fill("login1234");
+    const toggle = page.locator(".password-field button");
+    await expect(toggle).toHaveCount(1);
+    await toggle.click();
+    await expect(page.getByLabel("密码", { exact: true })).toHaveAttribute(
+      "type",
+      "text",
+    );
+    await toggle.click();
+    await expect(page.getByLabel("密码", { exact: true })).toHaveAttribute(
+      "type",
+      "password",
+    );
+  });
+}
+
+for (const mode of ["login", "register"]) {
+  test(`${mode} rate limit shows server countdown and enables retry on expiry`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.clock.install();
+    await page.route(
+      `**/api/v1/auth/${mode === "login" ? "login" : "email-codes"}`,
+      (route) =>
+        route.fulfill({
+          status: 429,
+          headers: { "Retry-After": "65" },
+          json: {
+            code: "AUTH_RATE_LIMITED",
+            message: "操作过于频繁，请稍后再试",
+            requestId: "countdown-test",
+          },
+        }),
+    );
+    await page.goto(`/${mode}`);
+    await page
+      .getByLabel("邮箱", { exact: true })
+      .fill("countdown@example.com");
+    if (mode === "login")
+      await page.getByLabel("密码", { exact: true }).fill("password123");
+    await page.locator(".studio-submit").click();
+    await expect(page.locator(".form-error")).toContainText("1 分 5 秒后重试");
+    await expect(page.locator(".studio-submit")).toBeDisabled();
+    await page.clock.fastForward(5000);
+    await expect(page.locator(".form-error")).toContainText("1 分 0 秒后重试");
+    await page.clock.fastForward(60000);
+    await expect(page.locator(".studio-submit")).toBeEnabled();
+    await expect(page.locator(".form-error")).toHaveCount(0);
+  });
+}

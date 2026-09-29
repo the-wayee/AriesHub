@@ -45,8 +45,9 @@ public class AuthTrafficGuard {
     }
 
     private void require(String scope, String subject, int limit, Duration window) {
-        if (!counter.tryConsume(scope, subject, limit, window)) {
-            throw new BusinessException(AUTH_RATE_LIMITED);
+        long retryAfter = counter.consumeRetryAfterSeconds(scope, subject, limit, window);
+        if (retryAfter > 0) {
+            throw new BusinessException(AUTH_RATE_LIMITED, retryAfter);
         }
     }
 }

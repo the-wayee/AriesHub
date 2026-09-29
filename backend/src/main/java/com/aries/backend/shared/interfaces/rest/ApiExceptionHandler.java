@@ -24,7 +24,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 @Slf4j
 @RestControllerAdvice
 public class ApiExceptionHandler {
-    public record ErrorBody(String code, String message, String requestId) {}
+    public record ErrorBody(String code, String message, String requestId, Long retryAfterSeconds) {}
 
     @ExceptionHandler(BusinessException.class)
     ResponseEntity<ErrorBody> business(BusinessException error, HttpServletRequest request) {
@@ -37,7 +37,12 @@ public class ApiExceptionHandler {
             case TOO_MANY_REQUESTS -> HttpStatus.TOO_MANY_REQUESTS;
             case SERVICE_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
         };
-        return response(status, error.getCode().name(), error.getMessage(), request);
+        var builder = ResponseEntity.status(status);
+        if (error.getRetryAfterSeconds() != null) {
+            builder.header("Retry-After", error.getRetryAfterSeconds().toString());
+        }
+        return builder.body(new ErrorBody(error.getCode().name(), error.getMessage(),
+                (String) request.getAttribute(RequestIdFilter.ATTRIBUTE), error.getRetryAfterSeconds()));
     }
 
     @ExceptionHandler(NotLoginException.class)
@@ -83,6 +88,6 @@ public class ApiExceptionHandler {
     private ResponseEntity<ErrorBody> response(HttpStatus status, String code, String message,
                                                HttpServletRequest request) {
         return ResponseEntity.status(status).body(new ErrorBody(code, message,
-                (String) request.getAttribute(RequestIdFilter.ATTRIBUTE)));
+                (String) request.getAttribute(RequestIdFilter.ATTRIBUTE), null));
     }
 }

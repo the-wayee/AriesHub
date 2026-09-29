@@ -1,28 +1,37 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { PageMotion } from "@/components/page-motion";
+import { RouteShell } from "@/components/studio/route-shell";
+import { cookies } from "next/headers";
 import { SiteFooter, SiteHeader } from "@/components/site-shell";
 import "./globals.css";
 import "./independent.css";
+import "./cosmos.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "AriesHub · 把 AI 想法做成作品",
+    default: "AriesHub · AI 实践社区",
     template: "%s · AriesHub",
   },
   description:
-    "探索 AI 实战案例、制作过程与可复用方法，从一个具体作品开始学习。",
+    "一个分享 AI 实践、交流想法的社区。主理人持续发布深度内容，成员一起学习与探索。",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const hasSession = (await cookies()).has("arieshub_token");
   return (
     <html lang="zh-CN" data-scroll-behavior="smooth">
       <body>
-        <SiteHeader />
-        <main id="main" className="wrap">
-          <PageMotion>{children}</PageMotion>
-        </main>
-        <SiteFooter />
+        <RouteShell
+          header={<SiteHeader />}
+          footer={<SiteFooter />}
+          hasSession={hasSession}
+        >
+          {children}
+        </RouteShell>
       </body>
     </html>
   );

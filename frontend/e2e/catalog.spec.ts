@@ -6,12 +6,11 @@ test("landing page leads through the case preview to the checkout prototype", as
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/");
+  await expect(page.getByRole("heading", { name: /探索 AI/ })).toBeVisible();
+  await page.getByRole("link", { name: "探索这篇内容" }).first().click();
+  await expect(page).toHaveURL(/\/cases\/website-from-zero$/);
   await expect(
-    page.getByRole("heading", { name: "把想法做出来。" }),
-  ).toBeVisible();
-  await page.getByRole("link", { name: "查看案例" }).first().click();
-  await expect(
-    page.getByRole("heading", { name: "从零做一个可上线的网站" }),
+    page.getByRole("heading", { name: "从零做一个可上线的网站", level: 1 }),
   ).toBeVisible();
   await page.getByRole("link", { name: "查看购买信息" }).click();
   await expect(
