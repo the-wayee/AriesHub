@@ -7,7 +7,7 @@
 - 后端：Java 27、Spring Boot 4.1.1、Sa-Token 1.46.0、Lombok 1.18.48、MyBatis-Plus 3.5.17、PostgreSQL、Redis、Flyway。
 - 后端按 DDD 分为接口、应用、领域和基础设施层，按业务模块组织。
 - 前端：Next.js 16.3.6、React 19.2.8、TypeScript、Tailwind CSS 4；前端 API 类型从 OpenAPI 生成。
-- Sa-Token 使用 HttpOnly Cookie 保存登录凭证；密码使用 BCrypt 摘要保存。注册和登录都需要邮箱验证码，验证码摘要、冷却时间和错误次数保存在 Redis。管理员可以新建、编辑、发布和下架案例；支付和下载尚未实现。
+- Sa-Token 使用 HttpOnly Cookie 保存登录凭证；密码使用 BCrypt 摘要保存。注册需要邮箱验证码，登录使用邮箱和密码；验证码及登录、注册限流计数保存在 Redis。管理员可以新建、编辑、发布和下架案例；支付和下载尚未实现。
 
 文档：[项目规划](doc/PROJECT.md) · [后端分层约定](doc/BACKEND_ARCHITECTURE.md) · [验证码与后台验收](doc/M3_VERIFICATION_ADMIN_ACCEPTANCE.md) · [API 契约](doc/openapi.json) · [前端说明](frontend/README.md)。
 
@@ -111,7 +111,7 @@ npm run test:e2e
 - 金额按人民币分保存，ID 以字符串返回，防止前端大整数精度丢失。
 - Markdown 不执行原始 HTML，不自动加载内容中的远程图片。
 - 演示价格不作为实际报价，当前没有购买或文件下载。
-- Sa-Token 会话当前仍使用内存存储，重启后需要重新登录；Redis 目前用于邮箱验证码。生产多实例部署前再接入 Sa-Token Redis 适配。
-- 验证码请求有 60 秒冷却，验证码 10 分钟过期并限制五次错误；找回密码、密码登录频率限制和完整 CSRF 防护将在公开部署前补齐。
+- Sa-Token 会话当前仍使用内存存储，重启后需要重新登录；Redis 用于注册验证码和认证限流。生产多实例部署前再接入 Sa-Token Redis 适配。
+- 验证码请求有 60 秒冷却，验证码 10 分钟过期并限制五次错误。Redis 来源限额分别为登录每 10 分钟 60 次、注册每小时 30 次、发码每小时 60 次；规范化邮箱限额分别为登录每 15 分钟 5 次、注册每 15 分钟 5 次、发码每小时 5 次，成功登录会清除该邮箱的登录计数。找回密码和完整 CSRF 防护仍需在公开部署前补齐。当前不信任客户端转发头；同一反向代理后的用户会共享来源限额，公开部署时还应在可信网关按真实客户端地址限流。
 
 下一步进入内容交付：完善 Markdown 编辑体验，增加资源上传、对象存储和付费权益模型。

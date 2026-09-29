@@ -17,7 +17,7 @@ public final class IdentityViews {
             OffsetDateTime createdAt
     ) {
         public static CurrentUser from(UserAccount user) {
-            return new CurrentUser(Long.toString(user.getId()), user.getEmail(), user.getNickname(),
+            return new CurrentUser(Long.toString(user.getId()), user.getEmail().value(), user.getNickname(),
                     user.getRole().name(), user.isEmailVerified(), user.getCreatedAt());
         }
     }

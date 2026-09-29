@@ -30,7 +30,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Sends a purpose-bound six-digit code through Resend */
+    /** Sends a six-digit registration code through Resend */
     post: operations["sendEmailCode"];
     delete?: never;
     options?: never;
@@ -64,7 +64,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Signs in with email, password and email verification code */
+    /** Signs in with email and password */
     post: operations["login"];
     delete?: never;
     options?: never;
@@ -327,7 +327,7 @@ export interface components {
       /** Format: email */
       email: string;
       /** @enum {string} */
-      purpose: "REGISTER" | "LOGIN";
+      purpose: "REGISTER";
     };
     EmailCodeDispatch: {
       /** Format: int64 */
@@ -351,7 +351,6 @@ export interface components {
       email: string;
       /** Format: password */
       password: string;
-      code: string;
     };
     AdminCategory: {
       id: string;
@@ -541,7 +540,7 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Request accepted; login requests do not reveal account existence */
+      /** @description Registration code request accepted */
       202: {
         headers: {
           [name: string]: unknown;
@@ -559,7 +558,7 @@ export interface operations {
           "application/json": components["schemas"]["Error"];
         };
       };
-      /** @description A code was requested during the resend cooldown */
+      /** @description Code resend cooldown or rate limit reached */
       429: {
         headers: {
           [name: string]: unknown;
@@ -619,6 +618,15 @@ export interface operations {
           "application/json": components["schemas"]["Error"];
         };
       };
+      /** @description Registration rate limit reached */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
     };
   };
   login: {
@@ -654,6 +662,15 @@ export interface operations {
       };
       /** @description Invalid credentials */
       401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Login rate limit reached */
+      429: {
         headers: {
           [name: string]: unknown;
         };

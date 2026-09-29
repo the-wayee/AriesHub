@@ -1,6 +1,7 @@
 package com.aries.backend.identity.infrastructure.persistence.repository;
 
 import com.aries.backend.identity.domain.model.UserAccount;
+import com.aries.backend.identity.domain.model.Email;
 import com.aries.backend.identity.domain.repository.UserRepository;
 import com.aries.backend.identity.infrastructure.persistence.converter.UserConverter;
 import com.aries.backend.identity.infrastructure.persistence.mapper.UserMapper;
@@ -24,9 +25,9 @@ public class MybatisUserRepository implements UserRepository {
     }
 
     @Override
-    public Optional<UserAccount> findByEmail(String email) {
+    public Optional<UserAccount> findByEmail(Email email) {
         return Optional.ofNullable(mapper.selectOne(Wrappers.<UserPO>lambdaQuery()
-                        .eq(UserPO::getEmail, email)))
+                        .eq(UserPO::getEmail, email.value())))
                 .map(UserConverter::toDomain);
     }
 

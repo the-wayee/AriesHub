@@ -1,6 +1,5 @@
 package com.aries.backend.identity.interfaces.rest;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.aries.backend.identity.application.service.AuthApplicationService;
 import com.aries.backend.identity.application.service.EmailVerificationService;
 import com.aries.backend.identity.application.view.IdentityViews.CurrentUser;
@@ -35,7 +34,7 @@ public class AuthController {
 
     @PostMapping("/login")
     public CurrentUser login(@Valid @RequestBody LoginRequest request) {
-        return service.login(request.email(), request.password(), request.code());
+        return service.login(request.email(), request.password());
     }
 
     @GetMapping("/me")
@@ -45,7 +44,7 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout() {
-        StpUtil.logout();
+        service.logout();
         return ResponseEntity.noContent().build();
     }
 }

@@ -8,7 +8,7 @@
         ORDER BY sort_order, id
     </select>
 
-    <select id="cases" resultType="com.aries.backend.catalog.application.view.AdminCatalogViews$CaseSummary">
+    <select id="cases" resultType="com.aries.backend.catalog.application.view.AdminCatalogViews$AdminCaseSummary">
         SELECT c.id::text AS id, c.slug, c.title, cat.name AS category_name,
                c.access_type, c.price_minor, c.status, c.delivery_status,
                c.published_at, c.updated_at
@@ -18,7 +18,7 @@
         ORDER BY c.updated_at DESC, c.id DESC
     </select>
 
-    <select id="find" resultType="com.aries.backend.catalog.application.view.AdminCatalogViews$CaseDetail">
+    <select id="find" resultType="com.aries.backend.catalog.application.view.AdminCatalogViews$AdminCaseDetail">
         SELECT c.id::text AS id, c.category_id::text AS category_id, c.slug, c.title, c.summary,
                c.access_type, c.price_minor, c.currency, c.status, c.delivery_status,
                c.is_demo, c.published_at, body.preview_markdown, body.full_markdown,

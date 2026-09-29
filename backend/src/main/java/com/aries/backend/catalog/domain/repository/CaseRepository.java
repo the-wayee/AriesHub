@@ -7,4 +7,6 @@ import java.util.Optional;
 public interface CaseRepository {
     Optional<CaseStudy> findById(long id);
     Optional<CaseStudy> findBySlug(String slug);
+    Optional<CaseStudy> findForEditing(long id);
+    CaseStudy save(CaseStudy study);
 }

@@ -27,7 +27,7 @@ public class ResendEmailCodeSender implements EmailCodeSender {
         if (!StringUtils.hasText(properties.apiKey()) || !StringUtils.hasText(properties.from())) {
             throw new IllegalStateException("Resend API Key 或发件地址未配置");
         }
-        String action = purpose == VerificationPurpose.REGISTER ? "注册" : "登录";
+        String action = "注册";
         client.post()
                 .uri("/emails")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + properties.apiKey())

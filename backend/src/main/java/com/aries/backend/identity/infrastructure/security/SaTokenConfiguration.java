@@ -24,11 +24,6 @@ public class SaTokenConfiguration implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new SaInterceptor(handle -> StpUtil.checkLogin()))
                 .addPathPatterns("/api/v1/auth/me", "/api/v1/auth/logout");
-        registry.addInterceptor(new SaInterceptor(handle -> {
-                    StpUtil.checkLogin();
-                    StpUtil.checkRole("ADMIN");
-                }))
-                .addPathPatterns("/api/v1/admin/**");
     }
 
     @Bean

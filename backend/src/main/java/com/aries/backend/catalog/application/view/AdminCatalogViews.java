@@ -8,7 +8,7 @@ public final class AdminCatalogViews {
 
     public record CategoryOption(String id, String slug, String name) {}
 
-    public record CaseSummary(
+    public record AdminCaseSummary(
             String id,
             String slug,
             String title,
@@ -21,7 +21,7 @@ public final class AdminCatalogViews {
             OffsetDateTime updatedAt
     ) {}
 
-    public record CaseDetail(
+    public record AdminCaseDetail(
             String id,
             String categoryId,
             String slug,

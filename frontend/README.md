@@ -13,7 +13,7 @@ Next.js 16.3.6 + React 19.2.8 + TypeScript + App Router + Tailwind CSS 4，使�
 - `/`：社区落地页，从数据库获取最近发布的三个案例，并说明使用流程。
 - `/cases`：关键词、分类、免费或付费筛选，分页和空结果提示。
 - `/cases/[slug]`：公开预览、适用条件和交付说明；免费案例显示完整正文，付费案例显示尚未开放。
-- `/register`、`/login`：先通过 Resend 获取六位邮箱验证码，再调用 Java 身份接口；成功后由 Sa-Token 写入 HttpOnly Cookie。
+- `/register`：先通过 Resend 获取六位邮箱验证码，再创建账号；`/login`：使用邮箱和密码登录，不再需要验证码。成功后由 Sa-Token 写入 HttpOnly Cookie。
 - `/account`：显示当前账号，支持退出登录，并预留收藏、购买与学习记录入口。
 - `/admin`：管理员案例列表；支持进入新建与编辑页，保存草稿、发布和下架。
 - 不存在或未公开案例显示 404 页面；提供加载态与错误重试。

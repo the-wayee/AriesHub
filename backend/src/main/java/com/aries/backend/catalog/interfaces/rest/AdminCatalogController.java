@@ -2,8 +2,8 @@ package com.aries.backend.catalog.interfaces.rest;
 
 import com.aries.backend.catalog.application.service.AdminCatalogService;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.CategoryOption;
-import com.aries.backend.catalog.application.view.AdminCatalogViews.CaseDetail;
-import com.aries.backend.catalog.application.view.AdminCatalogViews.CaseSummary;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminCaseDetail;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminCaseSummary;
 import com.aries.backend.catalog.interfaces.rest.request.AdminCaseRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -27,33 +27,33 @@ public class AdminCatalogController {
     }
 
     @GetMapping("/cases")
-    public List<CaseSummary> cases() {
+    public List<AdminCaseSummary> cases() {
         return service.cases();
     }
 
     @GetMapping("/cases/{id}")
-    public CaseDetail detail(@PathVariable @Positive long id) {
+    public AdminCaseDetail detail(@PathVariable @Positive long id) {
         return service.detail(id);
     }
 
     @PostMapping("/cases")
-    public ResponseEntity<CaseDetail> create(@Valid @RequestBody AdminCaseRequest request) {
+    public ResponseEntity<AdminCaseDetail> create(@Valid @RequestBody AdminCaseRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request.toCommand()));
     }
 
     @PutMapping("/cases/{id}")
-    public CaseDetail update(@PathVariable @Positive long id,
+    public AdminCaseDetail update(@PathVariable @Positive long id,
                              @Valid @RequestBody AdminCaseRequest request) {
         return service.update(id, request.toCommand());
     }
 
     @PostMapping("/cases/{id}/publish")
-    public CaseDetail publish(@PathVariable @Positive long id) {
+    public AdminCaseDetail publish(@PathVariable @Positive long id) {
         return service.publish(id);
     }
 
     @PostMapping("/cases/{id}/archive")
-    public CaseDetail archive(@PathVariable @Positive long id) {
+    public AdminCaseDetail archive(@PathVariable @Positive long id) {
         return service.archive(id);
     }
 }

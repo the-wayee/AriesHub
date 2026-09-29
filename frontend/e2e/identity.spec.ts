@@ -76,6 +76,35 @@ test("email delivery failures show a support request number", async ({
   );
 });
 
+test("login shows the server rate-limit message without asking for a code", async ({
+  page,
+}) => {
+  await page.route("**/api/v1/auth/login", async (route) => {
+    expect(route.request().postDataJSON()).toEqual({
+      email: "reader@example.com",
+      password: "reader1234",
+    });
+    await route.fulfill({
+      status: 429,
+      json: {
+        code: "AUTH_RATE_LIMITED",
+        message: "操作过于频繁，请稍后再试",
+        requestId: "rate-test-request",
+      },
+    });
+  });
+
+  await page.goto("/login");
+  await expect(page.getByLabel("邮箱验证码")).toHaveCount(0);
+  await page.getByLabel("邮箱", { exact: true }).fill("reader@example.com");
+  await page.getByLabel("密码").fill("reader1234");
+  await page.getByRole("button", { name: "登录 AriesHub" }).click();
+  await expect(page.locator(".form-error")).toContainText("操作过于频繁");
+  await expect(page.locator(".form-error")).toContainText(
+    "请求编号：rate-test-request",
+  );
+});
+
 test("member can request codes, register, log out and log back in", async ({
   page,
 }, testInfo) => {
@@ -93,11 +122,13 @@ test("member can request codes, register, log out and log back in", async ({
     createdAt: "2026-09-28T10:00:00Z",
   };
   let loggedIn = false;
+  let codeRequestCount = 0;
 
   // Resend 的真实投递由 Java 集成测试和手工收件验证负责；浏览器测试只验证交互契约。
   await page.route("**/api/v1/auth/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/email-codes")) {
+      codeRequestCount += 1;
       await route.fulfill({
         status: 202,
         contentType: "application/json",
@@ -106,6 +137,9 @@ test("member can request codes, register, log out and log back in", async ({
       return;
     }
     if (path.endsWith("/register") || path.endsWith("/login")) {
+      if (path.endsWith("/login")) {
+        expect(route.request().postDataJSON()).not.toHaveProperty("code");
+      }
       loggedIn = true;
       await route.fulfill({
         status: path.endsWith("/register") ? 201 : 200,
@@ -140,8 +174,9 @@ test("member can request codes, register, log out and log back in", async ({
   await page.getByLabel("邮箱验证码").fill("123456");
   await page.getByLabel("密码").fill("arieshub2026");
   await page.getByRole("button", { name: "创建账号" }).click();
+  expect(codeRequestCount).toBe(1);
 
-  await expect(page).toHaveURL(/\/account$/);
+  await expect(page).toHaveURL(/\/account$/, { timeout: 15_000 });
   await expect(page.getByRole("heading", { name: nickname })).toBeVisible();
   await expect(page.getByRole("link", { name: nickname })).toBeVisible();
 
@@ -153,10 +188,10 @@ test("member can request codes, register, log out and log back in", async ({
 
   await page.getByRole("link", { name: "登录", exact: true }).click();
   await page.getByLabel("邮箱", { exact: true }).fill(email);
-  await page.getByRole("button", { name: "获取验证码" }).click();
-  await page.getByLabel("邮箱验证码").fill("654321");
+  await expect(page.getByLabel("邮箱验证码")).toHaveCount(0);
   await page.getByLabel("密码").fill("arieshub2026");
   await page.getByRole("button", { name: "登录 AriesHub" }).click();
-  await expect(page).toHaveURL(/\/account$/);
+  await expect(page).toHaveURL(/\/account$/, { timeout: 15_000 });
   await expect(page.getByText(email, { exact: true })).toBeVisible();
+  expect(codeRequestCount).toBe(1);
 });

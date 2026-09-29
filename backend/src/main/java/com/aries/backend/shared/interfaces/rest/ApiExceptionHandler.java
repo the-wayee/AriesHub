@@ -10,6 +10,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -27,19 +28,14 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
     ResponseEntity<ErrorBody> business(BusinessException error, HttpServletRequest request) {
-        HttpStatus status = switch (error.getCode()) {
-            case CASE_NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case CONTENT_LOCKED -> HttpStatus.FORBIDDEN;
-            case EMAIL_ALREADY_REGISTERED -> HttpStatus.CONFLICT;
-            case INVALID_CREDENTIALS, USER_NOT_FOUND -> HttpStatus.UNAUTHORIZED;
-            case ACCOUNT_DISABLED -> HttpStatus.FORBIDDEN;
-            case VERIFICATION_CODE_TOO_FREQUENT -> HttpStatus.TOO_MANY_REQUESTS;
-            case VERIFICATION_CODE_EXPIRED, VERIFICATION_CODE_INVALID,
-                    VERIFICATION_CODE_ATTEMPTS_EXCEEDED -> HttpStatus.BAD_REQUEST;
-            case EMAIL_DELIVERY_FAILED -> HttpStatus.SERVICE_UNAVAILABLE;
-            case ADMIN_CASE_NOT_FOUND -> HttpStatus.NOT_FOUND;
-            case CATEGORY_NOT_FOUND -> HttpStatus.BAD_REQUEST;
-            case CASE_SLUG_CONFLICT -> HttpStatus.CONFLICT;
+        HttpStatus status = switch (error.getCode().getKind()) {
+            case BAD_REQUEST -> HttpStatus.BAD_REQUEST;
+            case UNAUTHORIZED -> HttpStatus.UNAUTHORIZED;
+            case FORBIDDEN -> HttpStatus.FORBIDDEN;
+            case NOT_FOUND -> HttpStatus.NOT_FOUND;
+            case CONFLICT -> HttpStatus.CONFLICT;
+            case TOO_MANY_REQUESTS -> HttpStatus.TOO_MANY_REQUESTS;
+            case SERVICE_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
         };
         return response(status, error.getCode().name(), error.getMessage(), request);
     }
@@ -55,7 +51,8 @@ public class ApiExceptionHandler {
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class, HandlerMethodValidationException.class,
-            MethodArgumentTypeMismatchException.class, ConstraintViolationException.class,
+            MethodArgumentTypeMismatchException.class, HttpMessageNotReadableException.class,
+            ConstraintViolationException.class,
             MissingServletRequestParameterException.class})
     ResponseEntity<ErrorBody> invalid(Exception error, HttpServletRequest request) {
         return response(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "请求参数不正确，请检查筛选条件或页码", request);

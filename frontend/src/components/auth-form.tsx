@@ -49,7 +49,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       method: "POST",
       body: JSON.stringify({
         email: emailInput.value.trim(),
-        purpose: isRegister ? "REGISTER" : "LOGIN",
+        purpose: "REGISTER",
       }),
     });
     setCodePending(false);
@@ -72,9 +72,11 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     const body = {
       email: String(values.get("email") ?? "").trim(),
       password: String(values.get("password") ?? ""),
-      code: String(values.get("code") ?? "").trim(),
       ...(isRegister
-        ? { nickname: String(values.get("nickname") ?? "").trim() }
+        ? {
+            nickname: String(values.get("nickname") ?? "").trim(),
+            code: String(values.get("code") ?? "").trim(),
+          }
         : {}),
     };
     const result = await authRequest<CurrentUser>(
@@ -120,37 +122,39 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
           placeholder="you@example.com"
         />
       </div>
-      <div className="form-field">
-        <Label htmlFor="code">邮箱验证码</Label>
-        <div className="code-field">
-          <Input
-            id="code"
-            name="code"
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="[0-9]{6}"
-            minLength={6}
-            maxLength={6}
-            required
-            placeholder="6 位验证码"
-          />
-          <Button
-            variant="outline"
-            className="code-button"
-            type="button"
-            disabled={codePending || cooldown > 0}
-            onClick={sendCode}
-          >
-            {codePending
-              ? "发送中…"
-              : cooldown > 0
-                ? `${cooldown}s 后重发`
-                : "获取验证码"}
-          </Button>
+      {isRegister && (
+        <div className="form-field">
+          <Label htmlFor="code">邮箱验证码</Label>
+          <div className="code-field">
+            <Input
+              id="code"
+              name="code"
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              pattern="[0-9]{6}"
+              minLength={6}
+              maxLength={6}
+              required
+              placeholder="6 位验证码"
+            />
+            <Button
+              variant="outline"
+              className="code-button"
+              type="button"
+              disabled={codePending || cooldown > 0}
+              onClick={sendCode}
+            >
+              {codePending
+                ? "发送中…"
+                : cooldown > 0
+                  ? `${cooldown}s 后重发`
+                  : "获取验证码"}
+            </Button>
+          </div>
+          {codeMessage && <small className="form-success">{codeMessage}</small>}
         </div>
-        {codeMessage && <small className="form-success">{codeMessage}</small>}
-      </div>
+      )}
       <div className="form-field">
         <Label htmlFor="password">密码</Label>
         <Input

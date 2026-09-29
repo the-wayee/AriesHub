@@ -13,7 +13,7 @@ com.aries.backend
 │   │   ├── service                  # 用例编排、事务边界
 │   │   ├── query                    # 查询条件
 │   │   ├── view                     # 只读结果投影
-│   │   └── port                     # 应用需要的查询端口
+│   │   └── port                     # 查询及外部能力端口
 │   ├── domain
 │   │   ├── model                    # 聚合与业务规则
 │   │   └── repository               # 聚合仓储契约
@@ -33,14 +33,14 @@ com.aries.backend
     └── infrastructure               # 审计字段自动填充、数据库就绪检查
 ```
 
-- `interfaces → application → domain`；基础设施实现应用端口和领域仓储。
+- `interfaces → application → domain`；基础设施实现应用端口和领域仓储。`catalog` 与 `identity` 不相互依赖，`shared` 不依赖业务模块。
 - `domain` 不导入 Spring、HTTP 或 ORM 类型。Lombok 仅用于减少样板代码。
-- 应用层不直接引用 Mapper、PO 或基础设施实现。
+- 应用层不直接引用 Mapper、PO、基础设施实现或 Sa-Token；登录态通过 `SessionManager` 端口操作。
 - `catalog` Controller 不访问数据库，不承担发布、收费、权益判断。
-- `shared` 只放跨模块技术能力，不变成所有业务的杂物目录。健康检查是技术接口，允许直接调用技术探针，不人为建立健康领域。
+- `shared` 只放跨模块技术能力，不变成所有业务的杂物目录。`BusinessException` 和 `ErrorCode` 是共享契约，错误码枚举由各业务模块维护。健康检查是技术接口，允许直接调用技术探针，不人为建立健康领域。
 - PO 不离开基础设施层。公开 API 返回经过选择的只读投影。
 
-身份用例：Controller → `AuthApplicationService` → `UserRepository`。`EmailVerificationService` 通过端口协调 Resend 与 Redis，明文验证码只存在于单次发送调用链，Redis 只保存 BCrypt 摘要。密码由 BCrypt 校验，Sa-Token 只负责登录态和鉴权；密码摘要不进入接口视图。`SaInterceptor` 保护当前用户、退出和管理员接口，未登录统一返回 401，非管理员返回 403。
+身份用例：Controller → `AuthApplicationService` → `UserRepository`。邮箱在领域内以 `Email` 值对象表示，由构造器完成规范化和校验。注册通过 `EmailVerificationService` 验证 Resend 邮件中的一次性验证码，登录只验证邮箱和 BCrypt 密码；Redis 只保存验证码摘要。`AuthTrafficGuard` 通过 Redis 原子计数按来源地址和规范化邮箱分别限制登录、注册、注册发码，超限返回 429；来源地址只取服务端连接地址，不信任客户端可伪造的转发头。Sa-Token 在基础设施层实现 `SessionManager`；密码摘要不进入接口视图。身份路由由 identity 配置保护，管理员路由由 catalog 自身配置保护，未登录统一返回 401，非管理员返回 403。
 
 ## 当前用例
 
@@ -48,7 +48,7 @@ com.aries.backend
 
 免费正文：应用层先调用聚合的 `allowsPublicReading()`，然后调用受限正文查询。数据库 SQL 再检查已发布、交付可用、免费类型。两道检查共同保护正文；M1 对所有付费正文请求返回 403。
 
-列表属于查询用例，通过只读投影查询端口获取分页数据，不为展示列表重复组装全部聚合。管理员写用例由 `AdminCatalogService` 编排案例与正文的事务性保存，并显式执行发布和下架；公开查询仍独立检查发布与交付状态。
+列表属于查询用例，通过只读投影查询端口获取分页数据，不为展示列表重复组装全部聚合。管理员写用例按“加载 `CaseStudy` 聚合 → 调用 `create`、`edit`、`publish` 或 `archive` 行为 → 通过 `CaseRepository.save` 持久化”执行；完整正文是发布前置条件。管理员列表和详情保留在 `AdminCatalogReadPort`。公开查询仍独立检查发布与交付状态。
 
 ## Lombok 约定
 
@@ -78,7 +78,7 @@ com.aries.backend
 
 ## 验证
 
-执行 `cd backend && ./mvnw clean test`。测试使用 Testcontainers 创建独立 PostgreSQL 和 Redis，验证真实约束、SQL、MyBatis-Plus 仓储、验证码生命周期、管理员权限和 HTTP 响应，不接触开发服务。
+执行 `cd backend && ./mvnw clean test`。ArchUnit 测试检查模块隔离和分层依赖；聚合与邮箱值对象由纯单元测试覆盖；按模块拆分的集成测试使用 Testcontainers 创建独立 PostgreSQL 和 Redis，验证真实约束、SQL、MyBatis-Plus 仓储、验证码生命周期、管理员权限和 HTTP 响应，不接触开发服务。
 
 包迁移、类重命名或 XML 重命名后使用 `clean` 清除旧 class 与资源，避免旧 Mapper 残留影响 Spring 启动。
 

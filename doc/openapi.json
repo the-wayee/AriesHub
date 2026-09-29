@@ -91,7 +91,7 @@
     "/auth/email-codes": {
       "post": {
         "operationId": "sendEmailCode",
-        "summary": "Sends a purpose-bound six-digit code through Resend",
+        "summary": "Sends a six-digit registration code through Resend",
         "requestBody": {
           "required": true,
           "content": {
@@ -102,7 +102,7 @@
         },
         "responses": {
           "202": {
-            "description": "Request accepted; login requests do not reveal account existence",
+            "description": "Registration code request accepted",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/EmailCodeDispatch" }
@@ -118,7 +118,7 @@
             }
           },
           "429": {
-            "description": "A code was requested during the resend cooldown",
+            "description": "Code resend cooldown or rate limit reached",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Error" }
@@ -172,6 +172,14 @@
                 "schema": { "$ref": "#/components/schemas/Error" }
               }
             }
+          },
+          "429": {
+            "description": "Registration rate limit reached",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
           }
         }
       }
@@ -179,7 +187,7 @@
     "/auth/login": {
       "post": {
         "operationId": "login",
-        "summary": "Signs in with email, password and email verification code",
+        "summary": "Signs in with email and password",
         "requestBody": {
           "required": true,
           "content": {
@@ -207,6 +215,14 @@
           },
           "401": {
             "description": "Invalid credentials",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Error" }
+              }
+            }
+          },
+          "429": {
+            "description": "Login rate limit reached",
             "content": {
               "application/json": {
                 "schema": { "$ref": "#/components/schemas/Error" }
@@ -1163,7 +1179,7 @@
         "required": ["email", "purpose"],
         "properties": {
           "email": { "type": "string", "format": "email", "maxLength": 254 },
-          "purpose": { "type": "string", "enum": ["REGISTER", "LOGIN"] }
+          "purpose": { "type": "string", "enum": ["REGISTER"] }
         }
       },
       "EmailCodeDispatch": {
@@ -1195,11 +1211,10 @@
       "LoginRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["email", "password", "code"],
+        "required": ["email", "password"],
         "properties": {
           "email": { "type": "string", "format": "email", "maxLength": 254 },
-          "password": { "type": "string", "format": "password", "maxLength": 72 },
-          "code": { "type": "string", "pattern": "^[0-9]{6}$" }
+          "password": { "type": "string", "format": "password", "maxLength": 72 }
         }
       },
       "AdminCategory": {

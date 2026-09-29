@@ -1,8 +1,8 @@
 package com.aries.backend.catalog.infrastructure.persistence.mapper;
 
 import com.aries.backend.catalog.application.view.AdminCatalogViews.CategoryOption;
-import com.aries.backend.catalog.application.view.AdminCatalogViews.CaseDetail;
-import com.aries.backend.catalog.application.view.AdminCatalogViews.CaseSummary;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminCaseDetail;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminCaseSummary;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -12,6 +12,6 @@ import java.util.List;
 @Mapper
 public interface AdminCatalogMapper {
     List<CategoryOption> categories();
-    List<CaseSummary> cases();
-    CaseDetail find(@Param("id") long id);
+    List<AdminCaseSummary> cases();
+    AdminCaseDetail find(@Param("id") long id);
 }

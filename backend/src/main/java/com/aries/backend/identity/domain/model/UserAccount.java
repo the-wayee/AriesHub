@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 @Builder
 public class UserAccount {
     long id;
-    String email;
+    Email email;
     String passwordHash;
     String nickname;
     Role role;

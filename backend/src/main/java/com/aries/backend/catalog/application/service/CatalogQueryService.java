@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import static com.aries.backend.catalog.application.view.CatalogViews.*;
-import static com.aries.backend.shared.application.exception.BusinessException.Code.*;
+import static com.aries.backend.catalog.application.exception.CatalogErrorCode.*;
 
 /**
  * 案例浏览用例：编排仓储与领域规则，不处理 HTTP，也不拼接 SQL。

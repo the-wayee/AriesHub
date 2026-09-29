@@ -1,0 +1,212 @@
+package com.aries.backend;
+
+import com.aries.backend.identity.domain.model.VerificationPurpose;
+import jakarta.servlet.http.Cookie;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
+
+import static org.assertj.core.api.Assertions.*;
+import static org.hamcrest.Matchers.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@Import(TestEmailConfiguration.class)
+class IdentityIntegrationTests extends IntegrationTestSupport {
+    @Test void registrationCreatesSessionAndStoresPasswordHash() throws Exception {
+        String code = requestCode("Hello@Example.com", VerificationPurpose.REGISTER);
+        var registered = mvc.perform(post("/api/v1/auth/register")
+                        .contentType("application/json")
+                        .content("""
+                            {"email":"Hello@Example.com","password":"hello1234","nickname":"小羊","code":"%s"}
+                            """.formatted(code)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value("1"))
+                .andExpect(jsonPath("$.email").value("hello@example.com"))
+                .andExpect(jsonPath("$.nickname").value("小羊"))
+                .andExpect(jsonPath("$.emailVerified").value(true))
+                .andExpect(jsonPath("$.passwordHash").doesNotExist())
+                .andExpect(header().string("Set-Cookie", containsString("HttpOnly")))
+                .andReturn();
+
+        String passwordHash = jdbc.queryForObject(
+                "SELECT password_hash FROM users WHERE email = 'hello@example.com'", String.class);
+        assertThat(passwordHash).startsWith("$2").doesNotContain("hello1234");
+        assertThat(jdbc.queryForObject(
+                "SELECT created_at IS NOT NULL AND updated_at IS NOT NULL AND NOT is_deleted FROM users WHERE id = 1",
+                Boolean.class)).isTrue();
+
+        Cookie session = registered.getResponse().getCookie("arieshub_token");
+        assertThat(session).isNotNull();
+        mvc.perform(get("/api/v1/auth/me").cookie(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("hello@example.com"));
+    }
+
+    @Test void duplicateRegistrationAndInvalidLoginReturnStableErrors() throws Exception {
+        String code = requestCode("member@example.com", VerificationPurpose.REGISTER);
+        String body = """
+                {"email":"member@example.com","password":"member123","nickname":"成员","code":"%s"}
+                """.formatted(code);
+        mvc.perform(post("/api/v1/auth/register").contentType("application/json").content(body))
+                .andExpect(status().isCreated());
+        mvc.perform(post("/api/v1/auth/register").contentType("application/json").content(body))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("EMAIL_ALREADY_REGISTERED"));
+        mvc.perform(post("/api/v1/auth/login").contentType("application/json").content("""
+                        {"email":"member@example.com","password":"wrong-password"}
+                        """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+    }
+
+    @Test void loginAndLogoutCompleteTheCookieSessionLifecycle() throws Exception {
+        register("login@example.com", "login1234", "登录用户");
+
+        var loggedIn = mvc.perform(post("/api/v1/auth/login")
+                        .contentType("application/json")
+                        .content("""
+                            {"email":"LOGIN@example.com","password":"login1234"}
+                            """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("login@example.com"))
+                .andReturn();
+        Cookie session = loggedIn.getResponse().getCookie("arieshub_token");
+        assertThat(session).isNotNull();
+        assertThat(jdbc.queryForObject(
+                "SELECT last_login_at IS NOT NULL FROM users WHERE email = 'login@example.com'", Boolean.class))
+                .isTrue();
+
+        mvc.perform(post("/api/v1/auth/logout").cookie(session))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/v1/auth/me").cookie(session))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
+    }
+
+    @Test void validationAndLogicalDeleteAreAppliedByFramework() throws Exception {
+        mvc.perform(post("/api/v1/auth/register").contentType("application/json").content("""
+                        {"email":"bad","password":"short","nickname":"x","code":"12"}
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+
+        register("delete@example.com", "delete1234", "待删除");
+        userMapper.deleteById(1L);
+        assertThat(userMapper.selectById(1L)).isNull();
+        assertThat(jdbc.queryForObject("SELECT is_deleted FROM users WHERE id = 1", Boolean.class)).isTrue();
+    }
+
+    @Test void protectedIdentityEndpointsRequireLogin() throws Exception {
+        mvc.perform(get("/api/v1/auth/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
+        mvc.perform(post("/api/v1/auth/logout"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test void verificationCodesAreHashedRateLimitedAndSingleUse() throws Exception {
+        String email = "code@example.com";
+        String code = requestCode(email, VerificationPurpose.REGISTER);
+        mvc.perform(post("/api/v1/auth/email-codes").contentType("application/json").content("""
+                        {"email":"code@example.com","purpose":"REGISTER"}
+                        """))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("VERIFICATION_CODE_TOO_FREQUENT"));
+
+        var keys = redisTemplate.keys("arieshub:auth:code:register:*");
+        assertThat(keys).hasSize(1).allMatch(key -> !key.contains(email));
+        Object storedHash = redisTemplate.opsForHash().get(keys.iterator().next(), "hash");
+        assertThat(storedHash).isNotNull().asString().startsWith("$2").doesNotContain(code);
+
+        mvc.perform(post("/api/v1/auth/register").contentType("application/json").content("""
+                        {"email":"code@example.com","password":"code12345","nickname":"验证码用户","code":"000000"}
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VERIFICATION_CODE_INVALID"));
+        mvc.perform(post("/api/v1/auth/register").contentType("application/json").content("""
+                        {"email":"code@example.com","password":"code12345","nickname":"验证码用户","code":"%s"}
+                        """.formatted(code)))
+                .andExpect(status().isCreated());
+        assertThat(redisTemplate.keys("arieshub:auth:code:register:*")).isEmpty();
+    }
+
+    @Test void loginIsLimitedByNormalizedEmailAndDoesNotRequireCode() throws Exception {
+        register("limit@example.com", "limit1234", "限流用户");
+        for (int attempt = 0; attempt < 5; attempt++) {
+            mvc.perform(post("/api/v1/auth/login").contentType("application/json").content("""
+                            {"email":"LIMIT@example.com","password":"wrong-password"}
+                            """))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+        }
+        mvc.perform(post("/api/v1/auth/login").contentType("application/json").content("""
+                        {"email":"limit@example.com","password":"limit1234"}
+                        """))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"));
+        assertThat(redisTemplate.keys("arieshub:auth:rate:login-email:*")).hasSize(1)
+                .allMatch(key -> !key.contains("limit@example.com"));
+    }
+
+    @Test void malformedAuthRequestsAreLimitedBySourceBeforeValidation() throws Exception {
+        for (int attempt = 0; attempt < 60; attempt++) {
+            mvc.perform(post("/api/v1/auth/login")
+                            .header("X-Forwarded-For", "203.0.113." + attempt)
+                            .contentType("application/json").content("{}"))
+                    .andExpect(status().isBadRequest());
+        }
+        mvc.perform(post("/api/v1/auth/login")
+                        .header("X-Forwarded-For", "203.0.113.200")
+                        .contentType("application/json").content("{}"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"));
+        mvc.perform(post("/api/v1/auth/login")
+                        .with(request -> {
+                            request.setRemoteAddr("198.51.100.10");
+                            return request;
+                        })
+                        .contentType("application/json").content("{}"))
+                .andExpect(status().isBadRequest());
+
+        for (int attempt = 0; attempt < 30; attempt++) {
+            mvc.perform(post("/api/v1/auth/register").contentType("application/json").content("{}"))
+                    .andExpect(status().isBadRequest());
+        }
+        mvc.perform(post("/api/v1/auth/register").contentType("application/json").content("{}"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"));
+    }
+
+    @Test void registrationCodesAreOnlyIssuedForRegistrationAndHaveSourceLimit() throws Exception {
+        mvc.perform(post("/api/v1/auth/email-codes").contentType("application/json").content("""
+                        {"email":"person@example.com","purpose":"LOGIN"}
+                        """))
+                .andExpect(status().isBadRequest());
+        for (int attempt = 1; attempt < 60; attempt++) {
+            mvc.perform(post("/api/v1/auth/email-codes").contentType("application/json").content("{}"))
+                    .andExpect(status().isBadRequest());
+        }
+        mvc.perform(post("/api/v1/auth/email-codes").contentType("application/json").content("{}"))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"));
+    }
+
+    @Test void registrationAttemptsAreAlsoLimitedByNormalizedEmail() throws Exception {
+        for (int attempt = 0; attempt < 5; attempt++) {
+            mvc.perform(post("/api/v1/auth/register").contentType("application/json").content("""
+                            {"email":"NEW@example.com","password":"member1234","nickname":"新成员","code":"000000"}
+                            """))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("VERIFICATION_CODE_EXPIRED"));
+        }
+        mvc.perform(post("/api/v1/auth/register").contentType("application/json").content("""
+                        {"email":"new@example.com","password":"member1234","nickname":"新成员","code":"000000"}
+                        """))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"));
+    }
+}
