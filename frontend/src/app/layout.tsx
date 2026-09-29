@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { PageMotion } from "@/components/page-motion";
 import { SiteFooter, SiteHeader } from "@/components/site-shell";
 import "./globals.css";
 
@@ -14,11 +15,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="zh-CN">
+    <html lang="zh-CN" data-scroll-behavior="smooth">
       <body>
         <SiteHeader />
         <main id="main" className="wrap">
-          {children}
+          <PageMotion>{children}</PageMotion>
         </main>
         <SiteFooter />
       </body>

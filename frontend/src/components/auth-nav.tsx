@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { authRequest, type CurrentUser } from "@/lib/auth";
 
-/** 头部只获取最小登录信息；失败时回退为登录入口，不阻塞页面主体。 */
-export function AuthNav() {
-  const [user, setUser] = useState<CurrentUser | null | undefined>(undefined);
+/** 用服务端可见的会话 Cookie 决定首帧，随后向 /me 核实用户信息。 */
+export function AuthNav({ initialHasSession }: { initialHasSession: boolean }) {
+  const [user, setUser] = useState<CurrentUser | null | undefined>(
+    initialHasSession ? undefined : null,
+  );
 
   useEffect(() => {
     let active = true;

@@ -1,5 +1,81 @@
 import { expect, test } from "@playwright/test";
 
+test("guest navigation is present in the first HTML response", async ({
+  page,
+}) => {
+  const response = await page.goto("/");
+  const html = await response?.text();
+  expect(html).toContain('href="/login"');
+  expect(html).toContain('href="/register"');
+});
+
+test("header keeps the signed-in entry stable while a refresh checks the session", async ({
+  page,
+  context,
+}) => {
+  const member = {
+    id: "9002",
+    email: "member@example.com",
+    nickname: "测试成员",
+    role: "USER",
+    emailVerified: true,
+    createdAt: "2026-09-28T10:00:00Z",
+  };
+  let releaseSession: (() => void) | undefined;
+  const sessionGate = new Promise<void>((resolve) => {
+    releaseSession = resolve;
+  });
+
+  await context.addCookies([
+    {
+      name: "arieshub_token",
+      value: "test-session",
+      url: `http://localhost:${process.env.E2E_PORT ?? "3000"}`,
+    },
+  ]);
+  await page.route("**/api/v1/auth/me", async (route) => {
+    await sessionGate;
+    await route.fulfill({ status: 200, json: member });
+  });
+
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "登录", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "注册", exact: true }),
+  ).toHaveCount(0);
+
+  releaseSession?.();
+  await expect(page.getByRole("link", { name: member.nickname })).toBeVisible();
+});
+
+test("email delivery failures show a support request number", async ({
+  page,
+}) => {
+  await page.route("**/api/v1/auth/email-codes", async (route) => {
+    await route.fulfill({
+      status: 503,
+      json: {
+        code: "EMAIL_DELIVERY_FAILED",
+        message: "验证码邮件暂时无法发送，请稍后再试",
+        requestId: "email-test-request",
+      },
+    });
+  });
+
+  await page.goto("/register");
+  await page.getByLabel("邮箱", { exact: true }).fill("reader@example.com");
+  await page.getByRole("button", { name: "获取验证码" }).click();
+  await expect(page.locator(".form-error")).toContainText(
+    "验证码邮件暂时无法发送",
+  );
+  await expect(page.locator(".form-error")).toContainText(
+    "请求编号：email-test-request",
+  );
+});
+
 test("member can request codes, register, log out and log back in", async ({
   page,
 }, testInfo) => {

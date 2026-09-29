@@ -28,8 +28,10 @@ test("keyword, category and access filters combine and can be cleared", async ({
 }) => {
   await page.goto("/cases");
   await page.getByLabel("关键词").fill("Codex");
-  await page.getByLabel("内容方向").selectOption("coding");
-  await page.getByLabel("阅读方式").selectOption("PAID");
+  await page.getByRole("combobox", { name: "内容方向" }).click();
+  await page.getByRole("option", { name: /编程|coding/i }).click();
+  await page.getByRole("combobox", { name: "阅读方式" }).click();
+  await page.getByRole("option", { name: "付费预览" }).click();
   await page.getByRole("button", { name: "筛选案例" }).click();
   await expect(page.locator(".case-card")).toHaveCount(1);
   await expect(

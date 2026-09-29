@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { authRequest, type CurrentUser } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface CodeDispatchResult {
   expiresInSeconds: number;
@@ -17,6 +20,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
   const [cooldown, setCooldown] = useState(0);
   const [codeMessage, setCodeMessage] = useState("");
   const [error, setError] = useState("");
+  const [errorRequestId, setErrorRequestId] = useState("");
   const emailRef = useRef<HTMLInputElement>(null);
   const isRegister = mode === "register";
 
@@ -39,6 +43,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       return;
     setCodePending(true);
     setError("");
+    setErrorRequestId("");
     setCodeMessage("");
     const result = await authRequest<CodeDispatchResult>("/email-codes", {
       method: "POST",
@@ -50,6 +55,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     setCodePending(false);
     if (!result.ok) {
       setError(result.error.message);
+      setErrorRequestId(result.error.requestId ?? "");
       return;
     }
     setCooldown(result.data.resendAfterSeconds);
@@ -61,6 +67,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     if (pending) return;
     setPending(true);
     setError("");
+    setErrorRequestId("");
     const values = new FormData(event.currentTarget);
     const body = {
       email: String(values.get("email") ?? "").trim(),
@@ -77,6 +84,7 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     setPending(false);
     if (!result.ok) {
       setError(result.error.message);
+      setErrorRequestId(result.error.requestId ?? "");
       return;
     }
     window.dispatchEvent(new Event("arieshub:auth"));
@@ -87,8 +95,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
     <form className="auth-form" onSubmit={submit}>
       {isRegister && (
         <div className="form-field">
-          <label htmlFor="nickname">怎么称呼你</label>
-          <input
+          <Label htmlFor="nickname">怎么称呼你</Label>
+          <Input
             id="nickname"
             name="nickname"
             autoComplete="nickname"
@@ -100,8 +108,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         </div>
       )}
       <div className="form-field">
-        <label htmlFor="email">邮箱</label>
-        <input
+        <Label htmlFor="email">邮箱</Label>
+        <Input
           id="email"
           ref={emailRef}
           name="email"
@@ -113,9 +121,9 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
         />
       </div>
       <div className="form-field">
-        <label htmlFor="code">邮箱验证码</label>
+        <Label htmlFor="code">邮箱验证码</Label>
         <div className="code-field">
-          <input
+          <Input
             id="code"
             name="code"
             type="text"
@@ -127,7 +135,8 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
             required
             placeholder="6 位验证码"
           />
-          <button
+          <Button
+            variant="outline"
             className="code-button"
             type="button"
             disabled={codePending || cooldown > 0}
@@ -138,13 +147,13 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
               : cooldown > 0
                 ? `${cooldown}s 后重发`
                 : "获取验证码"}
-          </button>
+          </Button>
         </div>
         {codeMessage && <small className="form-success">{codeMessage}</small>}
       </div>
       <div className="form-field">
-        <label htmlFor="password">密码</label>
-        <input
+        <Label htmlFor="password">密码</Label>
+        <Input
           id="password"
           name="password"
           type="password"
@@ -162,15 +171,16 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       {error && (
         <p className="form-error" role="alert">
           {error}
+          {errorRequestId && <small>请求编号：{errorRequestId}</small>}
         </p>
       )}
-      <button
+      <Button
         className="primary-link auth-submit"
         type="submit"
         disabled={pending}
       >
         {pending ? "正在提交…" : isRegister ? "创建账号 ↗" : "登录 AriesHub ↗"}
-      </button>
+      </Button>
       <p className="auth-switch">
         {isRegister ? "已经有账号？" : "第一次来这里？"}{" "}
         <Link href={isRegister ? "/login" : "/register"}>

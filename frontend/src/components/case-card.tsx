@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MotionArticle } from "@/components/page-motion";
 import type { CaseSummary } from "@/lib/catalog-types";
 
 const styles: Record<
@@ -43,7 +44,11 @@ export function CaseCard({
     illustration: "从好奇\n到作品。",
   };
   return (
-    <article className="case-card">
+    <MotionArticle
+      className="case-card"
+      direction={index % 2 === 0 ? "left" : "right"}
+      delay={(index % 3) * 0.08}
+    >
       <Link className="case-card-link" href={`/cases/${item.slug}`}>
         <div className={`direction-art ${style.theme}`} aria-hidden="true">
           <div className="art-label">
@@ -65,6 +70,6 @@ export function CaseCard({
           </span>
         </div>
       </Link>
-    </article>
+    </MotionArticle>
   );
 }

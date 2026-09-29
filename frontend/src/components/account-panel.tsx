@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authRequest, type CurrentUser } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
 
 export function AccountPanel() {
   const router = useRouter();
@@ -70,9 +71,14 @@ export function AccountPanel() {
         <Link className="primary-link" href="/cases">
           浏览案例库 ↗
         </Link>
-        <button className="quiet-button" type="button" onClick={logout}>
+        <Button
+          variant="outline"
+          className="quiet-button"
+          type="button"
+          onClick={logout}
+        >
           退出登录
-        </button>
+        </Button>
       </div>
     </div>
   );

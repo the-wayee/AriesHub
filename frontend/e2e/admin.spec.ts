@@ -60,6 +60,14 @@ test("administrator can browse cases and open the editor", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "编辑案例" })).toBeVisible();
   await expect(page.getByLabel("标题")).toHaveValue("Codex 实战工作流");
   await expect(page.getByRole("button", { name: "发布" })).toBeVisible();
+  await page.getByRole("combobox", { name: "阅读方式" }).click();
+  await page.getByRole("option", { name: "付费案例" }).click();
+  expect(
+    await page.locator(".admin-editor").evaluate((form) => {
+      const values = new FormData(form as HTMLFormElement);
+      return [values.get("categoryId"), values.get("accessType")];
+    }),
+  ).toEqual(["1", "PAID"]);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,

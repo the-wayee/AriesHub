@@ -3,6 +3,19 @@ import Link from "next/link";
 import { getCases } from "@/lib/catalog";
 import { CaseCard } from "@/components/case-card";
 import { ContentState } from "@/components/content-state";
+import {
+  MotionAsterisk,
+  MotionHeroCopy,
+  MotionHeroNote,
+  MotionOrbit,
+  MotionSection,
+} from "@/components/page-motion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +24,7 @@ export default async function Home() {
   return (
     <>
       <section className="hero" aria-labelledby="hero-title">
-        <div>
+        <MotionHeroCopy>
           <p className="eyebrow">A SPACE FOR IDEAS & MAKING</p>
           <h1 id="hero-title">
             学一点 AI，
@@ -36,16 +49,16 @@ export default async function Home() {
           <p className="launch-note">
             从免费内容开始阅读，付费案例暂未开放购买。
           </p>
-        </div>
-        <aside className="field-note" aria-label="AriesHub 的实践理念">
+        </MotionHeroCopy>
+        <MotionHeroNote>
           <div className="note-top">
             <span>THE MAKER’S NOTEBOOK</span>
             <span>VOL. 001</span>
           </div>
           <div className="note-art" aria-hidden="true">
-            <div className="orbit" />
-            <div className="orbit second" />
-            <span className="asterisk">✳</span>
+            <MotionOrbit />
+            <MotionOrbit secondary />
+            <MotionAsterisk />
           </div>
           <div className="note-bottom">
             <p>
@@ -59,12 +72,13 @@ export default async function Home() {
             <span>IDEA → PROCESS → WORK</span>
             <span>ARIESHUB</span>
           </div>
-        </aside>
+        </MotionHeroNote>
       </section>
-      <section
+      <MotionSection
         id="how-it-works"
         className="section process-section"
         aria-labelledby="process-title"
+        direction="left"
       >
         <div className="section-heading">
           <div>
@@ -90,8 +104,13 @@ export default async function Home() {
             <p>把案例变成作品，也把踩坑和心得沉淀为下一次的经验。</p>
           </li>
         </ol>
-      </section>
-      <section id="explore" className="section" aria-labelledby="explore-title">
+      </MotionSection>
+      <MotionSection
+        id="explore"
+        className="section"
+        aria-labelledby="explore-title"
+        direction="right"
+      >
         <div className="section-heading">
           <div>
             <p className="eyebrow">THE LATEST FIELD NOTES</p>
@@ -124,8 +143,12 @@ export default async function Home() {
             requestId={cases.requestId}
           />
         )}
-      </section>
-      <section className="section join-section" aria-labelledby="join-title">
+      </MotionSection>
+      <MotionSection
+        className="section join-section"
+        aria-labelledby="join-title"
+        direction="scale"
+      >
         <p className="eyebrow">BUILD YOUR OWN PRACTICE</p>
         <h2 id="join-title">
           今天先学会一个方法，
@@ -136,11 +159,12 @@ export default async function Home() {
         <Link className="primary-link" href="/register">
           创建免费账号 <span aria-hidden="true">↗</span>
         </Link>
-      </section>
-      <section
+      </MotionSection>
+      <MotionSection
         id="about"
         className="about section"
         aria-labelledby="about-title"
+        direction="left"
       >
         <div>
           <p className="eyebrow">LEARN. MAKE. SHARE.</p>
@@ -158,14 +182,18 @@ export default async function Home() {
           <p>
             未来每个案例都会说明适用条件、提供的素材与使用范围。先看懂，再决定是否适合自己。
           </p>
-          <details>
-            <summary>现在可以阅读哪些内容？</summary>
-            <p>
-              已发布的免费案例可以直接阅读；付费案例目前提供预览，暂未开放购买和下载。标注为演示的案例用于体验浏览流程，不作为商品销售。
-            </p>
-          </details>
+          <Accordion className="about-accordion">
+            <AccordionItem value="reading">
+              <AccordionTrigger>现在可以阅读哪些内容？</AccordionTrigger>
+              <AccordionContent>
+                <p>
+                  已发布的免费案例可以直接阅读；付费案例目前提供预览，暂未开放购买和下载。标注为演示的案例用于体验浏览流程，不作为商品销售。
+                </p>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
-      </section>
+      </MotionSection>
     </>
   );
 }

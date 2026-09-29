@@ -4,6 +4,16 @@ import { CaseCard } from "@/components/case-card";
 import { ContentState } from "@/components/content-state";
 import { getCases, getCategories } from "@/lib/catalog";
 import { filtersQuery, parseFilters } from "@/lib/catalog-filters";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const metadata: Metadata = { title: "案例库" };
 
@@ -48,8 +58,8 @@ export default async function CasesPage({
       </header>
       <form action="/cases" className="catalog-filters">
         <div className="search-field">
-          <label htmlFor="q">关键词</label>
-          <input
+          <Label htmlFor="q">关键词</Label>
+          <Input
             id="q"
             name="q"
             type="search"
@@ -59,32 +69,66 @@ export default async function CasesPage({
           />
         </div>
         <div>
-          <label htmlFor="category">内容方向</label>
-          <select id="category" name="category" defaultValue={filters.category}>
-            <option value="">全部方向</option>
-            {categories.data.map((category) => (
-              <option key={category.id} value={category.slug}>
-                {category.name}（{category.caseCount}）
-              </option>
-            ))}
-            {filters.category &&
-              !categories.data.some((c) => c.slug === filters.category) && (
-                <option value={filters.category}>未找到该分类</option>
-              )}
-          </select>
+          <Label htmlFor="category">内容方向</Label>
+          <Select
+            name="category"
+            defaultValue={filters.category}
+            items={[
+              { value: "", label: "全部方向" },
+              ...categories.data.map((category) => ({
+                value: category.slug,
+                label: `${category.name}（${category.caseCount}）`,
+              })),
+              ...(filters.category &&
+              !categories.data.some(
+                (category) => category.slug === filters.category,
+              )
+                ? [{ value: filters.category, label: "未找到该分类" }]
+                : []),
+            ]}
+          >
+            <SelectTrigger id="category" aria-label="内容方向">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">全部方向</SelectItem>
+              {categories.data.map((category) => (
+                <SelectItem key={category.id} value={category.slug}>
+                  {category.name}（{category.caseCount}）
+                </SelectItem>
+              ))}
+              {filters.category &&
+                !categories.data.some((c) => c.slug === filters.category) && (
+                  <SelectItem value={filters.category}>未找到该分类</SelectItem>
+                )}
+            </SelectContent>
+          </Select>
         </div>
         <div>
-          <label htmlFor="access">阅读方式</label>
-          <select id="access" name="access" defaultValue={filters.access}>
-            <option value="">全部案例</option>
-            <option value="FREE">免费阅读</option>
-            <option value="PAID">付费预览</option>
-          </select>
+          <Label htmlFor="access">阅读方式</Label>
+          <Select
+            name="access"
+            defaultValue={filters.access}
+            items={[
+              { value: "", label: "全部案例" },
+              { value: "FREE", label: "免费阅读" },
+              { value: "PAID", label: "付费预览" },
+            ]}
+          >
+            <SelectTrigger id="access" aria-label="阅读方式">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">全部案例</SelectItem>
+              <SelectItem value="FREE">免费阅读</SelectItem>
+              <SelectItem value="PAID">付费预览</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <input type="hidden" name="size" value={filters.size} />
-        <button className="primary-link" type="submit">
+        <Input type="hidden" name="size" value={filters.size} />
+        <Button className="primary-link" type="submit">
           筛选案例 ↗
-        </button>
+        </Button>
       </form>
       <div className="results-heading">
         <p>共 {data.total} 个案例</p>

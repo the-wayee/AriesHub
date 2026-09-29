@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { AuthNav } from "@/components/auth-nav";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const hasSession = (await cookies()).has("arieshub_token");
+
   return (
     <>
       <a className="skip-link" href="#main">
@@ -19,7 +22,7 @@ export function SiteHeader() {
           <Link href="/#how-it-works">如何使用</Link>
           <Link href="/#about">关于这里</Link>
         </nav>
-        <AuthNav />
+        <AuthNav initialHasSession={hasSession} />
       </header>
     </>
   );

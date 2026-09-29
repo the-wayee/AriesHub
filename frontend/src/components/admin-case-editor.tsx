@@ -13,6 +13,16 @@ import {
   type AdminCaseDetail,
   type AdminCategory,
 } from "@/lib/admin";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export function AdminCaseEditor({ id }: { id?: string }) {
   const router = useRouter();
@@ -119,26 +129,28 @@ export function AdminCaseEditor({ id }: { id?: string }) {
             </Link>
           )}
           {id && detail?.status !== "PUBLISHED" && (
-            <button
+            <Button
+              variant="outline"
               className="quiet-button"
               type="button"
               onClick={() => changeStatus("publish")}
             >
               发布
-            </button>
+            </Button>
           )}
           {id && detail?.status === "PUBLISHED" && (
-            <button
+            <Button
+              variant="outline"
               className="quiet-button"
               type="button"
               onClick={() => changeStatus("archive")}
             >
               下架
-            </button>
+            </Button>
           )}
-          <button className="primary-link" type="submit" disabled={pending}>
+          <Button className="primary-link" type="submit" disabled={pending}>
             {pending ? "保存中…" : "保存内容"}
-          </button>
+          </Button>
         </div>
       </div>
       {detail && (
@@ -170,22 +182,30 @@ export function AdminCaseEditor({ id }: { id?: string }) {
           />
           <label>
             内容分类
-            <select
+            <Select
               name="categoryId"
-              defaultValue={detail?.categoryId}
+              defaultValue={detail?.categoryId?.toString() ?? ""}
+              items={categories.map((category) => ({
+                value: category.id.toString(),
+                label: category.name,
+              }))}
               required
             >
-              <option value="">选择分类</option>
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="内容分类">
+                <SelectValue placeholder="选择分类" />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id.toString()}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
           <label>
             案例摘要
-            <textarea
+            <Textarea
               name="summary"
               defaultValue={detail?.summary}
               maxLength={500}
@@ -196,14 +216,23 @@ export function AdminCaseEditor({ id }: { id?: string }) {
           <div className="editor-two-columns">
             <label>
               阅读方式
-              <select
+              <Select
                 name="accessType"
                 defaultValue={detail?.accessType ?? "FREE"}
+                items={[
+                  { value: "FREE", label: "免费阅读" },
+                  { value: "PAID", label: "付费案例" },
+                ]}
                 required
               >
-                <option value="FREE">免费阅读</option>
-                <option value="PAID">付费案例</option>
-              </select>
+                <SelectTrigger aria-label="阅读方式">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="FREE">免费阅读</SelectItem>
+                  <SelectItem value="PAID">付费案例</SelectItem>
+                </SelectContent>
+              </Select>
             </label>
             <EditorField
               label="价格（分）"
@@ -225,7 +254,7 @@ export function AdminCaseEditor({ id }: { id?: string }) {
           <h2>正文与交付</h2>
           <label>
             公开预览（Markdown）
-            <textarea
+            <Textarea
               name="previewMarkdown"
               defaultValue={detail?.previewMarkdown}
               rows={10}
@@ -234,7 +263,7 @@ export function AdminCaseEditor({ id }: { id?: string }) {
           </label>
           <label>
             完整正文（Markdown）
-            <textarea
+            <Textarea
               name="fullMarkdown"
               defaultValue={detail?.fullMarkdown}
               rows={18}
@@ -243,7 +272,7 @@ export function AdminCaseEditor({ id }: { id?: string }) {
           </label>
           <label>
             开始之前
-            <textarea
+            <Textarea
               name="requirements"
               defaultValue={detail?.requirements}
               rows={4}
@@ -252,7 +281,7 @@ export function AdminCaseEditor({ id }: { id?: string }) {
           </label>
           <label>
             内容与交付
-            <textarea
+            <Textarea
               name="deliverables"
               defaultValue={detail?.deliverables}
               rows={4}
@@ -283,7 +312,7 @@ function EditorField({
   return (
     <label>
       {label}
-      <input
+      <Input
         name={name}
         type={type}
         defaultValue={defaultValue}
