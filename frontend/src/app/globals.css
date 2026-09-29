@@ -5,39 +5,39 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --muted: #626a62;
-  --line: #d9ddd2;
-  --accent: #32633e;
-  --background: #f7f7f2;
-  --foreground: #262d28;
-  --card: #f7f7f2;
-  --card-foreground: #262d28;
-  --popover: #fffef9;
-  --popover-foreground: #262d28;
-  --primary: #32633e;
-  --primary-foreground: #f7f7f2;
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted-foreground: #626a62;
-  --accent-foreground: #f7f7f2;
+  --muted: #eae0d2;
+  --line: #c9bba7;
+  --accent: #294b3e;
+  --background: #f5f0e7;
+  --foreground: #2a251f;
+  --card: #fffaf1;
+  --card-foreground: #2a251f;
+  --popover: #fffaf1;
+  --popover-foreground: #2a251f;
+  --primary: #294b3e;
+  --primary-foreground: #fffaf1;
+  --secondary: #eae0d2;
+  --secondary-foreground: #2a251f;
+  --muted-foreground: #6d6257;
+  --accent-foreground: #fffaf1;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #d9ddd2;
-  --input: #d9ddd2;
-  --ring: #32633e;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --border: #c9bba7;
+  --input: #c9bba7;
+  --ring: #aa844f;
+  --chart-1: #294b3e;
+  --chart-2: #aa844f;
+  --chart-3: #c8aa7f;
+  --chart-4: #56735a;
+  --chart-5: #765831;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #eae0d2;
+  --sidebar-foreground: #2a251f;
+  --sidebar-primary: #294b3e;
+  --sidebar-primary-foreground: #fffaf1;
+  --sidebar-accent: #dfe5da;
+  --sidebar-accent-foreground: #1d392f;
+  --sidebar-border: #c9bba7;
+  --sidebar-ring: #aa844f;
 }
 @theme inline {
   --color-background: var(--background);
@@ -104,7 +104,7 @@ summary:focus-visible {
   outline-offset: 6px;
 }
 ::selection {
-  background: #d3e4b3;
+  background: #d7c7a9;
 }
 .wrap {
   width: min(1180px, calc(100% - 96px));

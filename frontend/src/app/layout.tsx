@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { PageMotion } from "@/components/page-motion";
 import { SiteFooter, SiteHeader } from "@/components/site-shell";
 import "./globals.css";
+import "./independent.css";
 
 export const metadata: Metadata = {
   title: {

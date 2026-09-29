@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCase, getContent } from "@/lib/catalog";
-import { ContentState } from "@/components/content-state";
-import { Markdown } from "@/components/markdown";
-import { priceLabel } from "@/components/case-card";
+import { CaseArtwork } from "@/components/case-card";
+import { conceptCases, formatConceptPrice } from "@/lib/concept-cases";
+
+export function generateStaticParams() {
+  return conceptCases.map((item) => ({ slug: item.slug }));
+}
 
 export async function generateMetadata({
   params,
@@ -12,13 +14,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const result = await getCase(slug);
-  return result.ok
-    ? {
-        title: result.data.caseInfo.title,
-        description: result.data.caseInfo.summary,
-      }
-    : { title: "案例" };
+  const item = conceptCases.find((entry) => entry.slug === slug);
+  return { title: item?.title ?? "案例", description: item?.summary };
 }
 
 export default async function CasePage({
@@ -27,109 +24,111 @@ export default async function CasePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const result = await getCase(slug);
-  if (!result.ok) {
-    if (result.status === 404 || result.status === 400) notFound();
-    return (
-      <ContentState
-        title="案例暂时加载不了"
-        message="请稍后重试，或返回案例库浏览其他内容。"
-        href={`/cases/${encodeURIComponent(slug)}`}
-        reload
-        label="重新加载"
-        requestId={result.requestId}
-      />
-    );
-  }
-  const { caseInfo: info, preview } = result.data;
-  const content = info.accessType === "FREE" ? await getContent(info.id) : null;
-  // 两次读取之间可能发生下架或收费方式变更；以正文接口的最新权限结果为准。
-  if (content && !content.ok && content.status === 404) notFound();
+  const item = conceptCases.find((entry) => entry.slug === slug);
+  if (!item) notFound();
+
   return (
-    <article className="detail-page">
-      <nav className="breadcrumbs" aria-label="面包屑">
-        <Link href="/cases">案例库</Link>
-        <span aria-hidden="true">/</span>
-        <Link href={`/cases?category=${info.categorySlug}`}>
-          {info.categoryName}
+    <article className="concept-detail">
+      <nav className="concept-breadcrumb" aria-label="面包屑">
+        <Link href="/cases">案例</Link>
+        <span>/</span>
+        <Link href={`/cases?category=${item.categorySlug}`}>
+          {item.category}
         </Link>
       </nav>
-      <header className="detail-heading">
-        <div className="detail-labels">
-          <span>{info.categoryName}</span>
-          {info.isDemo && <span className="demo-badge">演示案例</span>}
+      <div className="concept-detail-main">
+        <div className="concept-detail-primary">
+          <header className="concept-detail-heading">
+            <p className="mono-label">
+              CASE STUDY / {item.category.toUpperCase()}
+            </p>
+            <h1>{item.title}</h1>
+            <p>{item.summary}</p>
+            <small>
+              更新&nbsp; {item.date} &nbsp; | &nbsp; 形式&nbsp; 图文案例 &nbsp;
+              | &nbsp; {item.category}
+            </small>
+          </header>
+          <CaseArtwork item={item} priority />
         </div>
-        <h1>{info.title}</h1>
-        <p>{info.summary}</p>
-      </header>
-      {info.isDemo && (
-        <p className="demo-notice">
-          这是用于体验平台的演示内容，暂不提供购买或文件下载。
-        </p>
-      )}
-      <div className="detail-grid">
-        <div className="detail-content">
-          <section aria-labelledby="preview-title">
-            <p className="eyebrow">BEFORE YOU START</p>
-            <h2 id="preview-title">案例预览</h2>
-            <Markdown>{preview.previewMarkdown}</Markdown>
-          </section>
-          {info.accessType === "FREE" ? (
-            <section
-              className="full-content"
-              id="read"
-              aria-labelledby="read-title"
-            >
-              <p className="eyebrow">THE PROCESS</p>
-              <h2 id="read-title">完整教程</h2>
-              {content?.ok ? (
-                <Markdown>{content.data.markdown}</Markdown>
-              ) : (
-                <ContentState
-                  title="正文暂时无法读取"
-                  message="内容可能已更新或访问方式发生变化，请重新加载。"
-                  href={`/cases/${slug}`}
-                  reload
-                  label="重新加载"
-                />
-              )}
-            </section>
-          ) : (
-            <section className="locked-content" aria-labelledby="locked-title">
-              <p className="eyebrow">THE COMPLETE CASE</p>
-              <h2 id="locked-title">完整内容，稍后开放</h2>
-              <p>现在可以查看公开预览与交付说明。购买功能尚未开放。</p>
-            </section>
-          )}
-        </div>
-        <aside className="case-facts" aria-label="案例说明">
-          <p className="eyebrow">CASE NOTES</p>
-          <p className="case-price">{priceLabel(info)}</p>
-          {info.accessType === "FREE" ? (
-            <a className="primary-link" href="#read">
-              阅读完整教程 ↓
-            </a>
-          ) : (
-            <p className="purchase-status">暂未开放购买</p>
-          )}
-          <dl>
-            <dt>开始之前</dt>
-            <dd>{preview.requirements}</dd>
-            <dt>内容与交付</dt>
-            <dd>{preview.deliverables}</dd>
-            <dt>内容版本</dt>
-            <dd>{preview.version}</dd>
-            <dt>最近更新</dt>
-            <dd>
-              {new Intl.DateTimeFormat("zh-CN", {
-                timeZone: "Asia/Shanghai",
-              }).format(new Date(preview.updatedAt))}
-            </dd>
-          </dl>
-          <Link className="text-link" href="/cases">
-            ← 继续浏览案例
+        <aside className="concept-detail-sidebar" aria-label="案例内容与价格">
+          <p className="mono-label">PRICE / SINGLE CASE</p>
+          <div className="concept-price">
+            <strong>{formatConceptPrice(item.price)}</strong>
+            <span>
+              单个案例
+              <br />
+              按需阅读
+            </span>
+          </div>
+          <Link
+            className="solid-action"
+            href={
+              item.price === 0
+                ? `/learn/${item.slug}`
+                : `/checkout/${item.slug}`
+            }
+          >
+            {item.price === 0 ? "开始阅读" : "查看购买信息"}
+            <span aria-hidden="true">→</span>
           </Link>
+          <a className="outline-action" href="#preview">
+            阅读免费预览 <span aria-hidden="true">→</span>
+          </a>
+          <div className="concept-deliverables">
+            <p className="mono-label">YOU WILL GET</p>
+            {item.deliverables.map((entry, index) => (
+              <div key={entry}>
+                <span className="deliverable-icon" aria-hidden="true">
+                  {["▤", "◇", "▣", "✳"][index % 4]}
+                </span>
+                <strong>{entry}</strong>
+              </div>
+            ))}
+          </div>
+          <div className="concept-support">
+            <p className="mono-label">THE APPROACH</p>
+            <strong>独立创作，完整记录</strong>
+            <p>从起点到交付，把做法和取舍都留在案例里。</p>
+          </div>
         </aside>
+      </div>
+      <div id="preview" className="concept-detail-lower">
+        <section aria-labelledby="contents-title">
+          <p className="mono-label">CONTENTS</p>
+          <h2 id="contents-title">内容目录</h2>
+          <ol>
+            {item.chapters.map((chapter, index) => (
+              <li key={chapter.title}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <span>{chapter.title}</span>
+                <small>{chapter.free ? "免费" : "完整内容"}</small>
+              </li>
+            ))}
+          </ol>
+        </section>
+        <section aria-labelledby="for-title">
+          <p className="mono-label">FOR WHOM</p>
+          <h2 id="for-title">适合谁</h2>
+          <ul>
+            <li>想把 AI 用在具体项目里的实践者</li>
+            <li>希望看清完整制作过程的人</li>
+            <li>愿意从真实案例中提炼自己方法的人</li>
+          </ul>
+        </section>
+        <section aria-labelledby="before-title">
+          <p className="mono-label">BEFORE YOU START</p>
+          <h2 id="before-title">使用前需要</h2>
+          <ul>
+            {item.requirements.map((requirement) => (
+              <li key={requirement}>{requirement}</li>
+            ))}
+          </ul>
+          <h3>案例说明</h3>
+          <p>
+            本页展示的是前端设计原型。购买、账号权益和资源交付将在业务方案确定后接入。
+          </p>
+        </section>
       </div>
     </article>
   );

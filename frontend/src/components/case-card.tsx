@@ -1,73 +1,73 @@
+import Image from "next/image";
 import Link from "next/link";
 import { MotionArticle } from "@/components/page-motion";
-import type { CaseSummary } from "@/lib/catalog-types";
+import { formatConceptPrice, type ConceptCase } from "@/lib/concept-cases";
 
-const styles: Record<
-  string,
-  { theme: string; word: string; illustration: string }
-> = {
-  "ai-ppt": {
-    theme: "presentation",
-    word: "CREATE",
-    illustration: "把想法\n讲清楚。",
-  },
-  coding: {
-    theme: "code",
-    word: "BUILD",
-    illustration: "> 一个想法\n  一次实践\n  一个作品_",
-  },
-  automation: {
-    theme: "workflow",
-    word: "SIMPLIFY",
-    illustration: "收集 → 整理\n       ↓\n     变成成果",
-  },
-};
-
-export function priceLabel(item: CaseSummary) {
-  if (item.accessType === "FREE") return "免费阅读";
-  return `${item.isDemo ? "演示价格 " : ""}${new Intl.NumberFormat("zh-CN", {
-    style: "currency",
-    currency: item.currency,
-  }).format(item.priceMinor / 100)}`;
+export function CaseArtwork({
+  item,
+  priority = false,
+}: {
+  item: ConceptCase;
+  priority?: boolean;
+}) {
+  return (
+    <div className="case-artwork">
+      <Image
+        src={item.image}
+        alt=""
+        fill
+        priority={priority}
+        sizes="(max-width: 700px) 100vw, 60vw"
+      />
+      <span className="case-artwork-caption" aria-hidden="true">
+        ARIESHUB / {item.category.toUpperCase()} <span>↗</span>
+      </span>
+    </div>
+  );
 }
 
 export function CaseCard({
   item,
   index,
+  featured = false,
+  compact = false,
 }: {
-  item: CaseSummary;
+  item: ConceptCase;
   index: number;
+  featured?: boolean;
+  compact?: boolean;
 }) {
-  const style = styles[item.categorySlug] ?? {
-    theme: "presentation",
-    word: "EXPLORE",
-    illustration: "从好奇\n到作品。",
-  };
   return (
     <MotionArticle
-      className="case-card"
-      direction={index % 2 === 0 ? "left" : "right"}
-      delay={(index % 3) * 0.08}
+      className={`archive-case ${featured ? "archive-case-featured" : ""} ${compact ? "archive-case-compact" : ""}`}
+      direction={index % 2 ? "right" : "left"}
+      delay={(index % 3) * 0.06}
     >
-      <Link className="case-card-link" href={`/cases/${item.slug}`}>
-        <div className={`direction-art ${style.theme}`} aria-hidden="true">
-          <div className="art-label">
-            <span>{style.word}</span>
-            <span>/{String(index + 1).padStart(2, "0")}</span>
-          </div>
-          <div className="art-text">{style.illustration}</div>
+      <Link href={`/cases/${item.slug}`} className="archive-case-link">
+        <div className="archive-index">
+          <strong>{String(index + 1).padStart(2, "0")}</strong>
+          <span>CASE / {item.categorySlug.toUpperCase()}</span>
         </div>
-        <div className="card-meta">
-          <span>{item.categoryName}</span>
-          {item.isDemo && <span className="demo-badge">演示案例</span>}
-        </div>
-        <h3>{item.title}</h3>
-        <p className="direction-description">{item.summary}</p>
-        <div className="card-bottom">
-          <span>{priceLabel(item)}</span>
-          <span>
-            查看案例 <span aria-hidden="true">↗</span>
+        <CaseArtwork item={item} priority={featured} />
+        <div className="archive-case-copy">
+          <span className="archive-access">
+            {item.price === 0 ? "免费案例" : "付费案例"}
           </span>
+          <h2>{item.title}</h2>
+          <p>{item.summary}</p>
+          {featured && (
+            <div className="archive-deliverables">
+              <small>你将获得</small>
+              <span>{item.deliverables.join(" / ")}</span>
+            </div>
+          )}
+          <div className="archive-case-bottom">
+            <span>
+              {item.date} / {item.category}
+            </span>
+            <strong>{formatConceptPrice(item.price)}</strong>
+            <span className="archive-case-action">查看详情&nbsp; →</span>
+          </div>
         </div>
       </Link>
     </MotionArticle>

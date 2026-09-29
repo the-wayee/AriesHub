@@ -1,4 +1,6 @@
-# AriesHub 独立站视觉概念（黑白版）
+# AriesHub 独立站视觉概念（版式参考与当前配色）
+
+> 2026-09-29 方向调整：前端原型继续对照这组稿子的构图与信息比例：并列的巨型字标与宣言、首页三栏主推案例、目录的宽图横排、详情的左侧成果画面与右侧价格栏。现行配色采用暖象牙白、深松绿、咖啡棕和少量旧铜色，呈现低调、克制、有材质感的视觉氛围。
 
 这组图片是未来网站的视觉探索，不是已实现页面。图片中的人名、案例、价格、时间、订单、讨论和文件均为示意内容，开发时必须以真实业务数据与最终售卖条款为准。界面文案和细节需要在实现阶段重新校对。
 
@@ -22,13 +24,17 @@
 
 ## 视觉原则
 
-- 纯黑白，使用灰阶处理案例图；以字体、留白、细分隔线和图片裁切建立层次。
+- 克制的色彩系统；以字体、留白、细分隔线和内容画面建立层次，强调色服务于导航和重点行动。
 - 页面像一本可操作的独立刊物：大标题、小号索引、错位网格与内容目录，而不是通用卡片式仪表盘。
 - 案例结果图、交付清单、价格和免费预览始终优先；社区内容作为案例实践的延伸。
 - 个人主页和后台延续同一视觉语言，同时保证阅读、下载、编辑与处理订单的操作清晰。
 
 ## 生成说明
 
-使用 Codex 内置 `image_gen` 的 `ui-mockup` 模式逐页生成。共同提示词约束为：`AriesHub; single-creator Chinese paid AI practice community; individual one-time case purchases; avant-garde minimal independent editorial website; strict pure black and white; Swiss asymmetric grid; strong typography; fine rules; grayscale project imagery; realistic navigable UI; no generic SaaS cards, gradients, colored accents, subscriptions, fake testimonials or metrics.` 各页分别补充上表所列的页面目标、内容结构与操作信息。
+原始九张黑白参考图使用 Codex 内置 `image_gen` 的 `ui-mockup` 模式逐页生成。它们提供版式参考，当前网站配色以实际前端实现为准。共同提示词约束为：`AriesHub; single-creator Chinese paid AI practice community; individual one-time case purchases; avant-garde minimal independent editorial website; strict pure black and white; Swiss asymmetric grid; strong typography; fine rules; grayscale project imagery; realistic navigable UI; no generic SaaS cards, gradients, colored accents, subscriptions, fake testimonials or metrics.` 各页分别补充上表所列的页面目标、内容结构与操作信息。
 
 图片是设计讨论稿，不能直接当作前端截图或产品功能验收证据。尤其是文字生成可能出现错字、跨页案例信息不一致；开发时以确定后的设计规范和真实数据重建界面。
+
+## 当前实施范围
+
+当前前端使用 `frontend/src/lib/concept-cases.ts` 中的示例数据来验证设计，不依赖现有后端接口或数据表。四张彩色配图是概念插画，不代表案例的真实交付成果。`/`、`/cases`、案例详情、`/checkout/[slug]`、`/learn/[slug]`、`/community`、`/members`、`/my-content` 和 `/studio` 分别对应九张概念稿的前端原型。支付、订单、资源下载、讨论和内容管理操作尚未接入，页面会标示不可用的操作；未来以确定后的业务规则和真实数据替换示例。

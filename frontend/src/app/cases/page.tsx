@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CaseCard } from "@/components/case-card";
-import { ContentState } from "@/components/content-state";
-import { getCases, getCategories } from "@/lib/catalog";
-import { filtersQuery, parseFilters } from "@/lib/catalog-filters";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -14,169 +10,123 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { conceptCases } from "@/lib/concept-cases";
 
-export const metadata: Metadata = { title: "案例库" };
+export const metadata: Metadata = { title: "案例档案" };
+
+const categories = [
+  { slug: "", label: "全部" },
+  { slug: "web", label: "网站与开发" },
+  { slug: "content", label: "内容创作" },
+  { slug: "automation", label: "自动化" },
+];
 
 export default async function CasesPage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const filters = parseFilters(await searchParams);
-  if (!filters)
-    return (
-      <ContentState
-        title="筛选条件不正确"
-        message="请使用有效的关键词、分类和页码，或清除条件重新浏览。"
-        label="清除筛选"
-      />
-    );
-  const [cases, categories] = await Promise.all([
-    getCases(filtersQuery(filters)),
-    getCategories(),
-  ]);
-  if (!cases.ok || !categories.ok) {
-    const failure = !cases.ok ? cases : !categories.ok ? categories : null;
-    return (
-      <ContentState
-        title="案例暂时加载不了"
-        message="内容服务暂时不可用，请稍后再试。"
-        href={`/cases?${filtersQuery(filters)}`}
-        reload
-        label="重新加载"
-        requestId={failure?.requestId}
-      />
-    );
-  }
-  const data = cases.data;
+  const params = await searchParams;
+  const value = (key: string) =>
+    typeof params[key] === "string" ? params[key] : "";
+  const q = value("q").slice(0, 120);
+  const category = value("category");
+  const access = value("access");
+  const cases = conceptCases.filter(
+    (item) =>
+      (!q ||
+        `${item.title} ${item.summary}`
+          .toLowerCase()
+          .includes(q.toLowerCase())) &&
+      (!category || item.categorySlug === category) &&
+      (!access || (access === "FREE" ? item.price === 0 : item.price > 0)),
+  );
+
   return (
-    <div className="library-page">
-      <header className="page-heading">
-        <p className="eyebrow">THE CASE LIBRARY</p>
-        <h1>把好奇心，落在实践里。</h1>
-        <p>找一个具体问题，从完整的过程里获得启发。</p>
+    <div className="archive-page">
+      <header className="archive-heading">
+        <div>
+          <p className="mono-label">THE CASE ARCHIVE / 001—004</p>
+          <h1>案例档案</h1>
+          <p>记录从想法到交付的 AI 实践过程、步骤与思考。</p>
+        </div>
+        <p className="archive-heading-aside">
+          PRACTICE
+          <br />
+          SHARE
+          <br />
+          REAL CHANGE.
+        </p>
       </header>
-      <form action="/cases" className="catalog-filters">
-        <div className="search-field">
-          <Label htmlFor="q">关键词</Label>
+
+      <div className="archive-toolbar">
+        <nav className="archive-tabs" aria-label="案例分类">
+          {categories.map((tab) => (
+            <Link
+              key={tab.slug}
+              href={tab.slug ? `/cases?category=${tab.slug}` : "/cases"}
+              className={category === tab.slug ? "active" : ""}
+              aria-current={category === tab.slug ? "page" : undefined}
+            >
+              {tab.label}
+            </Link>
+          ))}
+        </nav>
+        <form action="/cases" className="archive-search">
+          {category && <Input name="category" type="hidden" value={category} />}
           <Input
-            id="q"
+            aria-label="搜索案例"
             name="q"
             type="search"
-            maxLength={120}
-            defaultValue={filters.q}
-            placeholder="搜索标题或简介…"
+            placeholder="搜索案例、工具、关键词…"
+            defaultValue={q}
           />
-        </div>
-        <div>
-          <Label htmlFor="category">内容方向</Label>
-          <Select
-            name="category"
-            defaultValue={filters.category}
-            items={[
-              { value: "", label: "全部方向" },
-              ...categories.data.map((category) => ({
-                value: category.slug,
-                label: `${category.name}（${category.caseCount}）`,
-              })),
-              ...(filters.category &&
-              !categories.data.some(
-                (category) => category.slug === filters.category,
-              )
-                ? [{ value: filters.category, label: "未找到该分类" }]
-                : []),
-            ]}
-          >
-            <SelectTrigger id="category" aria-label="内容方向">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">全部方向</SelectItem>
-              {categories.data.map((category) => (
-                <SelectItem key={category.id} value={category.slug}>
-                  {category.name}（{category.caseCount}）
-                </SelectItem>
-              ))}
-              {filters.category &&
-                !categories.data.some((c) => c.slug === filters.category) && (
-                  <SelectItem value={filters.category}>未找到该分类</SelectItem>
-                )}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="access">阅读方式</Label>
           <Select
             name="access"
-            defaultValue={filters.access}
+            defaultValue={access}
             items={[
-              { value: "", label: "全部案例" },
-              { value: "FREE", label: "免费阅读" },
-              { value: "PAID", label: "付费预览" },
+              { value: "", label: "全部内容" },
+              { value: "FREE", label: "免费" },
+              { value: "PAID", label: "付费" },
             ]}
           >
-            <SelectTrigger id="access" aria-label="阅读方式">
+            <SelectTrigger aria-label="阅读方式">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">全部案例</SelectItem>
-              <SelectItem value="FREE">免费阅读</SelectItem>
-              <SelectItem value="PAID">付费预览</SelectItem>
+              <SelectItem value="">全部内容</SelectItem>
+              <SelectItem value="FREE">免费</SelectItem>
+              <SelectItem value="PAID">付费</SelectItem>
             </SelectContent>
           </Select>
-        </div>
-        <Input type="hidden" name="size" value={filters.size} />
-        <Button className="primary-link" type="submit">
-          筛选案例 ↗
-        </Button>
-      </form>
-      <div className="results-heading">
-        <p>共 {data.total} 个案例</p>
-        {(filters.q || filters.category || filters.access) && (
-          <Link className="text-link" href="/cases">
-            清除筛选
-          </Link>
+          <Button type="submit">搜索 →</Button>
+        </form>
+      </div>
+
+      <div className="archive-list">
+        {cases.length ? (
+          cases.map((item, index) => (
+            <CaseCard
+              key={item.slug}
+              item={item}
+              index={conceptCases.indexOf(item)}
+              featured={index === 0 && !q && !category && !access}
+            />
+          ))
+        ) : (
+          <div className="archive-empty">
+            <h2>没有找到匹配的案例。</h2>
+            <Link href="/cases">清除条件，查看全部 →</Link>
+          </div>
         )}
       </div>
-      {data.items.length ? (
-        <div className="direction-grid">
-          {data.items.map((item, index) => (
-            <CaseCard
-              key={item.id}
-              item={item}
-              index={(data.page - 1) * data.size + index}
-            />
-          ))}
-        </div>
-      ) : (
-        <ContentState
-          title={data.total ? "这一页没有案例" : "暂时没有符合条件的案例"}
-          message="试试其他关键词或分类，也可以返回查看全部内容。"
-          label="查看全部案例"
-        />
-      )}
-      {data.totalPages > 0 && (
-        <nav className="pagination" aria-label="案例分页">
-          {data.page > 1 && (
-            <Link
-              href={`/cases?${filtersQuery(filters, Math.min(data.page - 1, data.totalPages))}`}
-            >
-              上一页
-            </Link>
-          )}
-          <span aria-current="page">
-            第 {data.page} 页 / 共 {data.totalPages} 页
-          </span>
-          {data.page < data.totalPages && (
-            <Link href={`/cases?${filtersQuery(filters, data.page + 1)}`}>
-              下一页
-            </Link>
-          )}
-        </nav>
-      )}
-      <p className="library-note">
-        标注「演示案例」的内容用于体验浏览流程，演示价格不构成售卖报价。
-      </p>
+      <footer className="archive-page-footer">
+        <span>AriesHub&nbsp; — &nbsp; 与 AI 一起，实践更大的可能。</span>
+        <span>
+          {cases.length.toString().padStart(2, "0")} /{" "}
+          {conceptCases.length.toString().padStart(2, "0")} CASES
+        </span>
+      </footer>
     </div>
   );
 }
