@@ -17,23 +17,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AdminCatalogIntegrationTests extends IntegrationTestSupport {
     @Test void publishingWithoutFullContentReturnsConflictAndKeepsDraft() throws Exception {
         Cookie admin = register("admin@example.com", "admin1234", "管理员");
-        jdbc.update("DELETE FROM case_contents WHERE case_id = 13");
+        database.deletePublicationContent(13);
 
-        mvc.perform(post("/api/v1/admin/cases/13/publish").cookie(admin))
+        mvc.perform(post("/api/v1/admin/publications/13/publish").cookie(admin))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("CASE_CONTENT_REQUIRED"));
-        mvc.perform(get("/api/v1/cases/draft-case"))
+                .andExpect(jsonPath("$.code").value("PUBLICATION_CONTENT_REQUIRED"));
+        mvc.perform(get("/api/v1/publications/draft-case"))
                 .andExpect(status().isNotFound());
-        assertThat(jdbc.queryForObject("SELECT status FROM cases WHERE id = 13", String.class))
-                .isEqualTo("DRAFT");
+        assertThat(database.publicationStatus(13)).isEqualTo("DRAFT");
     }
 
-    @Test void adminCanCreatePublishAndArchiveCases() throws Exception {
-        mvc.perform(get("/api/v1/admin/cases"))
+    @Test void adminCanCreatePublishAndArchivePublications() throws Exception {
+        mvc.perform(get("/api/v1/admin/publications"))
                 .andExpect(status().isUnauthorized());
 
         Cookie member = register("ordinary@example.com", "ordinary123", "普通成员");
-        mvc.perform(get("/api/v1/admin/cases").cookie(member))
+        mvc.perform(get("/api/v1/admin/publications").cookie(member))
                 .andExpect(status().isForbidden());
 
         Cookie admin = register("admin@example.com", "admin1234", "管理员");
@@ -43,7 +42,7 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)));
 
-        mvc.perform(post("/api/v1/admin/cases").cookie(admin)
+        mvc.perform(post("/api/v1/admin/publications").cookie(admin)
                         .contentType("application/json")
                         .content("""
                             {
@@ -51,8 +50,9 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
                               "slug":"admin-created-case",
                               "title":"后台创建的案例",
                               "summary":"验证管理员可以维护内容",
+                              "publicationType":"CASE_STUDY",
                               "accessType":"FREE",
-                              "priceMinor":0,
+                              "creditPrice":0,
                               "previewMarkdown":"## 公开预览",
                               "fullMarkdown":"## 完整正文",
                               "requirements":"准备条件",
@@ -62,19 +62,19 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
                             """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("DRAFT"));
-        Long id = jdbc.queryForObject("SELECT id FROM cases WHERE slug = 'admin-created-case'", Long.class);
+        Long id = database.publicationIdBySlug("admin-created-case");
 
-        mvc.perform(get("/api/v1/cases/admin-created-case"))
+        mvc.perform(get("/api/v1/publications/admin-created-case"))
                 .andExpect(status().isNotFound());
-        mvc.perform(post("/api/v1/admin/cases/" + id + "/publish").cookie(admin))
+        mvc.perform(post("/api/v1/admin/publications/" + id + "/publish").cookie(admin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PUBLISHED"));
-        mvc.perform(get("/api/v1/cases/admin-created-case"))
+        mvc.perform(get("/api/v1/publications/admin-created-case"))
                 .andExpect(status().isOk());
-        mvc.perform(post("/api/v1/admin/cases/" + id + "/archive").cookie(admin))
+        mvc.perform(post("/api/v1/admin/publications/" + id + "/archive").cookie(admin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ARCHIVED"));
-        mvc.perform(get("/api/v1/cases/admin-created-case"))
+        mvc.perform(get("/api/v1/publications/admin-created-case"))
                 .andExpect(status().isNotFound());
     }
 }

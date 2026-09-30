@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CaseArtwork } from "@/components/case-card";
+import { PublicationArtwork } from "@/components/publication-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { conceptCases, formatConceptCredits } from "@/lib/concept-cases";
+import {
+  conceptPublications,
+  formatConceptCredits,
+} from "@/lib/concept-publications";
 
 export const metadata: Metadata = { title: "创作者工作台" };
 
 export default function StudioPage() {
-  const selected = conceptCases[1];
+  const selected = conceptPublications[1];
   return (
     <div className="concept-studio">
       <aside className="studio-nav">
@@ -37,7 +40,7 @@ export default function StudioPage() {
           <p>管理你的 AI 案例、付费内容与资源文件。</p>
         </header>
         <div className="studio-list-bar">
-          <span>全部 {conceptCases.length}　　已发布 3　　草稿 1</span>
+          <span>全部 {conceptPublications.length}　　已发布 3　　草稿 1</span>
           <Button disabled>＋ 新建案例</Button>
         </div>
         <div className="studio-table-head">
@@ -46,13 +49,13 @@ export default function StudioPage() {
           <span>积分</span>
           <span>操作</span>
         </div>
-        {conceptCases.map((item, index) => (
+        {conceptPublications.map((item, index) => (
           <div
             className={`studio-row ${index === 1 ? "selected" : ""}`}
             key={item.slug}
           >
             <div className="studio-row-title">
-              <CaseArtwork item={item} />
+              <PublicationArtwork item={item} />
               <div>
                 <strong>{item.title}</strong>
                 <small>{item.summary}</small>
@@ -60,7 +63,7 @@ export default function StudioPage() {
             </div>
             <span>{index === 1 ? "● 草稿" : "● 已发布"}</span>
             <span>{formatConceptCredits(item.creditPrice)}</span>
-            <Link href={`/cases/${item.slug}`}>预览 ↗</Link>
+            <Link href={`/publications/${item.slug}`}>预览 ↗</Link>
           </div>
         ))}
         <p className="community-prototype-note">
@@ -70,7 +73,7 @@ export default function StudioPage() {
       <aside className="studio-editor">
         <div className="studio-editor-top">
           <span>编辑案例</span>
-          <Link href={`/cases/${selected.slug}`}>预览页面 ↗</Link>
+          <Link href={`/publications/${selected.slug}`}>预览页面 ↗</Link>
         </div>
         <h2>{selected.title}</h2>
         <p>最近编辑 · 设计示例</p>
@@ -83,7 +86,7 @@ export default function StudioPage() {
         <form>
           <Label htmlFor="studio-cover">封面图</Label>
           <div id="studio-cover" className="studio-editor-cover">
-            <CaseArtwork item={selected} />
+            <PublicationArtwork item={selected} />
             <Button type="button" variant="outline" disabled>
               更换封面
             </Button>

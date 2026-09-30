@@ -12,7 +12,7 @@ export function SiteHeader() {
           AriesHub
         </Link>
         <nav aria-label="主导航">
-          <Link href="/cases">案例</Link>
+          <Link href="/publications">案例</Link>
           <Link href="/community">讨论</Link>
           <Link href="/my-content">我的内容</Link>
           <Link href="/#about">关于</Link>

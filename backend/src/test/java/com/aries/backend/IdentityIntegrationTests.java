@@ -49,12 +49,9 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
                 .andExpect(header().string("Set-Cookie", containsString("HttpOnly")))
                 .andReturn();
 
-        String passwordHash = jdbc.queryForObject(
-                "SELECT password_hash FROM users WHERE email = 'hello@example.com'", String.class);
+        String passwordHash = database.passwordHash("hello@example.com");
         assertThat(passwordHash).startsWith("$2").doesNotContain("hello1234");
-        assertThat(jdbc.queryForObject(
-                "SELECT created_at IS NOT NULL AND updated_at IS NOT NULL AND NOT is_deleted FROM users WHERE id = 1",
-                Boolean.class)).isTrue();
+        assertThat(database.userAuditFieldsPresent(1)).isTrue();
 
         Cookie session = registered.getResponse().getCookie("arieshub_token");
         assertThat(session).isNotNull();
@@ -93,9 +90,7 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
                 .andReturn();
         Cookie session = loggedIn.getResponse().getCookie("arieshub_token");
         assertThat(session).isNotNull();
-        assertThat(jdbc.queryForObject(
-                "SELECT last_login_at IS NOT NULL FROM users WHERE email = 'login@example.com'", Boolean.class))
-                .isTrue();
+        assertThat(database.userHasLastLogin("login@example.com")).isTrue();
 
         mvc.perform(post("/api/v1/auth/logout").cookie(session))
                 .andExpect(status().isNoContent());
@@ -114,7 +109,7 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
         register("delete@example.com", "delete1234", "待删除");
         userMapper.deleteById(1L);
         assertThat(userMapper.selectById(1L)).isNull();
-        assertThat(jdbc.queryForObject("SELECT is_deleted FROM users WHERE id = 1", Boolean.class)).isTrue();
+        assertThat(database.userDeleted(1)).isTrue();
     }
 
     @Test void protectedIdentityEndpointsRequireLogin() throws Exception {

@@ -4,7 +4,7 @@ import { Bookmark, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { conceptCases } from "@/lib/concept-cases";
+import { conceptPublications } from "@/lib/concept-publications";
 import { ContentCard } from "./content-card";
 
 const filters = [
@@ -16,7 +16,7 @@ const filters = [
 
 export function DiscoverView({ initialQuery = "" }: { initialQuery?: string }) {
   const [filter, setFilter] = useState("");
-  const items = conceptCases.filter(
+  const items = conceptPublications.filter(
     (item) =>
       (!filter || item.categorySlug === filter) &&
       `${item.title} ${item.summary}`
@@ -63,7 +63,7 @@ export function DiscoverView({ initialQuery = "" }: { initialQuery?: string }) {
             <ContentCard
               key={item.slug}
               item={item}
-              index={conceptCases.indexOf(item)}
+              index={conceptPublications.indexOf(item)}
             />
           ))}
         </div>

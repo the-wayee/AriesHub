@@ -123,78 +123,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/admin/cases": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Lists cases in every publication state */
-    get: operations["getAdminCases"];
-    put?: never;
-    /** Creates a draft case and its content */
-    post: operations["createAdminCase"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/admin/cases/{id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components["parameters"]["CaseId"];
-      };
-      cookie?: never;
-    };
-    /** Returns the complete editable case */
-    get: operations["getAdminCase"];
-    /** Replaces the editable case fields and content */
-    put: operations["updateAdminCase"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/admin/cases/{id}/publish": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Publishes a case to the public catalog */
-    post: operations["publishAdminCase"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/admin/cases/{id}/archive": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /** Archives a case and removes it from the public catalog */
-    post: operations["archiveAdminCase"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/categories": {
     parameters: {
       query?: never;
@@ -202,59 +130,8 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Categories with published and available case counts */
+    /** Categories with published and available publication counts */
     get: operations["getCategories"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/cases": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Public case summaries; never includes body content */
-    get: operations["getCases"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/cases/{slug}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Public detail and preview; never includes full body */
-    get: operations["getCase"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/cases/{id}/content": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Only published and available FREE cases are readable in M1 */
-    get: operations["getCaseContent"];
     put?: never;
     post?: never;
     delete?: never;
@@ -281,36 +158,142 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/admin/publications": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Lists publications in every publication state */
+    get: operations["getAdminPublications"];
+    put?: never;
+    /** Creates a draft publication and its content */
+    post: operations["createAdminPublication"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/publications/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: components["parameters"]["PublicationId"];
+      };
+      cookie?: never;
+    };
+    /** Returns the complete editable publication */
+    get: operations["getAdminPublication"];
+    /** Replaces the editable publication fields and content */
+    put: operations["updateAdminPublication"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/publications/{id}/publish": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Publishes a publication to the public catalog */
+    post: operations["publishAdminPublication"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/publications/{id}/archive": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Archives a publication and removes it from the public catalog */
+    post: operations["archiveAdminPublication"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/publications": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Public publication summaries; never includes body content */
+    get: operations["getPublications"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/publications/{slug}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Public detail and preview; never includes full body */
+    get: operations["getPublication"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/publications/{id}/content": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Only published and available FREE publications are readable in M1 */
+    get: operations["getPublicationContent"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     /** @enum {string} */
-    AccessType: "FREE" | "PAID";
+    AccessType: "FREE" | "CREDIT";
     Category: {
       /** @description PostgreSQL bigint ID serialized as a string. */
       id: string;
       slug: string;
       name: string;
       /** Format: int64 */
-      caseCount: number;
-    };
-    CaseSummary: {
-      /** @description PostgreSQL bigint ID serialized as a string. */
-      id: string;
-      slug: string;
-      title: string;
-      summary: string;
-      categorySlug: string;
-      categoryName: string;
-      accessType: components["schemas"]["AccessType"];
-      /** Format: int64 */
-      priceMinor: number;
-      /** @enum {string} */
-      currency: "CNY";
-      isDemo: boolean;
-      /** Format: date-time */
-      publishedAt: string;
+      publicationCount: number;
     };
     Preview: {
       previewMarkdown: string;
@@ -319,27 +302,6 @@ export interface components {
       version: string;
       /** Format: date-time */
       updatedAt: string;
-    };
-    CaseDetail: {
-      caseInfo: components["schemas"]["CaseSummary"];
-      preview: components["schemas"]["Preview"];
-    };
-    CaseContent: {
-      /** @description PostgreSQL bigint ID serialized as a string. */
-      caseId: string;
-      markdown: string;
-      version: string;
-      /** Format: date-time */
-      updatedAt: string;
-    };
-    CasePage: {
-      items: components["schemas"]["CaseSummary"][];
-      page: number;
-      size: number;
-      /** Format: int64 */
-      total: number;
-      /** Format: int64 */
-      totalPages: number;
     };
     EmailCodeRequest: {
       /** Format: email */
@@ -375,52 +337,6 @@ export interface components {
       slug: string;
       name: string;
     };
-    AdminCaseRequest: {
-      /** Format: int64 */
-      categoryId: number;
-      slug: string;
-      title: string;
-      summary: string;
-      accessType: components["schemas"]["AccessType"];
-      /** Format: int64 */
-      priceMinor: number;
-      previewMarkdown: string;
-      fullMarkdown: string;
-      requirements: string;
-      deliverables: string;
-      version: string;
-    };
-    AdminCaseSummary: {
-      id: string;
-      slug: string;
-      title: string;
-      categoryName: string;
-      accessType: components["schemas"]["AccessType"];
-      /** Format: int64 */
-      priceMinor: number;
-      /** @enum {string} */
-      status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
-      /** @enum {string} */
-      deliveryStatus: "AVAILABLE" | "SUSPENDED";
-      /** Format: date-time */
-      publishedAt: string | null;
-      /** Format: date-time */
-      updatedAt: string;
-    };
-    AdminCaseDetail: components["schemas"]["AdminCaseSummary"] & {
-      categoryId: string;
-      summary: string;
-      /** @enum {string} */
-      currency: "CNY";
-      isDemo: boolean;
-      previewMarkdown: string;
-      fullMarkdown: string;
-      requirements: string;
-      deliverables: string;
-      version: string;
-      /** Format: date-time */
-      createdAt: string;
-    };
     CurrentUser: {
       /** @description PostgreSQL bigint ID serialized as a string. */
       id: string;
@@ -447,7 +363,7 @@ export interface components {
     CreateCommentRequest: {
       /** @example PUBLICATION */
       targetType: string;
-      /** @example free-case */
+      /** @example free-publication */
       targetKey: string;
       /** Format: int64 */
       parentId?: number | null;
@@ -464,6 +380,89 @@ export interface components {
       createdAt: string;
       replies: components["schemas"]["CommentNode"][];
     };
+    PublicationSummary: {
+      /** @description PostgreSQL bigint ID serialized as a string. */
+      id: string;
+      slug: string;
+      title: string;
+      summary: string;
+      categorySlug: string;
+      categoryName: string;
+      accessType: components["schemas"]["AccessType"];
+      /** Format: date-time */
+      publishedAt: string;
+      publicationType: components["schemas"]["PublicationType"];
+      /** Format: int64 */
+      creditPrice: number;
+    };
+    PublicationDetail: {
+      preview: components["schemas"]["Preview"];
+      publication: components["schemas"]["PublicationSummary"];
+    };
+    PublicationContent: {
+      markdown: string;
+      version: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /** @description PostgreSQL bigint ID serialized as a string. */
+      publicationId: string;
+    };
+    PublicationPage: {
+      items: components["schemas"]["PublicationSummary"][];
+      page: number;
+      size: number;
+      /** Format: int64 */
+      total: number;
+      /** Format: int64 */
+      totalPages: number;
+    };
+    AdminPublicationRequest: {
+      /** Format: int64 */
+      categoryId: number;
+      slug: string;
+      title: string;
+      summary: string;
+      accessType: components["schemas"]["AccessType"];
+      previewMarkdown: string;
+      fullMarkdown: string;
+      requirements: string;
+      deliverables: string;
+      version: string;
+      publicationType: components["schemas"]["PublicationType"];
+      /** Format: int64 */
+      creditPrice: number;
+    };
+    AdminPublicationSummary: {
+      id: string;
+      slug: string;
+      title: string;
+      categoryName: string;
+      accessType: components["schemas"]["AccessType"];
+      /** @enum {string} */
+      status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+      /** @enum {string} */
+      deliveryStatus: "AVAILABLE" | "SUSPENDED";
+      /** Format: date-time */
+      publishedAt: string | null;
+      /** Format: date-time */
+      updatedAt: string;
+      publicationType: components["schemas"]["PublicationType"];
+      /** Format: int64 */
+      creditPrice: number;
+    };
+    AdminPublicationDetail: components["schemas"]["AdminPublicationSummary"] & {
+      categoryId: string;
+      summary: string;
+      previewMarkdown: string;
+      fullMarkdown: string;
+      requirements: string;
+      deliverables: string;
+      version: string;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    /** @enum {string} */
+    PublicationType: "CASE_STUDY" | "ARTICLE" | "COURSE";
   };
   responses: {
     /** @description Invalid request */
@@ -493,7 +492,7 @@ export interface components {
         "application/json": components["schemas"]["Error"];
       };
     };
-    /** @description Case not found */
+    /** @description Publication not found */
     NotFound: {
       headers: {
         [name: string]: unknown;
@@ -502,7 +501,7 @@ export interface components {
         "application/json": components["schemas"]["Error"];
       };
     };
-    /** @description Case slug already exists */
+    /** @description Publication slug already exists */
     Conflict: {
       headers: {
         [name: string]: unknown;
@@ -513,7 +512,7 @@ export interface components {
     };
   };
   parameters: {
-    CaseId: number;
+    PublicationId: number;
   };
   requestBodies: never;
   headers: never;
@@ -796,162 +795,6 @@ export interface operations {
       403: components["responses"]["Forbidden"];
     };
   };
-  getAdminCases: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description All cases */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AdminCaseSummary"][];
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-    };
-  };
-  createAdminCase: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AdminCaseRequest"];
-      };
-    };
-    responses: {
-      /** @description Draft created */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AdminCaseDetail"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      409: components["responses"]["Conflict"];
-    };
-  };
-  getAdminCase: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components["parameters"]["CaseId"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Editable case */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AdminCaseDetail"];
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-    };
-  };
-  updateAdminCase: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components["parameters"]["CaseId"];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AdminCaseRequest"];
-      };
-    };
-    responses: {
-      /** @description Case updated */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AdminCaseDetail"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-      409: components["responses"]["Conflict"];
-    };
-  };
-  publishAdminCase: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components["parameters"]["CaseId"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Published case */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AdminCaseDetail"];
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-    };
-  };
-  archiveAdminCase: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: components["parameters"]["CaseId"];
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Archived case */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["AdminCaseDetail"];
-        };
-      };
-      401: components["responses"]["Unauthorized"];
-      403: components["responses"]["Forbidden"];
-      404: components["responses"]["NotFound"];
-    };
-  };
   getCategories: {
     parameters: {
       query?: never;
@@ -970,214 +813,6 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["Category"][];
-        };
-      };
-      /** @description Unexpected server error */
-      500: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      /** @description Database temporarily unavailable */
-      503: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-    };
-  };
-  getCases: {
-    parameters: {
-      query?: {
-        page?: number;
-        size?: number;
-        q?: string;
-        category?: string;
-        access?: "" | "FREE" | "PAID";
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CasePage"];
-        };
-      };
-      /** @description Invalid query */
-      400: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      /** @description Unexpected server error */
-      500: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      /** @description Database temporarily unavailable */
-      503: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-    };
-  };
-  getCase: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        slug: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CaseDetail"];
-        };
-      };
-      /** @description Invalid slug */
-      400: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      /** @description Missing, draft, archived or suspended case */
-      404: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      /** @description Unexpected server error */
-      500: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      /** @description Database temporarily unavailable */
-      503: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-    };
-  };
-  getCaseContent: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Success */
-      200: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CaseContent"];
-        };
-      };
-      /** @description Invalid ID */
-      400: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      /** @description Paid content is locked; purchases are not implemented */
-      403: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-      /** @description Missing, draft, archived or suspended case */
-      404: {
-        headers: {
-          "X-Request-Id"?: string;
-          "Cache-Control"?: "no-store";
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
         };
       };
       /** @description Unexpected server error */
@@ -1267,7 +902,7 @@ export interface operations {
           "application/json": components["schemas"]["CommentNode"];
         };
       };
-      /** @description Invalid body or maximum reply depth reached */
+      /** @description Invalid comment body */
       400: {
         headers: {
           [name: string]: unknown;
@@ -1306,6 +941,371 @@ export interface operations {
       /** @description Unexpected server error */
       500: {
         headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getAdminPublications: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description All publications */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminPublicationSummary"][];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+    };
+  };
+  createAdminPublication: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdminPublicationRequest"];
+      };
+    };
+    responses: {
+      /** @description Draft created */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminPublicationDetail"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      409: components["responses"]["Conflict"];
+    };
+  };
+  getAdminPublication: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: components["parameters"]["PublicationId"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Editable publication */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminPublicationDetail"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  updateAdminPublication: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: components["parameters"]["PublicationId"];
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AdminPublicationRequest"];
+      };
+    };
+    responses: {
+      /** @description Publication updated */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminPublicationDetail"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+      409: components["responses"]["Conflict"];
+    };
+  };
+  publishAdminPublication: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: components["parameters"]["PublicationId"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Published publication */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminPublicationDetail"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  archiveAdminPublication: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: components["parameters"]["PublicationId"];
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Archived publication */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AdminPublicationDetail"];
+        };
+      };
+      401: components["responses"]["Unauthorized"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["NotFound"];
+    };
+  };
+  getPublications: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+        q?: string;
+        category?: string;
+        access?: "" | "FREE" | "CREDIT";
+        type?: "" | "CASE_STUDY" | "ARTICLE" | "COURSE";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublicationPage"];
+        };
+      };
+      /** @description Invalid query */
+      400: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Database temporarily unavailable */
+      503: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getPublication: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        slug: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublicationDetail"];
+        };
+      };
+      /** @description Invalid slug */
+      400: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Missing, draft, archived or suspended publication */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Database temporarily unavailable */
+      503: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getPublicationContent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PublicationContent"];
+        };
+      };
+      /** @description Invalid ID */
+      400: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Paid content is locked; purchases are not implemented */
+      403: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Missing, draft, archived or suspended publication */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Database temporarily unavailable */
+      503: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
           [name: string]: unknown;
         };
         content: {

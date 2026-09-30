@@ -16,6 +16,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PlatformIntegrationTest extends IntegrationTestSupport {
     @Test void healthChecksActualDatabase() throws Exception {
         mvc.perform(get("/api/v1/health")).andExpect(status().isOk()).andExpect(jsonPath("$.database").value("UP"));
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM flyway_schema_history WHERE success", Integer.class)).isPositive();
+        assertThat(database.successfulFlywayMigrations()).isPositive();
     }
 }

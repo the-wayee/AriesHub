@@ -56,7 +56,7 @@ export function CommunityShell({ children }: { children: ReactNode }) {
   const selected = (href: string) => {
     if (href === "/home") return path === "/home";
     if (href === "/discover")
-      return ["/discover", "/cases", "/learn", "/checkout"].some(
+      return ["/discover", "/publications", "/learn", "/checkout"].some(
         (prefix) => path === prefix || path.startsWith(`${prefix}/`),
       );
     return path === href || path.startsWith(`${href}/`);

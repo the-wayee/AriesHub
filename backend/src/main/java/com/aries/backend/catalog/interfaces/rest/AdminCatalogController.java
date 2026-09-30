@@ -2,9 +2,9 @@ package com.aries.backend.catalog.interfaces.rest;
 
 import com.aries.backend.catalog.application.service.AdminCatalogService;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.CategoryOption;
-import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminCaseDetail;
-import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminCaseSummary;
-import com.aries.backend.catalog.interfaces.rest.request.AdminCaseRequest;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetail;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationSummary;
+import com.aries.backend.catalog.interfaces.rest.request.AdminPublicationRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
@@ -26,34 +26,34 @@ public class AdminCatalogController {
         return service.categories();
     }
 
-    @GetMapping("/cases")
-    public List<AdminCaseSummary> cases() {
-        return service.cases();
+    @GetMapping("/publications")
+    public List<AdminPublicationSummary> publications() {
+        return service.publications();
     }
 
-    @GetMapping("/cases/{id}")
-    public AdminCaseDetail detail(@PathVariable @Positive long id) {
+    @GetMapping("/publications/{id}")
+    public AdminPublicationDetail detail(@PathVariable @Positive long id) {
         return service.detail(id);
     }
 
-    @PostMapping("/cases")
-    public ResponseEntity<AdminCaseDetail> create(@Valid @RequestBody AdminCaseRequest request) {
+    @PostMapping("/publications")
+    public ResponseEntity<AdminPublicationDetail> create(@Valid @RequestBody AdminPublicationRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request.toCommand()));
     }
 
-    @PutMapping("/cases/{id}")
-    public AdminCaseDetail update(@PathVariable @Positive long id,
-                             @Valid @RequestBody AdminCaseRequest request) {
+    @PutMapping("/publications/{id}")
+    public AdminPublicationDetail update(@PathVariable @Positive long id,
+                             @Valid @RequestBody AdminPublicationRequest request) {
         return service.update(id, request.toCommand());
     }
 
-    @PostMapping("/cases/{id}/publish")
-    public AdminCaseDetail publish(@PathVariable @Positive long id) {
+    @PostMapping("/publications/{id}/publish")
+    public AdminPublicationDetail publish(@PathVariable @Positive long id) {
         return service.publish(id);
     }
 
-    @PostMapping("/cases/{id}/archive")
-    public AdminCaseDetail archive(@PathVariable @Positive long id) {
+    @PostMapping("/publications/{id}/archive")
+    public AdminPublicationDetail archive(@PathVariable @Positive long id) {
         return service.archive(id);
     }
 }

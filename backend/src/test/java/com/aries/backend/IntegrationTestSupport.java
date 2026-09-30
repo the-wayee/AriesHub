@@ -8,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.RedisCallback;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -41,7 +40,7 @@ abstract class IntegrationTestSupport {
     }
 
     @Autowired MockMvc mvc;
-    @Autowired JdbcTemplate jdbc;
+    @Autowired TestDataMapper database;
     @Autowired CatalogReadMapper mapper;
     @Autowired UserMapper userMapper;
     @Autowired StringRedisTemplate redisTemplate;
@@ -49,19 +48,15 @@ abstract class IntegrationTestSupport {
 
     @BeforeEach
     void fixtures() {
-        jdbc.execute("""
-                TRUNCATE content_entitlements, credit_offers, credit_ledger_entries, credit_accounts,
-                    comments, discussion_threads, case_contents, cases, categories, users
-                RESTART IDENTITY CASCADE
-                """);
+        database.reset();
         redisTemplate.execute((RedisCallback<Void>) connection -> {
             connection.serverCommands().flushDb();
             return null;
         });
         emailSender.clear();
-        jdbc.update("INSERT INTO categories(id, slug, name) VALUES (1, 'coding', 'AI 编程'), (2, 'slides', 'AI 演示')");
+        database.insertCategories();
         insert(11, 1, "free-case", "免费 AI 工具", "FREE", "PUBLISHED", "AVAILABLE", "FREE_BODY");
-        insert(12, 2, "paid-case", "付费 PPT 案例", "PAID", "PUBLISHED", "AVAILABLE", "PAID_SECRET_SENTINEL");
+        insert(12, 2, "credit-publication", "积分 PPT 实战", "CREDIT", "PUBLISHED", "AVAILABLE", "CREDIT_SECRET_SENTINEL");
         insert(13, 1, "draft-case", "草稿", "FREE", "DRAFT", "AVAILABLE", "DRAFT_SECRET_SENTINEL");
         insert(14, 1, "archived-case", "下架", "FREE", "ARCHIVED", "AVAILABLE", "ARCHIVED_SECRET_SENTINEL");
         insert(15, 1, "suspended-case", "停用", "FREE", "PUBLISHED", "SUSPENDED", "SUSPENDED_SECRET_SENTINEL");
@@ -93,15 +88,11 @@ abstract class IntegrationTestSupport {
 
     void insert(long id, int category, String slug, String title, String access,
                         String status, String delivery, String content) {
-        jdbc.update("""
-            INSERT INTO cases (id, category_id, slug, title, summary, access_type, price_minor,
-                status, delivery_status, is_demo, published_at)
-            VALUES (?, ?, ?, ?, '案例摘要', ?, ?, ?, ?, true, '2026-09-28T00:00:00Z')
-            """, id, category, slug, title, access, "FREE".equals(access) ? 0 : 1990, status, delivery);
-        jdbc.update("""
-            INSERT INTO case_contents(case_id, preview_markdown, full_markdown, requirements, deliverables)
-            VALUES (?, '公开预览', ?, '基础要求', '交付清单')
-            """, id, content);
+        database.insertPublication(id, category, slug, title, access, status, delivery);
+        if ("CREDIT".equals(access)) {
+            database.insertCreditOffer(slug, 199);
+        }
+        database.insertPublicationContent(id, content);
     }
 
 }

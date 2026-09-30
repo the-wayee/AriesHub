@@ -554,7 +554,7 @@ h3 {
   }
 }
 
-/* Case library */
+/* Publication archive */
 button,
 input,
 select {
@@ -582,23 +582,23 @@ button.primary-link {
 .text-link:hover {
   text-decoration: underline;
 }
-.case-card {
+.publication-card {
   min-width: 0;
 }
-.case-card-link {
+.publication-card-link {
   display: flex;
   flex-direction: column;
   height: 100%;
 }
-.case-card-link:hover h3 {
+.publication-card-link:hover h3 {
   color: var(--accent);
   text-decoration: underline;
   text-underline-offset: 5px;
 }
-.case-card-link .direction-art {
+.publication-card-link .direction-art {
   transition: filter 0.2s;
 }
-.case-card-link:hover .direction-art {
+.publication-card-link:hover .direction-art {
   filter: brightness(0.97);
 }
 .card-meta {
@@ -832,31 +832,31 @@ button.primary-link {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.case-facts {
+.publication-facts {
   position: sticky;
   top: 24px;
   border: 1px solid var(--line);
   padding: 26px;
   background: #f0f1e9;
 }
-.case-price {
+.publication-price {
   font-size: 25px;
   margin: 0 0 20px;
   letter-spacing: -0.7px;
 }
-.case-facts .primary-link {
+.publication-facts .primary-link {
   width: 100%;
   justify-content: center;
 }
-.case-facts dl {
+.publication-facts dl {
   margin: 28px 0;
 }
-.case-facts dt {
+.publication-facts dt {
   font-size: 12px;
   margin: 22px 0 7px;
   color: var(--foreground);
 }
-.case-facts dd {
+.publication-facts dd {
   font-size: 12px;
   line-height: 1.9;
   margin: 0;
@@ -888,7 +888,7 @@ button.primary-link {
     gap: 32px;
     grid-template-columns: minmax(0, 1fr) 260px;
   }
-  .case-facts {
+  .publication-facts {
     padding: 20px;
   }
 }
@@ -917,12 +917,12 @@ button.primary-link {
     gap: 32px;
     padding-top: 24px;
   }
-  .case-facts {
+  .publication-facts {
     position: static;
     width: 100%;
     order: -1;
   }
-  .case-facts dl {
+  .publication-facts dl {
     margin-block: 20px;
   }
   .detail-heading h1 {
@@ -942,7 +942,7 @@ button.primary-link {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .case-card-link .direction-art {
+  .publication-card-link .direction-art {
     transition: none;
   }
 }
@@ -1385,11 +1385,11 @@ button.primary-link {
   color: var(--muted);
   font-size: 11px;
 }
-.admin-case-table {
+.admin-publication-table {
   border-top: 1px solid var(--foreground);
   background: #fffefa;
 }
-.admin-case-row {
+.admin-publication-row {
   display: grid;
   grid-template-columns: minmax(260px, 2fr) minmax(100px, 0.8fr) 90px 120px 56px;
   gap: 18px;
@@ -1399,7 +1399,7 @@ button.primary-link {
   border-bottom: 1px solid var(--line);
   font-size: 12px;
 }
-.admin-case-head {
+.admin-publication-head {
   min-height: 42px;
   color: var(--muted);
   background: #f0f1e9;
@@ -1408,21 +1408,21 @@ button.primary-link {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.admin-case-row strong,
-.admin-case-row small {
+.admin-publication-row strong,
+.admin-publication-row small {
   display: block;
 }
-.admin-case-row small {
+.admin-publication-row small {
   margin-top: 7px;
   color: var(--muted);
   font-family: var(--font-mono);
   font-size: 9px;
 }
-.admin-case-row > a {
+.admin-publication-row > a {
   color: var(--accent);
   text-align: right;
 }
-.case-status {
+.publication-status {
   width: fit-content;
   border: 1px solid currentColor;
   border-radius: 999px;
@@ -1537,11 +1537,11 @@ button.primary-link {
     grid-column: 1;
     grid-row: auto;
   }
-  .admin-case-row {
+  .admin-publication-row {
     grid-template-columns: minmax(180px, 1fr) 90px 72px;
   }
-  .admin-case-row > :nth-child(2),
-  .admin-case-row > :nth-child(4) {
+  .admin-publication-row > :nth-child(2),
+  .admin-publication-row > :nth-child(4) {
     display: none;
   }
 }
@@ -1565,14 +1565,14 @@ button.primary-link {
     width: 100%;
     justify-content: flex-start;
   }
-  .admin-case-row {
+  .admin-publication-row {
     grid-template-columns: minmax(0, 1fr) 72px 48px;
     padding-inline: 12px;
   }
-  .admin-case-row > a {
+  .admin-publication-row > a {
     font-size: 0;
   }
-  .admin-case-row > a::after {
+  .admin-publication-row > a::after {
     content: "编辑";
     font-size: 11px;
   }

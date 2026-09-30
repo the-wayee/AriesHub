@@ -2,52 +2,57 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.aries.backend.catalog.infrastructure.persistence.mapper.CatalogReadMapper">
     <sql id="publicColumns">
-        c.id::text AS id, c.slug, c.title, c.summary, cat.slug AS category_slug,
-        cat.name AS category_name, c.access_type, c.price_minor, c.currency,
-        c.is_demo, c.published_at
+        p.id::text AS id, p.slug, p.title, p.summary, cat.slug AS category_slug,
+        cat.name AS category_name, p.access_type, p.publication_type,
+        COALESCE(offer.credit_price, 0) AS credit_price, p.published_at
     </sql>
     <sql id="visible">
-        c.status = 'PUBLISHED' AND c.delivery_status = 'AVAILABLE' AND c.is_deleted = false
+        p.status = 'PUBLISHED' AND p.delivery_status = 'AVAILABLE' AND p.is_deleted = false
     </sql>
     <sql id="filters">
         <include refid="visible"/>
         <if test="query.category != ''">AND cat.slug = #{query.category}</if>
-        <if test="query.access != ''">AND c.access_type = #{query.access}</if>
+        <if test="query.type != ''">AND p.publication_type = #{query.type}</if>
+        <if test="query.access != ''">AND p.access_type = #{query.access}</if>
         <if test="query.q != ''">
-            AND (c.title ILIKE #{query.keyword} ESCAPE '!' OR c.summary ILIKE #{query.keyword} ESCAPE '!')
+            AND (p.title ILIKE #{query.keyword} ESCAPE '!' OR p.summary ILIKE #{query.keyword} ESCAPE '!')
         </if>
     </sql>
     <select id="categories" resultType="com.aries.backend.catalog.application.view.CatalogViews$Category">
-        SELECT cat.id::text AS id, cat.slug, cat.name, count(c.id) AS case_count
-        FROM categories cat LEFT JOIN cases c ON c.category_id = cat.id AND <include refid="visible"/>
+        SELECT cat.id::text AS id, cat.slug, cat.name, count(p.id) AS publication_count
+        FROM categories cat LEFT JOIN publications p ON p.category_id = cat.id AND <include refid="visible"/>
         WHERE cat.is_deleted = false
         GROUP BY cat.id ORDER BY cat.sort_order, cat.id
     </select>
-    <select id="list" resultType="com.aries.backend.catalog.application.view.CatalogViews$CaseSummary">
+    <select id="list" resultType="com.aries.backend.catalog.application.view.CatalogViews$PublicationSummary">
         SELECT <include refid="publicColumns"/>
-        FROM cases c JOIN categories cat ON cat.id = c.category_id
+        FROM publications p JOIN categories cat ON cat.id = p.category_id
+        LEFT JOIN credit_offers offer ON offer.target_type = 'PUBLICATION' AND offer.target_key = p.slug
+            AND offer.status = 'ACTIVE' AND offer.is_deleted = false
         WHERE cat.is_deleted = false AND <include refid="filters"/>
-        ORDER BY c.published_at DESC, c.id DESC LIMIT #{query.size} OFFSET #{query.offset}
+        ORDER BY p.published_at DESC, p.id DESC LIMIT #{query.size} OFFSET #{query.offset}
     </select>
     <select id="count" resultType="long">
-        SELECT count(*) FROM cases c JOIN categories cat ON cat.id = c.category_id
+        SELECT count(*) FROM publications p JOIN categories cat ON cat.id = p.category_id
         WHERE cat.is_deleted = false AND <include refid="filters"/>
     </select>
-    <select id="findPublicSummary" resultType="com.aries.backend.catalog.application.view.CatalogViews$CaseSummary">
+    <select id="findPublicSummary" resultType="com.aries.backend.catalog.application.view.CatalogViews$PublicationSummary">
         SELECT <include refid="publicColumns"/>
-        FROM cases c JOIN categories cat ON cat.id = c.category_id
-        WHERE cat.is_deleted = false AND <include refid="visible"/> AND c.id = #{id}
+        FROM publications p JOIN categories cat ON cat.id = p.category_id
+        LEFT JOIN credit_offers offer ON offer.target_type = 'PUBLICATION' AND offer.target_key = p.slug
+            AND offer.status = 'ACTIVE' AND offer.is_deleted = false
+        WHERE cat.is_deleted = false AND <include refid="visible"/> AND p.id = #{id}
     </select>
     <select id="preview" resultType="com.aries.backend.catalog.application.view.CatalogViews$Preview">
         SELECT body.preview_markdown, body.requirements, body.deliverables, body.version, body.updated_at
-        FROM case_contents body JOIN cases c ON c.id = body.case_id
-        WHERE body.is_deleted = false AND <include refid="visible"/> AND c.id = #{id}
+        FROM publication_contents body JOIN publications p ON p.id = body.publication_id
+        WHERE body.is_deleted = false AND <include refid="visible"/> AND p.id = #{id}
     </select>
-    <!-- 纵深防护：即使直接调用 Mapper，也无法读取付费或未发布案例的正文。 -->
+    <!-- 纵深防护：即使直接调用 Mapper，也无法读取积分内容或未发布内容的正文。 -->
     <select id="freeContent" resultType="com.aries.backend.catalog.application.view.CatalogViews$Content">
-        SELECT c.id::text AS case_id, body.full_markdown AS markdown, body.version, body.updated_at
-        FROM case_contents body JOIN cases c ON c.id = body.case_id
+        SELECT p.id::text AS publication_id, body.full_markdown AS markdown, body.version, body.updated_at
+        FROM publication_contents body JOIN publications p ON p.id = body.publication_id
         WHERE body.is_deleted = false AND <include refid="visible"/>
-          AND c.access_type = 'FREE' AND c.id = #{id}
+          AND p.access_type = 'FREE' AND p.id = #{id}
     </select>
 </mapper>

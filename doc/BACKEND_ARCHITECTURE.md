@@ -1,6 +1,6 @@
 # 后端分层与开发约定
 
-当前工程采用按业务边界组织的 DDD 模块化单体。现有业务模块为 `catalog`（待迁移的内容目录）、`identity`（用户身份）和 `discussion`（全局评论树）；积分账户与权益表已建立，应用模块在内容模型切换后接入。保持一个 Spring Boot 应用，不为当前规模拆微服务或多个 Maven 模块。
+当前工程采用按业务边界组织的 DDD 模块化单体。现有业务模块为 `catalog`（Publication 内容目录）、`identity`（用户身份）和 `discussion`（全局评论树）；积分账户与权益表已建立，应用模块将在下一阶段接入。保持一个 Spring Boot 应用，不为当前规模拆微服务或多个 Maven 模块。
 
 ## 目录和依赖
 
@@ -50,13 +50,13 @@ com.aries.backend
 
 ## 当前用例
 
-评论：公开读取 `/api/v1/discussions/comments`；登录成员可发布根评论或回复。接口使用 `targetType + targetKey` 定位挂载对象，`composition` 校验目标真实存在且可见。评论领域负责最大深度，仓储保存 `parent_id + root_id + depth`，应用层返回嵌套树。
+评论：公开读取 `/api/v1/discussions/comments`；登录成员可发布根评论或回复。接口使用 `targetType + targetKey` 定位挂载对象，`composition` 校验目标真实存在且可见。仓储保存 `parent_id + root_id + depth`，其中 depth 是派生信息而非回复上限，应用层返回嵌套树。
 
-案例详情：Controller → `CatalogQueryService` → `CaseRepository` 加载 `CaseStudy` → 聚合判断公开可见 → 查询端口返回公开摘要与预览。
+内容详情：Controller → `CatalogQueryService` → `PublicationRepository` 加载 `Publication` → 聚合判断公开可见 → 查询端口返回公开摘要与预览。
 
-免费正文：应用层先调用聚合的 `allowsPublicReading()`，然后调用受限正文查询。数据库 SQL 再检查已发布、交付可用、免费类型。两道检查共同保护正文；M1 对所有付费正文请求返回 403。
+免费正文：应用层先调用聚合的 `allowsPublicReading()`，然后调用受限正文查询。数据库 SQL 再检查已发布、交付可用、免费类型。两道检查共同保护正文；未接入权益前，对所有积分内容正文请求返回 403。
 
-列表属于查询用例，通过只读投影查询端口获取分页数据，不为展示列表重复组装全部聚合。管理员写用例按“加载 `CaseStudy` 聚合 → 调用 `create`、`edit`、`publish` 或 `archive` 行为 → 通过 `CaseRepository.save` 持久化”执行；完整正文是发布前置条件。管理员列表和详情保留在 `AdminCatalogReadPort`。公开查询仍独立检查发布与交付状态。
+列表属于查询用例，通过只读投影查询端口获取分页数据，不为展示列表重复组装全部聚合。管理员写用例按“加载 `Publication` 聚合 → 调用 `create`、`edit`、`publish` 或 `archive` 行为 → 通过 `PublicationRepository.save` 持久化”执行；完整正文是发布前置条件。管理员列表和详情保留在 `AdminCatalogReadPort`。公开查询仍独立检查发布与交付状态。
 
 ## Lombok 约定
 
@@ -71,8 +71,9 @@ com.aries.backend
 ## MyBatis-Plus 约定
 
 - 使用 **3.5.17 的 Spring Boot 4 starter**，不再同时引入 MyBatis 原始 starter。
-- 简单单表查询用 `BaseMapper` 和 `LambdaQueryWrapper`。例如仓储按 ID 查询用 `selectById`，按 slug 查询使用 `CasePO::getSlug`。
+- 简单单表查询用 `BaseMapper` 和 `LambdaQueryWrapper`。例如仓储按 ID 查询用 `selectById`，按 slug 查询使用 `PublicationPO::getSlug`。
 - 联表、统计和权限敏感投影使用 XML，明确列清单，便于审查；不为了避免 SQL 堆砌多次查询。
+- 生产代码和测试夹具统一通过 MyBatis-Plus Mapper 访问数据库，不直接注入 `JdbcTemplate`。简单 SQL 使用 `BaseMapper`、Lambda Wrapper 或 Mapper 注解；XML 只用于联表、动态条件和复杂投影。
 - 本次联表分页使用绑定参数的 `LIMIT/OFFSET` 与相同条件的计数查询，不引入未使用的分页插件。
 - 用户输入必须参数绑定，不使用 `${}` 拼接 SQL；ILIKE 的 `%`、`_` 和转义符按普通字符处理。
 - 限制页大小和查询超时；数据库变更通过 Flyway，生产禁止自动更新表结构。

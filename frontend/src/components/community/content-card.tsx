@@ -4,10 +4,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { Bookmark, Heart, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { type ConceptCase, formatConceptCredits } from "@/lib/concept-cases";
+import {
+  type ConceptPublication,
+  formatConceptCredits,
+} from "@/lib/concept-publications";
 import { useCommunityState } from "./local-state";
 
-export function ContentActions({ item }: { item: ConceptCase }) {
+export function ContentActions({ item }: { item: ConceptPublication }) {
   const { state, toggle } = useCommunityState();
   const liked = state.liked.includes(item.slug);
   const saved = state.saved.includes(item.slug);
@@ -46,7 +49,7 @@ export function ContentCard({
   index,
   compact = false,
 }: {
-  item: ConceptCase;
+  item: ConceptPublication;
   index: number;
   compact?: boolean;
 }) {
@@ -55,7 +58,7 @@ export function ContentCard({
     <article
       className={`hub-content-card hub-enter ${compact ? "is-compact" : ""}`}
     >
-      <Link className="hub-content-image" href={`/cases/${item.slug}`}>
+      <Link className="hub-content-image" href={`/publications/${item.slug}`}>
         <Image
           src={item.image}
           alt={item.title}
@@ -67,7 +70,7 @@ export function ContentCard({
         <span>{type}</span>
       </Link>
       <div className="hub-content-copy">
-        <Link href={`/cases/${item.slug}`}>
+        <Link href={`/publications/${item.slug}`}>
           <h2>{item.shortTitle}</h2>
         </Link>
         <p>{item.summary}</p>

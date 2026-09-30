@@ -43,11 +43,7 @@ public class DiscussionService {
             Comment parent = discussions.findComment(parentId)
                     .filter(comment -> comment.threadId() == thread.id())
                     .orElseThrow(() -> new BusinessException(COMMENT_NOT_FOUND));
-            try {
-                draft = Comment.reply(thread.id(), authorId, parent, body);
-            } catch (Comment.ReplyTooDeep error) {
-                throw new BusinessException(COMMENT_REPLY_TOO_DEEP);
-            }
+            draft = Comment.reply(thread.id(), authorId, parent, body);
         }
         Comment saved = discussions.save(draft);
         return node(saved, identities.displayNames(Set.of(authorId)), List.of());

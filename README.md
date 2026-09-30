@@ -4,7 +4,7 @@
 
 ## 技术与进度
 
-- 后端：Java 27、Spring Boot 4.1.1、Sa-Token 1.46.0、Lombok 1.18.48、MyBatis-Plus 3.5.17、PostgreSQL、Redis、Flyway。
+- 后端：Java 27、Spring Boot 4.1.1、Sa-Token 1.46.0、Lombok 1.18.48、MyBatis-Plus 3.5.17、PostgreSQL、Redis、Flyway。数据库访问统一经过 MyBatis-Plus Mapper，复杂 SQL 保存在 XML Mapper。
 - 后端按 DDD 分为接口、应用、领域和基础设施层，按业务模块组织。
 - 前端：Next.js 16.3.6、React 19.2.8、TypeScript、Tailwind CSS 4；前端 API 类型从 OpenAPI 生成。
 - Sa-Token 使用 HttpOnly Cookie 保存浏览器凭证，服务端登录态、验证码及认证限流保存在 Redis；密码使用 BCrypt 摘要保存在 PostgreSQL。管理员可以新建、编辑、发布和下架当前内容；全局评论树已接入，积分应用与支付尚未实现。
@@ -51,7 +51,7 @@ export ADMIN_EMAILS='you@example.com'
 
 ```bash
 curl http://localhost:8080/api/v1/health
-curl 'http://localhost:8080/api/v1/cases?access=FREE&page=1&size=9'
+curl 'http://localhost:8080/api/v1/publications?type=CASE_STUDY&access=FREE&page=1&size=9'
 curl -H 'Content-Type: application/json' \
   -d '{"email":"you@example.com","purpose":"REGISTER"}' \
   http://localhost:8080/api/v1/auth/email-codes
@@ -106,12 +106,12 @@ npm run test:e2e
 
 ## 当前边界
 
-- 草稿、下架、暂停交付的案例在公开详情和正文接口返回 404。
-- 列表和详情不返回完整正文。免费正文使用独立接口；付费正文统一返回 403。
-- 旧 `cases` API 暂时仍含人民币字段；新内容价格统一使用整数积分，下一阶段迁移 `Publication` 时删除旧金额模型。ID 以字符串返回，防止前端大整数精度丢失。
+- 草稿、下架、暂停交付的内容在公开详情和正文接口返回 404。
+- 列表和详情不返回完整正文。免费正文使用独立接口；未解锁的积分内容统一返回 403。
+- 内容使用 `Publication` 模型，并区分实战案例、文章和课程；价格统一使用整数积分，ID 以字符串返回以防止前端大整数精度丢失。
 - Markdown 不执行原始 HTML，不自动加载内容中的远程图片。
 - 前端积分数值是体验数据，当前不会扣除积分，也没有充值或文件下载。
 - Sa-Token 使用官方 Redis DAO，登录态可跨应用重启及多实例共享；仍受总有效期、活跃超时、主动退出和 Redis 数据保留策略约束。
 - 验证码请求有 60 秒冷却，验证码 10 分钟过期并限制五次错误。Redis 来源限额分别为登录每 10 分钟 60 次、注册每小时 30 次、发码每小时 60 次；规范化邮箱限额分别为登录每 15 分钟 5 次、注册每 15 分钟 5 次、发码每小时 5 次，成功登录会清除该邮箱的登录计数。找回密码和完整 CSRF 防护仍需在公开部署前补齐。当前不信任客户端转发头；同一反向代理后的用户会共享来源限额，公开部署时还应在可信网关按真实客户端地址限流。
 
-下一步先整体迁移 `CaseStudy/cases` 为通用 `Publication`，再把新版文章详情和讨论接入真实内容与评论树；随后实现积分账户服务和内容权益，支付放在积分体系稳定之后。
+下一步把新版文章详情和讨论接入真实内容与评论树；随后实现积分账户服务和内容权益，支付放在积分体系稳定之后。

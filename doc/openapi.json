@@ -353,242 +353,10 @@
         }
       }
     },
-    "/admin/cases": {
-      "get": {
-        "operationId": "getAdminCases",
-        "summary": "Lists cases in every publication state",
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "All cases",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AdminCaseSummary"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          }
-        }
-      },
-      "post": {
-        "operationId": "createAdminCase",
-        "summary": "Creates a draft case and its content",
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdminCaseRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Draft created",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminCaseDetail"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          }
-        }
-      }
-    },
-    "/admin/cases/{id}": {
-      "parameters": [
-        {
-          "$ref": "#/components/parameters/CaseId"
-        }
-      ],
-      "get": {
-        "operationId": "getAdminCase",
-        "summary": "Returns the complete editable case",
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Editable case",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminCaseDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        }
-      },
-      "put": {
-        "operationId": "updateAdminCase",
-        "summary": "Replaces the editable case fields and content",
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AdminCaseRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Case updated",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminCaseDetail"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          }
-        }
-      }
-    },
-    "/admin/cases/{id}/publish": {
-      "post": {
-        "operationId": "publishAdminCase",
-        "summary": "Publishes a case to the public catalog",
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/CaseId"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Published case",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminCaseDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        }
-      }
-    },
-    "/admin/cases/{id}/archive": {
-      "post": {
-        "operationId": "archiveAdminCase",
-        "summary": "Archives a case and removes it from the public catalog",
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "$ref": "#/components/parameters/CaseId"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Archived case",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/AdminCaseDetail"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        }
-      }
-    },
     "/categories": {
       "get": {
         "operationId": "getCategories",
-        "summary": "Categories with published and available case counts",
+        "summary": "Categories with published and available publication counts",
         "responses": {
           "200": {
             "description": "Success",
@@ -665,10 +433,386 @@
         }
       }
     },
-    "/cases": {
+    "/discussions/comments": {
       "get": {
-        "operationId": "getCases",
-        "summary": "Public case summaries; never includes body content",
+        "operationId": "listComments",
+        "summary": "Returns the public nested comment tree for a registered target",
+        "parameters": [
+          {
+            "name": "targetType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{1,39}$",
+              "example": "PUBLICATION"
+            }
+          },
+          {
+            "name": "targetKey",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 120,
+              "example": "free-publication"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Nested root comments and replies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CommentNode"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid target",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createComment",
+        "summary": "Creates a root comment or a reply as the logged-in member",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created comment node",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentNode"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid comment body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Login required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Target or parent comment not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Discussion thread is locked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/publications": {
+      "get": {
+        "operationId": "getAdminPublications",
+        "summary": "Lists publications in every publication state",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "All publications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AdminPublicationSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "post": {
+        "operationId": "createAdminPublication",
+        "summary": "Creates a draft publication and its content",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminPublicationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Draft created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPublicationDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/admin/publications/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/PublicationId"
+        }
+      ],
+      "get": {
+        "operationId": "getAdminPublication",
+        "summary": "Returns the complete editable publication",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Editable publication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPublicationDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "put": {
+        "operationId": "updateAdminPublication",
+        "summary": "Replaces the editable publication fields and content",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminPublicationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Publication updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPublicationDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
+        }
+      }
+    },
+    "/admin/publications/{id}/publish": {
+      "post": {
+        "operationId": "publishAdminPublication",
+        "summary": "Publishes a publication to the public catalog",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PublicationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Published publication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPublicationDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/admin/publications/{id}/archive": {
+      "post": {
+        "operationId": "archiveAdminPublication",
+        "summary": "Archives a publication and removes it from the public catalog",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/PublicationId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Archived publication",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminPublicationDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/publications": {
+      "get": {
+        "operationId": "getPublications",
+        "summary": "Public publication summaries; never includes body content",
         "responses": {
           "200": {
             "description": "Success",
@@ -688,7 +832,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CasePage"
+                  "$ref": "#/components/schemas/PublicationPage"
                 }
               }
             }
@@ -793,7 +937,7 @@
             "schema": {
               "type": "string",
               "maxLength": 120,
-              "description": "Trimmed literal substring matched against title/summary, case insensitive. SQL wildcards are escaped."
+              "description": "Trimmed literal substring matched against title/summary, publication insensitive. SQL wildcards are escaped."
             }
           },
           {
@@ -811,15 +955,33 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": ["", "FREE", "PAID"]
+              "enum": [
+                "",
+                "FREE",
+                "CREDIT"
+              ]
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "",
+                "CASE_STUDY",
+                "ARTICLE",
+                "COURSE"
+              ]
             }
           }
         ]
       }
     },
-    "/cases/{slug}": {
+    "/publications/{slug}": {
       "get": {
-        "operationId": "getCase",
+        "operationId": "getPublication",
         "summary": "Public detail and preview; never includes full body",
         "responses": {
           "200": {
@@ -840,7 +1002,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CaseDetail"
+                  "$ref": "#/components/schemas/PublicationDetail"
                 }
               }
             }
@@ -869,7 +1031,7 @@
             }
           },
           "404": {
-            "description": "Missing, draft, archived or suspended case",
+            "description": "Missing, draft, archived or suspended publication",
             "headers": {
               "X-Request-Id": {
                 "schema": {
@@ -951,10 +1113,10 @@
         ]
       }
     },
-    "/cases/{id}/content": {
+    "/publications/{id}/content": {
       "get": {
-        "operationId": "getCaseContent",
-        "summary": "Only published and available FREE cases are readable in M1",
+        "operationId": "getPublicationContent",
+        "summary": "Only published and available FREE publications are readable in M1",
         "responses": {
           "200": {
             "description": "Success",
@@ -974,7 +1136,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CaseContent"
+                  "$ref": "#/components/schemas/PublicationContent"
                 }
               }
             }
@@ -1026,7 +1188,7 @@
             }
           },
           "404": {
-            "description": "Missing, draft, archived or suspended case",
+            "description": "Missing, draft, archived or suspended publication",
             "headers": {
               "X-Request-Id": {
                 "schema": {
@@ -1108,162 +1270,26 @@
           }
         ]
       }
-    },
-    "/discussions/comments": {
-      "get": {
-        "operationId": "listComments",
-        "summary": "Returns the public nested comment tree for a registered target",
-        "parameters": [
-          {
-            "name": "targetType",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[A-Z][A-Z0-9_]{1,39}$",
-              "example": "PUBLICATION"
-            }
-          },
-          {
-            "name": "targetKey",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "maxLength": 120,
-              "example": "free-case"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Nested root comments and replies",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CommentNode"
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid target",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Unexpected server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "operationId": "createComment",
-        "summary": "Creates a root comment or a reply as the logged-in member",
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateCommentRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Created comment node",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CommentNode"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid body or maximum reply depth reached",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Login required",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Target or parent comment not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Discussion thread is locked",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Unexpected server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
     }
   },
   "components": {
     "schemas": {
       "AccessType": {
         "type": "string",
-        "enum": ["FREE", "PAID"]
+        "enum": [
+          "FREE",
+          "CREDIT"
+        ]
       },
       "Category": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "slug", "name", "caseCount"],
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "publicationCount"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -1276,68 +1302,10 @@
           "name": {
             "type": "string"
           },
-          "caseCount": {
+          "publicationCount": {
             "type": "integer",
             "format": "int64",
             "minimum": 0
-          }
-        }
-      },
-      "CaseSummary": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "slug",
-          "title",
-          "summary",
-          "categorySlug",
-          "categoryName",
-          "accessType",
-          "priceMinor",
-          "currency",
-          "isDemo",
-          "publishedAt"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^[0-9]+$",
-            "description": "PostgreSQL bigint ID serialized as a string."
-          },
-          "slug": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "summary": {
-            "type": "string"
-          },
-          "categorySlug": {
-            "type": "string"
-          },
-          "categoryName": {
-            "type": "string"
-          },
-          "accessType": {
-            "$ref": "#/components/schemas/AccessType"
-          },
-          "priceMinor": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
-          "currency": {
-            "type": "string",
-            "enum": ["CNY"]
-          },
-          "isDemo": {
-            "type": "boolean"
-          },
-          "publishedAt": {
-            "type": "string",
-            "format": "date-time"
           }
         }
       },
@@ -1370,77 +1338,13 @@
           }
         }
       },
-      "CaseDetail": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["caseInfo", "preview"],
-        "properties": {
-          "caseInfo": {
-            "$ref": "#/components/schemas/CaseSummary"
-          },
-          "preview": {
-            "$ref": "#/components/schemas/Preview"
-          }
-        }
-      },
-      "CaseContent": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["caseId", "markdown", "version", "updatedAt"],
-        "properties": {
-          "caseId": {
-            "type": "string",
-            "pattern": "^[0-9]+$",
-            "description": "PostgreSQL bigint ID serialized as a string."
-          },
-          "markdown": {
-            "type": "string"
-          },
-          "version": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "CasePage": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["items", "page", "size", "total", "totalPages"],
-        "properties": {
-          "items": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CaseSummary"
-            }
-          },
-          "page": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "size": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 24
-          },
-          "total": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
-          "totalPages": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          }
-        }
-      },
       "EmailCodeRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["email", "purpose"],
+        "required": [
+          "email",
+          "purpose"
+        ],
         "properties": {
           "email": {
             "type": "string",
@@ -1449,14 +1353,19 @@
           },
           "purpose": {
             "type": "string",
-            "enum": ["REGISTER"]
+            "enum": [
+              "REGISTER"
+            ]
           }
         }
       },
       "EmailCodeDispatch": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["expiresInSeconds", "resendAfterSeconds"],
+        "required": [
+          "expiresInSeconds",
+          "resendAfterSeconds"
+        ],
         "properties": {
           "expiresInSeconds": {
             "type": "integer",
@@ -1473,7 +1382,12 @@
       "RegisterRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["email", "password", "nickname", "code"],
+        "required": [
+          "email",
+          "password",
+          "nickname",
+          "code"
+        ],
         "properties": {
           "email": {
             "type": "string",
@@ -1501,7 +1415,10 @@
       "LoginRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["email", "password"],
+        "required": [
+          "email",
+          "password"
+        ],
         "properties": {
           "email": {
             "type": "string",
@@ -1518,7 +1435,11 @@
       "AdminCategory": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "slug", "name"],
+        "required": [
+          "id",
+          "slug",
+          "name"
+        ],
         "properties": {
           "id": {
             "type": "string",
@@ -1532,7 +1453,306 @@
           }
         }
       },
-      "AdminCaseRequest": {
+      "CurrentUser": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "email",
+          "nickname",
+          "role",
+          "emailVerified",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "PostgreSQL bigint ID serialized as a string."
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "USER",
+              "ADMIN"
+            ]
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "message",
+          "requestId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "database"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "UP"
+            ]
+          },
+          "database": {
+            "type": "string",
+            "enum": [
+              "UP"
+            ]
+          }
+        }
+      },
+      "CreateCommentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "targetType",
+          "targetKey",
+          "body"
+        ],
+        "properties": {
+          "targetType": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{1,39}$",
+            "example": "PUBLICATION"
+          },
+          "targetKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "example": "free-publication"
+          },
+          "parentId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "format": "int64",
+            "minimum": 1
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        }
+      },
+      "CommentNode": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "depth",
+          "authorId",
+          "authorName",
+          "body",
+          "createdAt",
+          "replies"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "authorId": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "replies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommentNode"
+            }
+          }
+        }
+      },
+      "PublicationSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "summary",
+          "categorySlug",
+          "categoryName",
+          "publicationType",
+          "accessType",
+          "creditPrice",
+          "publishedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "PostgreSQL bigint ID serialized as a string."
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "categorySlug": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "accessType": {
+            "$ref": "#/components/schemas/AccessType"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "publicationType": {
+            "$ref": "#/components/schemas/PublicationType"
+          },
+          "creditPrice": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "PublicationDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "publication",
+          "preview"
+        ],
+        "properties": {
+          "preview": {
+            "$ref": "#/components/schemas/Preview"
+          },
+          "publication": {
+            "$ref": "#/components/schemas/PublicationSummary"
+          }
+        }
+      },
+      "PublicationContent": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "publicationId",
+          "markdown",
+          "version",
+          "updatedAt"
+        ],
+        "properties": {
+          "markdown": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "publicationId": {
+            "type": "string",
+            "pattern": "^[0-9]+$",
+            "description": "PostgreSQL bigint ID serialized as a string."
+          }
+        }
+      },
+      "PublicationPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "size",
+          "total",
+          "totalPages"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicationSummary"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 24
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          }
+        }
+      },
+      "AdminPublicationRequest": {
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -1540,8 +1760,9 @@
           "slug",
           "title",
           "summary",
+          "publicationType",
           "accessType",
-          "priceMinor",
+          "creditPrice",
           "previewMarkdown",
           "fullMarkdown",
           "requirements",
@@ -1571,11 +1792,6 @@
           "accessType": {
             "$ref": "#/components/schemas/AccessType"
           },
-          "priceMinor": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
           "previewMarkdown": {
             "type": "string",
             "minLength": 1,
@@ -1600,18 +1816,27 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 32
+          },
+          "publicationType": {
+            "$ref": "#/components/schemas/PublicationType"
+          },
+          "creditPrice": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
-      "AdminCaseSummary": {
+      "AdminPublicationSummary": {
         "type": "object",
         "required": [
           "id",
           "slug",
           "title",
           "categoryName",
+          "publicationType",
           "accessType",
-          "priceMinor",
+          "creditPrice",
           "status",
           "deliveryStatus",
           "publishedAt",
@@ -1634,41 +1859,52 @@
           "accessType": {
             "$ref": "#/components/schemas/AccessType"
           },
-          "priceMinor": {
-            "type": "integer",
-            "format": "int64",
-            "minimum": 0
-          },
           "status": {
             "type": "string",
-            "enum": ["DRAFT", "PUBLISHED", "ARCHIVED"]
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "ARCHIVED"
+            ]
           },
           "deliveryStatus": {
             "type": "string",
-            "enum": ["AVAILABLE", "SUSPENDED"]
+            "enum": [
+              "AVAILABLE",
+              "SUSPENDED"
+            ]
           },
           "publishedAt": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "format": "date-time"
           },
           "updatedAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "publicationType": {
+            "$ref": "#/components/schemas/PublicationType"
+          },
+          "creditPrice": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       },
-      "AdminCaseDetail": {
+      "AdminPublicationDetail": {
         "allOf": [
           {
-            "$ref": "#/components/schemas/AdminCaseSummary"
+            "$ref": "#/components/schemas/AdminPublicationSummary"
           },
           {
             "type": "object",
             "required": [
               "categoryId",
               "summary",
-              "currency",
-              "isDemo",
               "previewMarkdown",
               "fullMarkdown",
               "requirements",
@@ -1683,13 +1919,6 @@
               },
               "summary": {
                 "type": "string"
-              },
-              "currency": {
-                "type": "string",
-                "enum": ["CNY"]
-              },
-              "isDemo": {
-                "type": "boolean"
               },
               "previewMarkdown": {
                 "type": "string"
@@ -1714,150 +1943,17 @@
           }
         ]
       },
-      "CurrentUser": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "email",
-          "nickname",
-          "role",
-          "emailVerified",
-          "createdAt"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "pattern": "^[0-9]+$",
-            "description": "PostgreSQL bigint ID serialized as a string."
-          },
-          "email": {
-            "type": "string",
-            "format": "email"
-          },
-          "nickname": {
-            "type": "string"
-          },
-          "role": {
-            "type": "string",
-            "enum": ["USER", "ADMIN"]
-          },
-          "emailVerified": {
-            "type": "boolean"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          }
-        }
-      },
-      "Error": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["code", "message", "requestId"],
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "requestId": {
-            "type": "string"
-          }
-        }
-      },
-      "Health": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["status", "database"],
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": ["UP"]
-          },
-          "database": {
-            "type": "string",
-            "enum": ["UP"]
-          }
-        }
-      },
-      "CreateCommentRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": ["targetType", "targetKey", "body"],
-        "properties": {
-          "targetType": {
-            "type": "string",
-            "pattern": "^[A-Z][A-Z0-9_]{1,39}$",
-            "example": "PUBLICATION"
-          },
-          "targetKey": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 120,
-            "example": "free-case"
-          },
-          "parentId": {
-            "type": ["integer", "null"],
-            "format": "int64",
-            "minimum": 1
-          },
-          "body": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 4000
-          }
-        }
-      },
-      "CommentNode": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "depth",
-          "authorId",
-          "authorName",
-          "body",
-          "createdAt",
-          "replies"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "parentId": {
-            "type": ["string", "null"]
-          },
-          "depth": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 5
-          },
-          "authorId": {
-            "type": "string"
-          },
-          "authorName": {
-            "type": "string"
-          },
-          "body": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "replies": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CommentNode"
-            }
-          }
-        }
+      "PublicationType": {
+        "type": "string",
+        "enum": [
+          "CASE_STUDY",
+          "ARTICLE",
+          "COURSE"
+        ]
       }
     },
     "parameters": {
-      "CaseId": {
+      "PublicationId": {
         "name": "id",
         "in": "path",
         "required": true,
@@ -1900,7 +1996,7 @@
         }
       },
       "NotFound": {
-        "description": "Case not found",
+        "description": "Publication not found",
         "content": {
           "application/json": {
             "schema": {
@@ -1910,7 +2006,7 @@
         }
       },
       "Conflict": {
-        "description": "Case slug already exists",
+        "description": "Publication slug already exists",
         "content": {
           "application/json": {
             "schema": {

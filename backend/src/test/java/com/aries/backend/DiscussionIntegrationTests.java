@@ -39,7 +39,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.depth").value(0))
                 .andExpect(jsonPath("$.authorName").value("讨论成员"));
 
-        Long rootId = jdbc.queryForObject("SELECT id FROM comments WHERE body = '根评论'", Long.class);
+        Long rootId = database.commentIdByBody("根评论");
         mvc.perform(post("/api/v1/discussions/comments").cookie(member)
                         .contentType("application/json")
                         .content("""
@@ -58,6 +58,37 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                 .andExpect(jsonPath("$[0].replies[0].parentId").value(rootId.toString()));
     }
 
+    @Test void replyChainsCanGrowBeyondFiveLevels() throws Exception {
+        Cookie member = register("deep-replies@example.com", "discussion123", "深层讨论成员");
+        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
+                        .contentType("application/json")
+                        .content("""
+                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"第 0 层"}
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.depth").value(0));
+
+        Long parentId = database.commentIdByBody("第 0 层");
+        for (int depth = 1; depth <= 6; depth++) {
+            String body = "第 " + depth + " 层";
+            mvc.perform(post("/api/v1/discussions/comments").cookie(member)
+                            .contentType("application/json")
+                            .content("""
+                                    {"targetType":"PUBLICATION","targetKey":"free-case",
+                                     "parentId":%d,"body":"%s"}
+                                    """.formatted(parentId, body)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.depth").value(depth));
+            parentId = database.commentIdByBody(body);
+        }
+
+        mvc.perform(get("/api/v1/discussions/comments")
+                        .param("targetType", "PUBLICATION").param("targetKey", "free-case"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].replies[0].replies[0].replies[0].replies[0].replies[0].replies[0].depth")
+                        .value(6));
+    }
+
     @Test void orphanTargetsAndCrossThreadRepliesAreRejected() throws Exception {
         Cookie member = register("boundaries@example.com", "discussion123", "边界成员");
         mvc.perform(post("/api/v1/discussions/comments").cookie(member)
@@ -74,12 +105,12 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 {"targetType":"PUBLICATION","targetKey":"free-case","body":"属于 A"}
                                 """))
                 .andExpect(status().isCreated());
-        Long rootId = jdbc.queryForObject("SELECT id FROM comments WHERE body = '属于 A'", Long.class);
+        Long rootId = database.commentIdByBody("属于 A");
 
         mvc.perform(post("/api/v1/discussions/comments").cookie(member)
                         .contentType("application/json")
                         .content("""
-                                {"targetType":"PUBLICATION","targetKey":"paid-case",
+                                {"targetType":"PUBLICATION","targetKey":"credit-publication",
                                  "parentId":%d,"body":"错误跨树"}
                                 """.formatted(rootId)))
                 .andExpect(status().isNotFound())
@@ -87,20 +118,13 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
     }
 
     @Test void creditLedgerConstraintsProtectBalanceAndIdempotency() {
-        jdbc.update("INSERT INTO users(email,password_hash,nickname,email_verified) VALUES ('credit@example.com','hash','积分用户',true)");
-        jdbc.update("INSERT INTO credit_accounts(user_id,balance) VALUES (1,100)");
-        jdbc.update("""
-                INSERT INTO credit_ledger_entries(account_id,entry_type,amount,balance_after,
-                    reference_type,reference_key,idempotency_key)
-                VALUES (1,'GRANT',100,100,'ADMIN_GRANT','welcome','grant:welcome:1')
-                """);
+        database.insertCreditUser();
+        database.insertCreditAccount();
+        database.insertCreditLedger();
 
-        assertThatThrownBy(() -> jdbc.update("""
-                INSERT INTO credit_ledger_entries(account_id,entry_type,amount,balance_after,
-                    reference_type,reference_key,idempotency_key)
-                VALUES (1,'GRANT',100,200,'ADMIN_GRANT','welcome','grant:welcome:1')
-                """)).hasMessageContaining("credit_ledger_entries_idempotency_key_key");
-        assertThatThrownBy(() -> jdbc.update("UPDATE credit_accounts SET balance = -1 WHERE id = 1"))
+        assertThatThrownBy(database::insertDuplicateCreditLedger)
+                .hasMessageContaining("credit_ledger_entries_idempotency_key_key");
+        assertThatThrownBy(() -> database.updateCreditBalance(-1))
                 .hasMessageContaining("credit_accounts_balance_check");
     }
 }

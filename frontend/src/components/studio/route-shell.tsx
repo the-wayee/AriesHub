@@ -21,7 +21,7 @@ export function RouteShell({
   const community = [
     "/home",
     "/discover",
-    "/cases",
+    "/publications",
     "/learn",
     "/checkout",
     "/community",

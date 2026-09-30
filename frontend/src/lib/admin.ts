@@ -6,31 +6,31 @@ export interface AdminCategory {
   name: string;
 }
 
-export interface AdminCaseSummary {
+export interface AdminPublicationSummary {
   id: string;
   slug: string;
   title: string;
   categoryName: string;
-  accessType: "FREE" | "PAID";
-  priceMinor: number;
+  publicationType: "CASE_STUDY" | "ARTICLE" | "COURSE";
+  accessType: "FREE" | "CREDIT";
+  creditPrice: number;
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
   deliveryStatus: "AVAILABLE" | "SUSPENDED";
   publishedAt: string | null;
   updatedAt: string;
 }
 
-export interface AdminCaseDetail {
+export interface AdminPublicationDetail {
   id: string;
   categoryId: string;
   slug: string;
   title: string;
   summary: string;
-  accessType: "FREE" | "PAID";
-  priceMinor: number;
-  currency: "CNY";
+  publicationType: "CASE_STUDY" | "ARTICLE" | "COURSE";
+  accessType: "FREE" | "CREDIT";
+  creditPrice: number;
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
   deliveryStatus: "AVAILABLE" | "SUSPENDED";
-  isDemo: boolean;
   publishedAt: string | null;
   previewMarkdown: string;
   fullMarkdown: string;

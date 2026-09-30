@@ -53,4 +53,12 @@ class ArchitectureTest {
                 .should().dependOnClassesThat().resideInAPackage("..infrastructure..po..")
                 .check(code);
     }
+
+    @Test
+    void databaseAccessGoesThroughMybatisPlus() {
+        noClasses().should().dependOnClassesThat().resideInAnyPackage(
+                        "org.springframework.jdbc..", "java.sql..")
+                .because("database access must go through MyBatis-Plus mappers")
+                .check(code);
+    }
 }

@@ -1,6 +1,6 @@
 package com.aries.backend.composition;
 
-import com.aries.backend.catalog.domain.repository.CaseRepository;
+import com.aries.backend.catalog.domain.repository.PublicationRepository;
 import com.aries.backend.discussion.application.port.DiscussionIdentityProvider;
 import com.aries.backend.discussion.application.port.DiscussionTargetResolver;
 import com.aries.backend.discussion.domain.model.DiscussionTarget;
@@ -20,14 +20,14 @@ import java.util.Set;
 @Component
 @RequiredArgsConstructor
 public class DiscussionContextAdapter implements DiscussionTargetResolver, DiscussionIdentityProvider {
-    private final CaseRepository cases;
+    private final PublicationRepository publications;
     private final SessionManager sessions;
     private final UserRepository users;
 
     @Override
     public boolean exists(DiscussionTarget target) {
         if (!"PUBLICATION".equals(target.type())) return false;
-        return cases.findBySlug(target.key()).filter(study -> study.isPubliclyVisible()).isPresent();
+        return publications.findBySlug(target.key()).filter(publication -> publication.isPubliclyVisible()).isPresent();
     }
 
     @Override

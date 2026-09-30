@@ -7,10 +7,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import com.aries.backend.catalog.application.service.CatalogQueryService;
-import com.aries.backend.catalog.interfaces.rest.request.CaseListRequest;
+import com.aries.backend.catalog.interfaces.rest.request.PublicationListRequest;
 import static com.aries.backend.catalog.application.view.CatalogViews.*;
 
-/** 公开案例 HTTP 接口：只做参数适配与用例调用，不直接访问数据库。 */
+/** 公开发布内容 HTTP 接口：只做参数适配与用例调用，不直接访问数据库。 */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1")
@@ -20,14 +20,14 @@ public class CatalogController {
     @GetMapping("/categories")
     public List<Category> categories() { return service.categories(); }
 
-    @GetMapping("/cases")
-    public Page<CaseSummary> cases(@Valid @ModelAttribute CaseListRequest query) { return service.list(query.toQuery()); }
+    @GetMapping("/publications")
+    public Page<PublicationSummary> publications(@Valid @ModelAttribute PublicationListRequest query) { return service.list(query.toQuery()); }
 
-    @GetMapping("/cases/{slug}")
-    public CaseDetail detail(@PathVariable @Pattern(regexp = "[a-z0-9-]{1,120}") String slug) {
+    @GetMapping("/publications/{slug}")
+    public PublicationDetail detail(@PathVariable @Pattern(regexp = "[a-z0-9-]{1,120}") String slug) {
         return service.detail(slug);
     }
 
-    @GetMapping("/cases/{id}/content")
+    @GetMapping("/publications/{id}/content")
     public Content content(@PathVariable @Positive long id) { return service.content(id); }
 }

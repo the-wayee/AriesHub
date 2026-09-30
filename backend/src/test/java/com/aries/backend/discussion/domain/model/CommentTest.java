@@ -20,10 +20,12 @@ class CommentTest {
         assertThat(second.depth()).isEqualTo(2);
     }
 
-    @Test void repliesStopAtTheConfiguredDepth() {
-        Comment deepest = new Comment(20, 3, 1, 19L, 10L, Comment.MAX_DEPTH,
+    @Test void conversationsCanContinueBeyondFiveReplies() {
+        Comment parent = new Comment(20, 3, 1, 19L, 10L, 5,
                 "deep", Comment.Status.PUBLISHED, null);
-        assertThatThrownBy(() -> Comment.reply(3, 2, deepest, "too deep"))
-                .isInstanceOf(Comment.ReplyTooDeep.class);
+        Comment reply = Comment.reply(3, 2, parent, "continue");
+        assertThat(reply.depth()).isEqualTo(6);
+        assertThat(reply.parentId()).isEqualTo(20);
+        assertThat(reply.rootId()).isEqualTo(10);
     }
 }

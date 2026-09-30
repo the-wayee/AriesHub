@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("landing page leads through the case preview to the checkout prototype", async ({
+test("landing page leads through the publication preview to the checkout prototype", async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -8,16 +8,16 @@ test("landing page leads through the case preview to the checkout prototype", as
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /探索 AI/ })).toBeVisible();
   await page.getByRole("link", { name: "探索这篇内容" }).first().click();
-  await expect(page).toHaveURL(/\/cases\/website-from-zero$/);
+  await expect(page).toHaveURL(/\/publications\/website-from-zero$/);
   await expect(
     page.getByRole("heading", { name: "从零做一个可上线的网站", level: 1 }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "查看购买信息" }).click();
+  await page.getByRole("link", { name: "查看积分解锁信息" }).click();
   await expect(
     page.getByRole("heading", { name: /为下一次实践/ }),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "支付功能准备中" }),
+    page.getByRole("button", { name: "积分解锁准备中" }),
   ).toBeDisabled();
   expect(errors).toEqual([]);
 });
@@ -31,14 +31,14 @@ test("category and search filters work without the backend", async ({
   await expect(page.locator(".hub-content-card")).toHaveCount(1);
   await page.goto("/discover?q=工作流");
   await expect(page.locator(".hub-content-card")).toHaveCount(1);
-  await page.goto("/cases?q=不存在的案例");
+  await page.goto("/publications?q=不存在的案例");
   await expect(
     page.getByRole("heading", { name: "没有找到匹配的内容" }),
   ).toBeVisible();
 });
 
-test("free case opens the reading prototype", async ({ page }) => {
-  await page.goto("/cases/personal-knowledge");
+test("free publication opens the reading prototype", async ({ page }) => {
+  await page.goto("/publications/personal-knowledge");
   await page.getByRole("link", { name: "开始阅读" }).click();
   await expect(page).toHaveURL(/\/learn\/personal-knowledge$/);
   await expect(
@@ -71,8 +71,8 @@ test("concept routes render on desktop and mobile", async ({ page }) => {
   }
 });
 
-test("missing case shows the not-found view", async ({ page }) => {
-  await page.goto("/cases/does-not-exist");
+test("missing publication shows the not-found view", async ({ page }) => {
+  await page.goto("/publications/does-not-exist");
   await expect(
     page.getByRole("heading", { name: "这份内容暂时找不到了" }),
   ).toBeVisible();

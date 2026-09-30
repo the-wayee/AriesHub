@@ -3,7 +3,7 @@ import Link from "next/link";
 export function ContentState({
   title,
   message,
-  href = "/cases",
+  href = "/publications",
   label = "返回案例库",
   requestId,
   reload = false,

@@ -2,8 +2,8 @@ package com.aries.backend.catalog.infrastructure.persistence.repository;
 
 import com.aries.backend.catalog.application.port.AdminCatalogReadPort;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.CategoryOption;
-import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminCaseDetail;
-import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminCaseSummary;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetail;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationSummary;
 import com.aries.backend.catalog.infrastructure.persistence.mapper.AdminCatalogMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -23,12 +23,12 @@ public class MybatisAdminCatalogReadRepository implements AdminCatalogReadPort {
     }
 
     @Override
-    public List<AdminCaseSummary> cases() {
-        return queries.cases();
+    public List<AdminPublicationSummary> publications() {
+        return queries.publications();
     }
 
     @Override
-    public Optional<AdminCaseDetail> find(long id) {
+    public Optional<AdminPublicationDetail> find(long id) {
         return Optional.ofNullable(queries.find(id));
     }
 }

@@ -11,14 +11,14 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { type ConceptCase } from "@/lib/concept-cases";
+import { type ConceptPublication } from "@/lib/concept-publications";
 import { useCommunityState } from "./local-state";
 
 export function ReaderView({
   item,
   initialChapter,
 }: {
-  item: ConceptCase;
+  item: ConceptPublication;
   initialChapter: number;
 }) {
   const { state, toggle, remember } = useCommunityState();
@@ -37,7 +37,7 @@ export function ReaderView({
   return (
     <div className="hub-reader">
       <aside className="hub-reader-toc">
-        <Link href={`/cases/${item.slug}`}>← 返回内容</Link>
+        <Link href={`/publications/${item.slug}`}>← 返回内容</Link>
         <p className="hub-kicker">内容目录</p>
         <nav>
           {item.chapters.map((entry, index) => (

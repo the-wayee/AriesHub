@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { conceptCases } from "@/lib/concept-cases";
+import { conceptPublications } from "@/lib/concept-publications";
 import { useCommunityState, type LocalTopic } from "./local-state";
 
 const samples: LocalTopic[] = [
@@ -92,7 +92,7 @@ export function DiscussionView({ about }: { about?: string }) {
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const related = conceptCases.find((item) => item.slug === about);
+  const related = conceptPublications.find((item) => item.slug === about);
   const topics = useMemo(() => [...state.topics, ...samples], [state.topics]);
   function publish() {
     if (!title.trim() || !body.trim()) return;
@@ -180,7 +180,7 @@ export function DiscussionView({ about }: { about?: string }) {
           </p>
           <hr />
           <h3>讨论从这里开始</h3>
-          <Link href={`/cases/${conceptCases[0].slug}`}>
+          <Link href={`/publications/${conceptPublications[0].slug}`}>
             先看一篇实战案例 <ArrowRight />
           </Link>
           <Link href="/members">

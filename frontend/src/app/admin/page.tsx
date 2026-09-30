@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { AdminCaseList } from "@/components/admin-case-list";
+import { AdminPublicationList } from "@/components/admin-publication-list";
 
 export const metadata: Metadata = { title: "内容后台" };
 
@@ -11,7 +11,7 @@ export default function AdminPage() {
         <h1>内容后台</h1>
         <p>把实践过程整理成案例，再决定何时发布到主站。</p>
       </header>
-      <AdminCaseList />
+      <AdminPublicationList />
     </div>
   );
 }

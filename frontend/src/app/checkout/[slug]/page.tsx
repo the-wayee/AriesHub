@@ -4,11 +4,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { conceptCases, formatConceptCredits } from "@/lib/concept-cases";
+import {
+  conceptPublications,
+  formatConceptCredits,
+} from "@/lib/concept-publications";
 
 export const metadata: Metadata = { title: "内容说明" };
 export function generateStaticParams() {
-  return conceptCases
+  return conceptPublications
     .filter((item) => item.creditPrice > 0)
     .map((item) => ({ slug: item.slug }));
 }
@@ -16,13 +19,13 @@ export default async function CheckoutPage({
   params,
 }: PageProps<"/checkout/[slug]">) {
   const { slug } = await params;
-  const item = conceptCases.find(
+  const item = conceptPublications.find(
     (entry) => entry.slug === slug && entry.creditPrice > 0,
   );
   if (!item) notFound();
   return (
     <>
-      <Link className="hub-back" href={`/cases/${item.slug}`}>
+      <Link className="hub-back" href={`/publications/${item.slug}`}>
         ← 返回内容
       </Link>
       <header className="hub-page-heading hub-enter">

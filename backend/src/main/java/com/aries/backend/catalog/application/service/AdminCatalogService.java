@@ -1,12 +1,12 @@
 package com.aries.backend.catalog.application.service;
 
-import com.aries.backend.catalog.application.command.SaveCaseCommand;
+import com.aries.backend.catalog.application.command.SavePublicationCommand;
 import com.aries.backend.catalog.application.port.AdminCatalogReadPort;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.CategoryOption;
-import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminCaseDetail;
-import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminCaseSummary;
-import com.aries.backend.catalog.domain.model.CaseStudy;
-import com.aries.backend.catalog.domain.repository.CaseRepository;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetail;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationSummary;
+import com.aries.backend.catalog.domain.model.Publication;
+import com.aries.backend.catalog.domain.repository.PublicationRepository;
 import com.aries.backend.shared.application.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
@@ -24,7 +24,7 @@ import static com.aries.backend.catalog.application.exception.CatalogErrorCode.*
 @RequiredArgsConstructor
 public class AdminCatalogService {
     private final AdminCatalogReadPort catalog;
-    private final CaseRepository cases;
+    private final PublicationRepository publications;
 
     @Transactional(readOnly = true)
     public List<CategoryOption> categories() {
@@ -32,59 +32,59 @@ public class AdminCatalogService {
     }
 
     @Transactional(readOnly = true)
-    public List<AdminCaseSummary> cases() {
-        return catalog.cases();
+    public List<AdminPublicationSummary> publications() {
+        return catalog.publications();
     }
 
     @Transactional(readOnly = true)
-    public AdminCaseDetail detail(long id) {
-        return catalog.find(id).orElseThrow(() -> new BusinessException(ADMIN_CASE_NOT_FOUND));
+    public AdminPublicationDetail detail(long id) {
+        return catalog.find(id).orElseThrow(() -> new BusinessException(ADMIN_PUBLICATION_NOT_FOUND));
     }
 
     @Transactional
-    public AdminCaseDetail create(SaveCaseCommand command) {
+    public AdminPublicationDetail create(SavePublicationCommand command) {
         validateCategory(command.categoryId());
         try {
-            CaseStudy created = cases.save(CaseStudy.create(command.toDraft()));
+            Publication created = publications.save(Publication.create(command.toDraft()));
             return detail(created.getId());
         } catch (DuplicateKeyException error) {
-            throw new BusinessException(CASE_SLUG_CONFLICT);
+            throw new BusinessException(PUBLICATION_SLUG_CONFLICT);
         }
     }
 
     @Transactional
-    public AdminCaseDetail update(long id, SaveCaseCommand command) {
+    public AdminPublicationDetail update(long id, SavePublicationCommand command) {
         validateCategory(command.categoryId());
         try {
-            CaseStudy study = editable(id);
-            cases.save(study.edit(command.toDraft()));
+            Publication study = editable(id);
+            publications.save(study.edit(command.toDraft()));
             return detail(id);
         } catch (DuplicateKeyException error) {
-            throw new BusinessException(CASE_SLUG_CONFLICT);
-        } catch (CaseStudy.MissingContent error) {
-            throw new BusinessException(CASE_CONTENT_REQUIRED);
+            throw new BusinessException(PUBLICATION_SLUG_CONFLICT);
+        } catch (Publication.MissingContent error) {
+            throw new BusinessException(PUBLICATION_CONTENT_REQUIRED);
         }
     }
 
     @Transactional
-    public AdminCaseDetail publish(long id) {
+    public AdminPublicationDetail publish(long id) {
         try {
-            cases.save(editable(id).publish(OffsetDateTime.now(ZoneOffset.UTC)));
-        } catch (CaseStudy.MissingContent error) {
-            throw new BusinessException(CASE_CONTENT_REQUIRED);
+            publications.save(editable(id).publish(OffsetDateTime.now(ZoneOffset.UTC)));
+        } catch (Publication.MissingContent error) {
+            throw new BusinessException(PUBLICATION_CONTENT_REQUIRED);
         }
         return detail(id);
     }
 
     @Transactional
-    public AdminCaseDetail archive(long id) {
-        cases.save(editable(id).archive());
+    public AdminPublicationDetail archive(long id) {
+        publications.save(editable(id).archive());
         return detail(id);
     }
 
-    private CaseStudy editable(long id) {
-        return cases.findForEditing(id)
-                .orElseThrow(() -> new BusinessException(ADMIN_CASE_NOT_FOUND));
+    private Publication editable(long id) {
+        return publications.findForEditing(id)
+                .orElseThrow(() -> new BusinessException(ADMIN_PUBLICATION_NOT_FOUND));
     }
 
     private void validateCategory(long categoryId) {

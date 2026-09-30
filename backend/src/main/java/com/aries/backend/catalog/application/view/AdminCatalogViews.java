@@ -8,31 +8,31 @@ public final class AdminCatalogViews {
 
     public record CategoryOption(String id, String slug, String name) {}
 
-    public record AdminCaseSummary(
+    public record AdminPublicationSummary(
             String id,
             String slug,
             String title,
             String categoryName,
+            String publicationType,
             String accessType,
-            long priceMinor,
+            long creditPrice,
             String status,
             String deliveryStatus,
             OffsetDateTime publishedAt,
             OffsetDateTime updatedAt
     ) {}
 
-    public record AdminCaseDetail(
+    public record AdminPublicationDetail(
             String id,
             String categoryId,
             String slug,
             String title,
             String summary,
+            String publicationType,
             String accessType,
-            long priceMinor,
-            String currency,
+            long creditPrice,
             String status,
             String deliveryStatus,
-            boolean isDemo,
             OffsetDateTime publishedAt,
             String previewMarkdown,
             String fullMarkdown,

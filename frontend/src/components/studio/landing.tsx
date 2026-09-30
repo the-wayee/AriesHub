@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandOrbit } from "./brand-orbit";
-import { conceptCases } from "@/lib/concept-cases";
+import { conceptPublications } from "@/lib/concept-publications";
 import { useAuthSession } from "@/components/auth-session";
 gsap.registerPlugin(ScrollTrigger);
 const topics = ["AI 编程", "内容创作", "自动化", "知识管理"];
@@ -181,15 +181,15 @@ export function Landing() {
           <div className="stage-main" key={active}>
             <Image
               unoptimized
-              src={conceptCases[active].image}
-              alt={conceptCases[active].title}
+              src={conceptPublications[active].image}
+              alt={conceptPublications[active].title}
               width={900}
               height={650}
             />
             <div>
               <span>0{active + 1} / PRACTICE</span>
-              <h3>{conceptCases[active].shortTitle}</h3>
-              <Link href={`/cases/${conceptCases[active].slug}`}>
+              <h3>{conceptPublications[active].shortTitle}</h3>
+              <Link href={`/publications/${conceptPublications[active].slug}`}>
                 探索这篇内容 <ArrowUpRight size={18} />
               </Link>
             </div>
@@ -197,7 +197,7 @@ export function Landing() {
           <div className="stage-side">
             <Image
               unoptimized
-              src={conceptCases[(active + 1) % 4].image}
+              src={conceptPublications[(active + 1) % 4].image}
               alt="更多实践内容预览"
               width={400}
               height={500}
@@ -232,11 +232,11 @@ export function Landing() {
           也聊怎么做到。
         </h2>
         <div className="story-grid">
-          {conceptCases.slice(0, 2).map((item, i) => (
+          {conceptPublications.slice(0, 2).map((item, i) => (
             <Link
               className={`story-card story-${i}`}
               key={item.slug}
-              href={`/cases/${item.slug}`}
+              href={`/publications/${item.slug}`}
             >
               <Image src={item.image} alt="" width={900} height={700} />
               <div>
@@ -297,7 +297,7 @@ export function Landing() {
               也期待与你交流新的想法。
             </p>
             <span>深度文章、实践拆解，以及过程中的发现。</span>
-            <Link className="cosmos-text-link" href="/cases">
+            <Link className="cosmos-text-link" href="/publications">
               浏览内容 <ArrowUpRight size={16} />
             </Link>
           </div>

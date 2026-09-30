@@ -4,9 +4,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, ArrowUpRight, Check, LockKeyhole } from "lucide-react";
 import { ContentActions } from "./content-card";
-import { type ConceptCase, formatConceptCredits } from "@/lib/concept-cases";
+import {
+  type ConceptPublication,
+  formatConceptCredits,
+} from "@/lib/concept-publications";
 
-export function ArticleView({ item }: { item: ConceptCase }) {
+export function ArticleView({ item }: { item: ConceptPublication }) {
   return (
     <article className="hub-article-detail">
       <Link className="hub-back" href="/discover">

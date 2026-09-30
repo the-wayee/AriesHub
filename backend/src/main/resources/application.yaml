@@ -24,7 +24,7 @@ server:
     include-message: never
     include-stacktrace: never
 mybatis-plus:
-  mapper-locations: classpath:mapper/*.xml
+  mapper-locations: classpath*:/mapper/*.xml
   global-config:
     db-config:
       logic-delete-field: deleted

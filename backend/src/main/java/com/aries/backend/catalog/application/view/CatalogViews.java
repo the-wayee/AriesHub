@@ -7,14 +7,14 @@ import java.util.List;
 public final class CatalogViews {
     private CatalogViews() {}
 
-    public record Category(String id, String slug, String name, long caseCount) {}
+    public record Category(String id, String slug, String name, long publicationCount) {}
     // 此投影用于公开接口，禁止追加私有正文和对象存储 key。
-    public record CaseSummary(String id, String slug, String title, String summary,
+    public record PublicationSummary(String id, String slug, String title, String summary,
                               String categorySlug, String categoryName, String accessType,
-                              long priceMinor, String currency, boolean isDemo, OffsetDateTime publishedAt) {}
+                              String publicationType, long creditPrice, OffsetDateTime publishedAt) {}
     public record Preview(String previewMarkdown, String requirements, String deliverables,
                           String version, OffsetDateTime updatedAt) {}
-    public record CaseDetail(CaseSummary caseInfo, Preview preview) {}
-    public record Content(String caseId, String markdown, String version, OffsetDateTime updatedAt) {}
+    public record PublicationDetail(PublicationSummary publication, Preview preview) {}
+    public record Content(String publicationId, String markdown, String version, OffsetDateTime updatedAt) {}
     public record Page<T>(List<T> items, int page, int size, long total, long totalPages) {}
 }

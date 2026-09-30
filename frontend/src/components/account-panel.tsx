@@ -69,7 +69,7 @@ export function AccountPanel() {
         </div>
       </dl>
       <div className="account-actions">
-        <Link className="primary-link" href="/cases">
+        <Link className="primary-link" href="/publications">
           浏览案例库 ↗
         </Link>
         <Button

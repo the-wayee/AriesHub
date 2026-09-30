@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-test("administrator can browse cases and open the editor", async ({ page }) => {
+test("administrator can browse publications and open the editor", async ({
+  page,
+}) => {
   await page.route("**/api/v1/admin/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/categories")) {
@@ -9,7 +11,7 @@ test("administrator can browse cases and open the editor", async ({ page }) => {
       });
       return;
     }
-    if (path.endsWith("/cases/41")) {
+    if (path.endsWith("/publications/41")) {
       await route.fulfill({
         json: {
           id: "41",
@@ -17,12 +19,11 @@ test("administrator can browse cases and open the editor", async ({ page }) => {
           slug: "codex-workflow",
           title: "Codex 实战工作流",
           summary: "把重复任务整理成可复现的工作流。",
+          publicationType: "CASE_STUDY",
           accessType: "FREE",
-          priceMinor: 0,
-          currency: "CNY",
+          creditPrice: 0,
           status: "DRAFT",
           deliveryStatus: "AVAILABLE",
-          isDemo: false,
           publishedAt: null,
           previewMarkdown: "公开预览",
           fullMarkdown: "完整正文",
@@ -42,8 +43,9 @@ test("administrator can browse cases and open the editor", async ({ page }) => {
           slug: "codex-workflow",
           title: "Codex 实战工作流",
           categoryName: "Codex 编程",
+          publicationType: "CASE_STUDY",
           accessType: "FREE",
-          priceMinor: 0,
+          creditPrice: 0,
           status: "DRAFT",
           deliveryStatus: "AVAILABLE",
           publishedAt: null,
@@ -57,17 +59,21 @@ test("administrator can browse cases and open the editor", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "内容后台" })).toBeVisible();
   await expect(page.getByText("Codex 实战工作流")).toBeVisible();
   await page.getByRole("link", { name: "编辑" }).click();
-  await expect(page.getByRole("heading", { name: "编辑案例" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "编辑内容" })).toBeVisible();
   await expect(page.getByLabel("标题")).toHaveValue("Codex 实战工作流");
   await expect(page.getByRole("button", { name: "发布" })).toBeVisible();
   await page.getByRole("combobox", { name: "阅读方式" }).click();
-  await page.getByRole("option", { name: "付费案例" }).click();
+  await page.getByRole("option", { name: "积分内容" }).click();
   expect(
     await page.locator(".admin-editor").evaluate((form) => {
       const values = new FormData(form as HTMLFormElement);
-      return [values.get("categoryId"), values.get("accessType")];
+      return [
+        values.get("categoryId"),
+        values.get("publicationType"),
+        values.get("accessType"),
+      ];
     }),
-  ).toEqual(["1", "PAID"]);
+  ).toEqual(["1", "CASE_STUDY", "CREDIT"]);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,

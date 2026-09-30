@@ -4,14 +4,14 @@ import { Bookmark, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { conceptCases } from "@/lib/concept-cases";
+import { conceptPublications } from "@/lib/concept-publications";
 import { ContentCard } from "./content-card";
 import { useCommunityState } from "./local-state";
 
 export function LibraryView() {
   const { state } = useCommunityState();
   const [tab, setTab] = useState<"saved" | "history" | "liked">("saved");
-  const items = conceptCases.filter((item) =>
+  const items = conceptPublications.filter((item) =>
     tab === "saved"
       ? state.saved.includes(item.slug)
       : tab === "liked"
@@ -54,7 +54,10 @@ export function LibraryView() {
         <div className="hub-discover-grid">
           {items.map((item) => (
             <div key={item.slug}>
-              <ContentCard item={item} index={conceptCases.indexOf(item)} />
+              <ContentCard
+                item={item}
+                index={conceptPublications.indexOf(item)}
+              />
               {tab === "history" && (
                 <Link
                   className="hub-inline-link"

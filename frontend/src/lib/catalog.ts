@@ -1,9 +1,9 @@
 import "server-only";
 import { cache } from "react";
 import type {
-  CaseContent,
-  CaseDetail,
-  CasePage,
+  PublicationContent,
+  PublicationDetail,
+  PublicationPage,
   Category,
 } from "./catalog-types";
 
@@ -48,10 +48,10 @@ async function get<T>(path: string): Promise<ApiResult<T>> {
 }
 
 export const getCategories = () => get<Category[]>("/categories");
-export const getCases = (query = "") =>
-  get<CasePage>(`/cases${query ? `?${query}` : ""}`);
-export const getCase = cache((slug: string) =>
-  get<CaseDetail>(`/cases/${encodeURIComponent(slug)}`),
+export const getPublications = (query = "") =>
+  get<PublicationPage>(`/publications${query ? `?${query}` : ""}`);
+export const getPublication = cache((slug: string) =>
+  get<PublicationDetail>(`/publications/${encodeURIComponent(slug)}`),
 );
 export const getContent = (id: string) =>
-  get<CaseContent>(`/cases/${encodeURIComponent(id)}/content`);
+  get<PublicationContent>(`/publications/${encodeURIComponent(id)}/content`);

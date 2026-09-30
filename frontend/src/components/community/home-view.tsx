@@ -6,7 +6,7 @@ import { ArrowRight, Check, Send, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { conceptCases } from "@/lib/concept-cases";
+import { conceptPublications } from "@/lib/concept-publications";
 import { ContentCard } from "./content-card";
 import { useCommunityState, type LocalTopic } from "./local-state";
 
@@ -26,7 +26,7 @@ export function HomeView() {
   const [message, setMessage] = useState("");
   const topic =
     state.topics.find((item) => item.id === seedTopic.id) || seedTopic;
-  const featured = conceptCases[0];
+  const featured = conceptPublications[0];
   const chapter = state.history[featured.slug] ?? 1;
 
   function sendReply() {
@@ -56,7 +56,7 @@ export function HomeView() {
           <strong>看看今天来过的成员</strong>
           <ArrowRight />
         </Link>
-        <Link href={`/cases/${conceptCases[1].slug}`}>
+        <Link href={`/publications/${conceptPublications[1].slug}`}>
           <span className="hub-activity-icon">
             <Sparkles />
           </span>
@@ -118,7 +118,7 @@ export function HomeView() {
             </Link>
           </div>
           <div className="hub-recommend-grid">
-            {conceptCases.slice(1, 3).map((item, index) => (
+            {conceptPublications.slice(1, 3).map((item, index) => (
               <ContentCard item={item} index={index + 1} key={item.slug} />
             ))}
           </div>
@@ -128,7 +128,7 @@ export function HomeView() {
               <h2>最新发布</h2>
             </div>
           </div>
-          <ContentCard item={conceptCases[3]} index={3} compact />
+          <ContentCard item={conceptPublications[3]} index={3} compact />
         </div>
         <aside className="hub-community-rail hub-enter">
           <section className="hub-people-now">
