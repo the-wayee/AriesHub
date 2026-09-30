@@ -3,10 +3,25 @@ import { expect, test } from "@playwright/test";
 test("guest navigation is present in the first HTML response", async ({
   page,
 }) => {
+  let meRequests = 0;
+  await page.route("**/api/v1/auth/me", async (route) => {
+    meRequests += 1;
+    await route.fulfill({
+      status: 401,
+      json: { code: "UNAUTHORIZED", message: "请先登录" },
+    });
+  });
   const response = await page.goto("/");
   const html = await response?.text();
   expect(html).toContain('href="/login"');
   expect(html).toContain('href="/register"');
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  expect(meRequests).toBe(0);
 });
 
 test("header keeps the signed-in entry stable while a refresh checks the session", async ({
@@ -46,9 +61,14 @@ test("header keeps the signed-in entry stable while a refresh checks the session
   await expect(
     page.getByRole("link", { name: "注册", exact: true }),
   ).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "进入社区", exact: true }),
+  ).toHaveAttribute("href", "/home");
 
   releaseSession?.();
   await expect(page.getByRole("link", { name: member.nickname })).toBeVisible();
+  await page.getByRole("link", { name: "进入社区", exact: true }).click();
+  await expect(page).toHaveURL(/\/home$/);
 });
 
 test("email delivery failures show a support request number", async ({
@@ -183,9 +203,9 @@ test("member can request codes, register, log out and log back in", async ({
     .click();
   expect(codeRequestCount).toBe(1);
 
-  await expect(page).toHaveURL(/\/account$/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/\/home$/, { timeout: 15_000 });
+  await page.goto("/account");
   await expect(page.getByRole("heading", { name: nickname })).toBeVisible();
-  await expect(page.getByRole("link", { name: nickname })).toBeVisible();
 
   await page.getByRole("button", { name: "退出登录" }).click();
   await expect(page).toHaveURL(/\/$/);
@@ -201,7 +221,8 @@ test("member can request codes, register, log out and log back in", async ({
   await expect(page.getByLabel("邮箱验证码")).toHaveCount(0);
   await page.getByLabel("密码", { exact: true }).fill("arieshub2026");
   await page.getByRole("button", { name: "登录 AriesHub" }).click();
-  await expect(page).toHaveURL(/\/account$/, { timeout: 15_000 });
+  await expect(page).toHaveURL(/\/home$/, { timeout: 15_000 });
+  await page.goto("/account");
   await expect(page.getByText(email, { exact: true })).toBeVisible();
   expect(codeRequestCount).toBe(1);
 });

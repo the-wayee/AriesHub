@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AriesHub API",
-    "version": "0.3.0",
-    "description": "Public catalog, Resend email verification, cookie-based identity and administrator content API. Purchase and upload operations are not implemented."
+    "version": "0.4.0",
+    "description": "Public content catalog, Redis-backed cookie identity, global discussion trees and administrator content API. Credit ledger tables exist; credit application and payment APIs are not implemented."
   },
   "servers": [
     {
@@ -96,7 +96,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/EmailCodeRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/EmailCodeRequest"
+              }
             }
           }
         },
@@ -105,7 +107,9 @@
             "description": "Registration code request accepted",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/EmailCodeDispatch" }
+                "schema": {
+                  "$ref": "#/components/schemas/EmailCodeDispatch"
+                }
               }
             }
           },
@@ -113,7 +117,9 @@
             "description": "Invalid email or purpose",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           },
@@ -121,7 +127,9 @@
             "description": "Code resend cooldown or rate limit reached",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           },
@@ -129,7 +137,9 @@
             "description": "Email delivery failed",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -144,7 +154,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/RegisterRequest"
+              }
             }
           }
         },
@@ -153,7 +165,9 @@
             "description": "Account created; session cookie is set",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CurrentUser" }
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUser"
+                }
               }
             }
           },
@@ -161,7 +175,9 @@
             "description": "Invalid input or verification code",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           },
@@ -169,7 +185,9 @@
             "description": "Email already registered",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           },
@@ -177,7 +195,9 @@
             "description": "Registration rate limit reached",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -192,7 +212,9 @@
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
             }
           }
         },
@@ -201,7 +223,9 @@
             "description": "Signed in; session cookie is set",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CurrentUser" }
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUser"
+                }
               }
             }
           },
@@ -209,7 +233,9 @@
             "description": "Invalid request",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           },
@@ -217,7 +243,9 @@
             "description": "Invalid credentials",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           },
@@ -225,7 +253,9 @@
             "description": "Login rate limit reached",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -236,13 +266,19 @@
       "get": {
         "operationId": "getCurrentUser",
         "summary": "Returns the signed-in member",
-        "security": [{ "cookieAuth": [] }],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Current member",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/CurrentUser" }
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUser"
+                }
               }
             }
           },
@@ -250,7 +286,9 @@
             "description": "Not signed in",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -261,14 +299,22 @@
       "post": {
         "operationId": "logout",
         "summary": "Invalidates the current session",
-        "security": [{ "cookieAuth": [] }],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "responses": {
-          "204": { "description": "Signed out" },
+          "204": {
+            "description": "Signed out"
+          },
           "401": {
             "description": "Not signed in",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Error" }
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
               }
             }
           }
@@ -279,7 +325,11 @@
       "get": {
         "operationId": "getAdminCategories",
         "summary": "Lists category options for the content editor",
-        "security": [{ "cookieAuth": [] }],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Category options",
@@ -287,13 +337,19 @@
               "application/json": {
                 "schema": {
                   "type": "array",
-                  "items": { "$ref": "#/components/schemas/AdminCategory" }
+                  "items": {
+                    "$ref": "#/components/schemas/AdminCategory"
+                  }
                 }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" }
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
         }
       }
     },
@@ -301,7 +357,11 @@
       "get": {
         "operationId": "getAdminCases",
         "summary": "Lists cases in every publication state",
-        "security": [{ "cookieAuth": [] }],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "All cases",
@@ -309,24 +369,36 @@
               "application/json": {
                 "schema": {
                   "type": "array",
-                  "items": { "$ref": "#/components/schemas/AdminCaseSummary" }
+                  "items": {
+                    "$ref": "#/components/schemas/AdminCaseSummary"
+                  }
                 }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" }
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
         }
       },
       "post": {
         "operationId": "createAdminCase",
         "summary": "Creates a draft case and its content",
-        "security": [{ "cookieAuth": [] }],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/AdminCaseRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/AdminCaseRequest"
+              }
             }
           }
         },
@@ -335,46 +407,78 @@
             "description": "Draft created",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AdminCaseDetail" }
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCaseDetail"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" },
-          "409": { "$ref": "#/components/responses/Conflict" }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
         }
       }
     },
     "/admin/cases/{id}": {
-      "parameters": [{ "$ref": "#/components/parameters/CaseId" }],
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/CaseId"
+        }
+      ],
       "get": {
         "operationId": "getAdminCase",
         "summary": "Returns the complete editable case",
-        "security": [{ "cookieAuth": [] }],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Editable case",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AdminCaseDetail" }
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCaseDetail"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       },
       "put": {
         "operationId": "updateAdminCase",
         "summary": "Replaces the editable case fields and content",
-        "security": [{ "cookieAuth": [] }],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/AdminCaseRequest" }
+              "schema": {
+                "$ref": "#/components/schemas/AdminCaseRequest"
+              }
             }
           }
         },
@@ -383,15 +487,27 @@
             "description": "Case updated",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AdminCaseDetail" }
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCaseDetail"
+                }
               }
             }
           },
-          "400": { "$ref": "#/components/responses/BadRequest" },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" },
-          "404": { "$ref": "#/components/responses/NotFound" },
-          "409": { "$ref": "#/components/responses/Conflict" }
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          }
         }
       }
     },
@@ -399,20 +515,36 @@
       "post": {
         "operationId": "publishAdminCase",
         "summary": "Publishes a case to the public catalog",
-        "security": [{ "cookieAuth": [] }],
-        "parameters": [{ "$ref": "#/components/parameters/CaseId" }],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CaseId"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Published case",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AdminCaseDetail" }
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCaseDetail"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
@@ -420,20 +552,36 @@
       "post": {
         "operationId": "archiveAdminCase",
         "summary": "Archives a case and removes it from the public catalog",
-        "security": [{ "cookieAuth": [] }],
-        "parameters": [{ "$ref": "#/components/parameters/CaseId" }],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CaseId"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Archived case",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/AdminCaseDetail" }
+                "schema": {
+                  "$ref": "#/components/schemas/AdminCaseDetail"
+                }
               }
             }
           },
-          "401": { "$ref": "#/components/responses/Unauthorized" },
-          "403": { "$ref": "#/components/responses/Forbidden" },
-          "404": { "$ref": "#/components/responses/NotFound" }
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
         }
       }
     },
@@ -663,11 +811,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": [
-                "",
-                "FREE",
-                "PAID"
-              ]
+              "enum": ["", "FREE", "PAID"]
             }
           }
         ]
@@ -964,26 +1108,162 @@
           }
         ]
       }
+    },
+    "/discussions/comments": {
+      "get": {
+        "operationId": "listComments",
+        "summary": "Returns the public nested comment tree for a registered target",
+        "parameters": [
+          {
+            "name": "targetType",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z][A-Z0-9_]{1,39}$",
+              "example": "PUBLICATION"
+            }
+          },
+          {
+            "name": "targetKey",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 120,
+              "example": "free-case"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Nested root comments and replies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CommentNode"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid target",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createComment",
+        "summary": "Creates a root comment or a reply as the logged-in member",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created comment node",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentNode"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or maximum reply depth reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Login required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Target or parent comment not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Discussion thread is locked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
       "AccessType": {
         "type": "string",
-        "enum": [
-          "FREE",
-          "PAID"
-        ]
+        "enum": ["FREE", "PAID"]
       },
       "Category": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "id",
-          "slug",
-          "name",
-          "caseCount"
-        ],
+        "required": ["id", "slug", "name", "caseCount"],
         "properties": {
           "id": {
             "type": "string",
@@ -1050,9 +1330,7 @@
           },
           "currency": {
             "type": "string",
-            "enum": [
-              "CNY"
-            ]
+            "enum": ["CNY"]
           },
           "isDemo": {
             "type": "boolean"
@@ -1095,10 +1373,7 @@
       "CaseDetail": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "caseInfo",
-          "preview"
-        ],
+        "required": ["caseInfo", "preview"],
         "properties": {
           "caseInfo": {
             "$ref": "#/components/schemas/CaseSummary"
@@ -1111,12 +1386,7 @@
       "CaseContent": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "caseId",
-          "markdown",
-          "version",
-          "updatedAt"
-        ],
+        "required": ["caseId", "markdown", "version", "updatedAt"],
         "properties": {
           "caseId": {
             "type": "string",
@@ -1138,13 +1408,7 @@
       "CasePage": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "items",
-          "page",
-          "size",
-          "total",
-          "totalPages"
-        ],
+        "required": ["items", "page", "size", "total", "totalPages"],
         "properties": {
           "items": {
             "type": "array",
@@ -1178,8 +1442,15 @@
         "additionalProperties": false,
         "required": ["email", "purpose"],
         "properties": {
-          "email": { "type": "string", "format": "email", "maxLength": 254 },
-          "purpose": { "type": "string", "enum": ["REGISTER"] }
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "purpose": {
+            "type": "string",
+            "enum": ["REGISTER"]
+          }
         }
       },
       "EmailCodeDispatch": {
@@ -1187,8 +1458,16 @@
         "additionalProperties": false,
         "required": ["expiresInSeconds", "resendAfterSeconds"],
         "properties": {
-          "expiresInSeconds": { "type": "integer", "format": "int64", "minimum": 1 },
-          "resendAfterSeconds": { "type": "integer", "format": "int64", "minimum": 1 }
+          "expiresInSeconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "resendAfterSeconds": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          }
         }
       },
       "RegisterRequest": {
@@ -1196,7 +1475,11 @@
         "additionalProperties": false,
         "required": ["email", "password", "nickname", "code"],
         "properties": {
-          "email": { "type": "string", "format": "email", "maxLength": 254 },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
           "password": {
             "type": "string",
             "format": "password",
@@ -1204,8 +1487,15 @@
             "maxLength": 72,
             "description": "Must contain at least one ASCII letter and one digit."
           },
-          "nickname": { "type": "string", "minLength": 2, "maxLength": 30 },
-          "code": { "type": "string", "pattern": "^[0-9]{6}$" }
+          "nickname": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 30
+          },
+          "code": {
+            "type": "string",
+            "pattern": "^[0-9]{6}$"
+          }
         }
       },
       "LoginRequest": {
@@ -1213,8 +1503,16 @@
         "additionalProperties": false,
         "required": ["email", "password"],
         "properties": {
-          "email": { "type": "string", "format": "email", "maxLength": 254 },
-          "password": { "type": "string", "format": "password", "maxLength": 72 }
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254
+          },
+          "password": {
+            "type": "string",
+            "format": "password",
+            "maxLength": 72
+          }
         }
       },
       "AdminCategory": {
@@ -1222,62 +1520,196 @@
         "additionalProperties": false,
         "required": ["id", "slug", "name"],
         "properties": {
-          "id": { "type": "string", "pattern": "^[0-9]+$" },
-          "slug": { "type": "string" },
-          "name": { "type": "string" }
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
         }
       },
       "AdminCaseRequest": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["categoryId", "slug", "title", "summary", "accessType", "priceMinor", "previewMarkdown", "fullMarkdown", "requirements", "deliverables", "version"],
+        "required": [
+          "categoryId",
+          "slug",
+          "title",
+          "summary",
+          "accessType",
+          "priceMinor",
+          "previewMarkdown",
+          "fullMarkdown",
+          "requirements",
+          "deliverables",
+          "version"
+        ],
         "properties": {
-          "categoryId": { "type": "integer", "format": "int64", "minimum": 1 },
-          "slug": { "type": "string", "pattern": "^[a-z0-9-]{1,120}$" },
-          "title": { "type": "string", "minLength": 1, "maxLength": 160 },
-          "summary": { "type": "string", "minLength": 1, "maxLength": 500 },
-          "accessType": { "$ref": "#/components/schemas/AccessType" },
-          "priceMinor": { "type": "integer", "format": "int64", "minimum": 0 },
-          "previewMarkdown": { "type": "string", "minLength": 1, "maxLength": 100000 },
-          "fullMarkdown": { "type": "string", "minLength": 1, "maxLength": 500000 },
-          "requirements": { "type": "string", "minLength": 1, "maxLength": 2000 },
-          "deliverables": { "type": "string", "minLength": 1, "maxLength": 2000 },
-          "version": { "type": "string", "minLength": 1, "maxLength": 32 }
+          "categoryId": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 1
+          },
+          "slug": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]{1,120}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "accessType": {
+            "$ref": "#/components/schemas/AccessType"
+          },
+          "priceMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "previewMarkdown": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100000
+          },
+          "fullMarkdown": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500000
+          },
+          "requirements": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "deliverables": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          }
         }
       },
       "AdminCaseSummary": {
         "type": "object",
-        "required": ["id", "slug", "title", "categoryName", "accessType", "priceMinor", "status", "deliveryStatus", "publishedAt", "updatedAt"],
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "categoryName",
+          "accessType",
+          "priceMinor",
+          "status",
+          "deliveryStatus",
+          "publishedAt",
+          "updatedAt"
+        ],
         "properties": {
-          "id": { "type": "string", "pattern": "^[0-9]+$" },
-          "slug": { "type": "string" },
-          "title": { "type": "string" },
-          "categoryName": { "type": "string" },
-          "accessType": { "$ref": "#/components/schemas/AccessType" },
-          "priceMinor": { "type": "integer", "format": "int64", "minimum": 0 },
-          "status": { "type": "string", "enum": ["DRAFT", "PUBLISHED", "ARCHIVED"] },
-          "deliveryStatus": { "type": "string", "enum": ["AVAILABLE", "SUSPENDED"] },
-          "publishedAt": { "type": ["string", "null"], "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "categoryName": {
+            "type": "string"
+          },
+          "accessType": {
+            "$ref": "#/components/schemas/AccessType"
+          },
+          "priceMinor": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "status": {
+            "type": "string",
+            "enum": ["DRAFT", "PUBLISHED", "ARCHIVED"]
+          },
+          "deliveryStatus": {
+            "type": "string",
+            "enum": ["AVAILABLE", "SUSPENDED"]
+          },
+          "publishedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "AdminCaseDetail": {
         "allOf": [
-          { "$ref": "#/components/schemas/AdminCaseSummary" },
+          {
+            "$ref": "#/components/schemas/AdminCaseSummary"
+          },
           {
             "type": "object",
-            "required": ["categoryId", "summary", "currency", "isDemo", "previewMarkdown", "fullMarkdown", "requirements", "deliverables", "version", "createdAt"],
+            "required": [
+              "categoryId",
+              "summary",
+              "currency",
+              "isDemo",
+              "previewMarkdown",
+              "fullMarkdown",
+              "requirements",
+              "deliverables",
+              "version",
+              "createdAt"
+            ],
             "properties": {
-              "categoryId": { "type": "string", "pattern": "^[0-9]+$" },
-              "summary": { "type": "string" },
-              "currency": { "type": "string", "enum": ["CNY"] },
-              "isDemo": { "type": "boolean" },
-              "previewMarkdown": { "type": "string" },
-              "fullMarkdown": { "type": "string" },
-              "requirements": { "type": "string" },
-              "deliverables": { "type": "string" },
-              "version": { "type": "string" },
-              "createdAt": { "type": "string", "format": "date-time" }
+              "categoryId": {
+                "type": "string",
+                "pattern": "^[0-9]+$"
+              },
+              "summary": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string",
+                "enum": ["CNY"]
+              },
+              "isDemo": {
+                "type": "boolean"
+              },
+              "previewMarkdown": {
+                "type": "string"
+              },
+              "fullMarkdown": {
+                "type": "string"
+              },
+              "requirements": {
+                "type": "string"
+              },
+              "deliverables": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
             }
           }
         ]
@@ -1285,28 +1717,44 @@
       "CurrentUser": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["id", "email", "nickname", "role", "emailVerified", "createdAt"],
+        "required": [
+          "id",
+          "email",
+          "nickname",
+          "role",
+          "emailVerified",
+          "createdAt"
+        ],
         "properties": {
           "id": {
             "type": "string",
             "pattern": "^[0-9]+$",
             "description": "PostgreSQL bigint ID serialized as a string."
           },
-          "email": { "type": "string", "format": "email" },
-          "nickname": { "type": "string" },
-          "role": { "type": "string", "enum": ["USER", "ADMIN"] },
-          "emailVerified": { "type": "boolean" },
-          "createdAt": { "type": "string", "format": "date-time" }
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["USER", "ADMIN"]
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "Error": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "code",
-          "message",
-          "requestId"
-        ],
+        "required": ["code", "message", "requestId"],
         "properties": {
           "code": {
             "type": "string"
@@ -1322,22 +1770,88 @@
       "Health": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "status",
-          "database"
-        ],
+        "required": ["status", "database"],
         "properties": {
           "status": {
             "type": "string",
-            "enum": [
-              "UP"
-            ]
+            "enum": ["UP"]
           },
           "database": {
             "type": "string",
-            "enum": [
-              "UP"
-            ]
+            "enum": ["UP"]
+          }
+        }
+      },
+      "CreateCommentRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["targetType", "targetKey", "body"],
+        "properties": {
+          "targetType": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{1,39}$",
+            "example": "PUBLICATION"
+          },
+          "targetKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "example": "free-case"
+          },
+          "parentId": {
+            "type": ["integer", "null"],
+            "format": "int64",
+            "minimum": 1
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        }
+      },
+      "CommentNode": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "depth",
+          "authorId",
+          "authorName",
+          "body",
+          "createdAt",
+          "replies"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": ["string", "null"]
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "authorId": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "replies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommentNode"
+            }
           }
         }
       }
@@ -1347,29 +1861,63 @@
         "name": "id",
         "in": "path",
         "required": true,
-        "schema": { "type": "integer", "format": "int64", "minimum": 1 }
+        "schema": {
+          "type": "integer",
+          "format": "int64",
+          "minimum": 1
+        }
       }
     },
     "responses": {
       "BadRequest": {
         "description": "Invalid request",
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
       },
       "Unauthorized": {
         "description": "Not signed in",
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
       },
       "Forbidden": {
         "description": "Signed in without the ADMIN role",
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
       },
       "NotFound": {
         "description": "Case not found",
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
       },
       "Conflict": {
         "description": "Case slug already exists",
-        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
       }
     },
     "securitySchemes": {

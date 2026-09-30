@@ -1,7 +1,10 @@
 package com.aries.backend;
 
+import cn.dev33.satoken.dao.SaTokenDao;
+import cn.dev33.satoken.dao.SaTokenDaoForRedisTemplate;
 import com.aries.backend.identity.domain.model.VerificationPurpose;
 import jakarta.servlet.http.Cookie;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -16,6 +19,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Import(TestEmailConfiguration.class)
 class IdentityIntegrationTests extends IntegrationTestSupport {
+    @Autowired SaTokenDao saTokenDao;
+
+    @Test void sessionsArePersistedInRedisInsteadOfProcessMemory() throws Exception {
+        assertThat(saTokenDao).isInstanceOf(SaTokenDaoForRedisTemplate.class);
+        saTokenDao.set("arieshub:test:satoken-dao", "redis", 60);
+        assertThat(redisTemplate.opsForValue().get("arieshub:test:satoken-dao")).isEqualTo("redis");
+
+        Cookie session = register("redis-session@example.com", "redis1234", "Redis 会话");
+
+        mvc.perform(get("/api/v1/auth/me").cookie(session))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("redis-session@example.com"));
+    }
+
     @Test void registrationCreatesSessionAndStoresPasswordHash() throws Exception {
         String code = requestCode("Hello@Example.com", VerificationPurpose.REGISTER);
         var registered = mvc.perform(post("/api/v1/auth/register")

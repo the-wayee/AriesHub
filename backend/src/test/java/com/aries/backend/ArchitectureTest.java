@@ -19,7 +19,13 @@ class ArchitectureTest {
                 .should().dependOnClassesThat().resideInAPackage("..catalog..")
                 .check(code);
         noClasses().that().resideInAPackage("..shared..")
+                .should().dependOnClassesThat().resideInAnyPackage("..catalog..", "..identity..", "..discussion..")
+                .check(code);
+        noClasses().that().resideInAPackage("..discussion..")
                 .should().dependOnClassesThat().resideInAnyPackage("..catalog..", "..identity..")
+                .check(code);
+        noClasses().that().resideInAnyPackage("..catalog..", "..identity..")
+                .should().dependOnClassesThat().resideInAPackage("..discussion..")
                 .check(code);
     }
 

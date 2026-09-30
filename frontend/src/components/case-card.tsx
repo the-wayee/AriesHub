@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { MotionArticle } from "@/components/page-motion";
-import { formatConceptPrice, type ConceptCase } from "@/lib/concept-cases";
+import { formatConceptCredits, type ConceptCase } from "@/lib/concept-cases";
 
 export function CaseArtwork({
   item,
@@ -51,7 +51,7 @@ export function CaseCard({
         <CaseArtwork item={item} priority={featured} />
         <div className="archive-case-copy">
           <span className="archive-access">
-            {item.price === 0 ? "免费案例" : "付费案例"}
+            {item.creditPrice === 0 ? "免费内容" : "积分内容"}
           </span>
           <h2>{item.title}</h2>
           <p>{item.summary}</p>
@@ -65,7 +65,7 @@ export function CaseCard({
             <span>
               {item.date} / {item.category}
             </span>
-            <strong>{formatConceptPrice(item.price)}</strong>
+            <strong>{formatConceptCredits(item.creditPrice)}</strong>
             <span className="archive-case-action">查看详情&nbsp; →</span>
           </div>
         </div>

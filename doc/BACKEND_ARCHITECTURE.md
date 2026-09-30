@@ -1,6 +1,6 @@
 # 后端分层与开发约定
 
-当前工程采用按业务边界组织的 DDD 模块化单体。现有业务模块为 `catalog`（案例目录）和 `identity`（用户身份），后续交易和权益分别独立建包。保持一个 Spring Boot 应用，不为当前规模拆微服务或多个 Maven 模块。
+当前工程采用按业务边界组织的 DDD 模块化单体。现有业务模块为 `catalog`（待迁移的内容目录）、`identity`（用户身份）和 `discussion`（全局评论树）；积分账户与权益表已建立，应用模块在内容模型切换后接入。保持一个 Spring Boot 应用，不为当前规模拆微服务或多个 Maven 模块。
 
 ## 目录和依赖
 
@@ -27,22 +27,30 @@ com.aries.backend
 │   ├── application                  # 身份用例和安全视图
 │   ├── domain                       # 用户聚合及仓储契约
 │   └── infrastructure               # 用户持久化、Sa-Token、密码编码
+├── discussion                       # 可挂载任意业务目标的评论与回复树
+│   ├── interfaces/rest              # 公开读取、登录后评论
+│   ├── application                  # 树组装、目标和身份端口
+│   ├── domain                       # 线程、评论层级规则
+│   └── infrastructure/persistence   # 评论仓储
+├── composition                      # 唯一允许组合多个业务模块的适配层
 └── shared
     ├── application/exception        # 与 HTTP 无关的业务失败
     ├── interfaces/rest              # 错误响应、请求追踪、健康接口
     └── infrastructure               # 审计字段自动填充、数据库就绪检查
 ```
 
-- `interfaces → application → domain`；基础设施实现应用端口和领域仓储。`catalog` 与 `identity` 不相互依赖，`shared` 不依赖业务模块。
+- `interfaces → application → domain`；基础设施实现应用端口和领域仓储。业务模块不相互引用，`shared` 不依赖业务模块。确需跨模块读取时，由 `composition` 同时实现两侧端口。
 - `domain` 不导入 Spring、HTTP 或 ORM 类型。Lombok 仅用于减少样板代码。
 - 应用层不直接引用 Mapper、PO、基础设施实现或 Sa-Token；登录态通过 `SessionManager` 端口操作。
 - `catalog` Controller 不访问数据库，不承担发布、收费、权益判断。
 - `shared` 只放跨模块技术能力，不变成所有业务的杂物目录。`BusinessException` 和 `ErrorCode` 是共享契约，错误码枚举由各业务模块维护。健康检查是技术接口，允许直接调用技术探针，不人为建立健康领域。
 - PO 不离开基础设施层。公开 API 返回经过选择的只读投影。
 
-身份用例：Controller → `AuthApplicationService` → `UserRepository`。邮箱在领域内以 `Email` 值对象表示，由构造器完成规范化和校验。注册通过 `EmailVerificationService` 验证 Resend 邮件中的一次性验证码，登录只验证邮箱和 BCrypt 密码；Redis 只保存验证码摘要。`AuthTrafficGuard` 通过 Redis 原子计数按来源地址和规范化邮箱分别限制登录、注册、注册发码，超限返回 429；来源地址只取服务端连接地址，不信任客户端可伪造的转发头。Sa-Token 在基础设施层实现 `SessionManager`；密码摘要不进入接口视图。身份路由由 identity 配置保护，管理员路由由 catalog 自身配置保护，未登录统一返回 401，非管理员返回 403。
+身份用例：Controller → `AuthApplicationService` → `UserRepository`。邮箱在领域内以 `Email` 值对象表示，由构造器完成规范化和校验。注册通过 `EmailVerificationService` 验证 Resend 邮件中的一次性验证码，登录只验证邮箱和 BCrypt 密码。Redis 保存验证码摘要、限流窗口和 Sa-Token 登录态；`sa-token-redis-template` 使用现有 Spring Data Redis 连接，使会话可跨重启和多实例共享。`AuthTrafficGuard` 通过 Redis 原子计数按来源地址和规范化邮箱分别限制登录、注册、注册发码，超限返回 429；来源地址只取服务端连接地址，不信任客户端可伪造的转发头。Sa-Token 在基础设施层实现 `SessionManager`；密码摘要不进入接口视图。身份路由由 identity 配置保护，管理员路由由 catalog 自身配置保护，未登录统一返回 401，非管理员返回 403。
 
 ## 当前用例
+
+评论：公开读取 `/api/v1/discussions/comments`；登录成员可发布根评论或回复。接口使用 `targetType + targetKey` 定位挂载对象，`composition` 校验目标真实存在且可见。评论领域负责最大深度，仓储保存 `parent_id + root_id + depth`，应用层返回嵌套树。
 
 案例详情：Controller → `CatalogQueryService` → `CaseRepository` 加载 `CaseStudy` → 聚合判断公开可见 → 查询端口返回公开摘要与预览。
 

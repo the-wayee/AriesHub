@@ -7,7 +7,7 @@ export type ConceptCase = {
   category: string;
   categorySlug: string;
   image: string;
-  price: number;
+  creditPrice: number;
   date: string;
   tagline: string;
   deliverables: string[];
@@ -24,7 +24,7 @@ export const conceptCases: ConceptCase[] = [
     category: "网站与开发",
     categorySlug: "web",
     image: "/concepts/architecture-color.webp",
-    price: 79,
+    creditPrice: 790,
     date: "2024.12.10",
     tagline: "从想法到真实上线。",
     deliverables: ["完整图文教程", "项目源码", "部署清单", "可复用提示词"],
@@ -50,7 +50,7 @@ export const conceptCases: ConceptCase[] = [
     category: "内容创作",
     categorySlug: "content",
     image: "/concepts/presentation-color.webp",
-    price: 59,
+    creditPrice: 590,
     date: "2024.11.28",
     tagline: "把想法讲清楚。",
     deliverables: ["制作步骤", "内容结构模板", "设计检查清单"],
@@ -69,7 +69,7 @@ export const conceptCases: ConceptCase[] = [
     category: "自动化",
     categorySlug: "automation",
     image: "/concepts/automation-color.webp",
-    price: 69,
+    creditPrice: 690,
     date: "2024.12.02",
     tagline: "把重复交给系统。",
     deliverables: ["流程搭建教程", "节点配置示例", "排错清单"],
@@ -88,7 +88,7 @@ export const conceptCases: ConceptCase[] = [
     category: "内容创作",
     categorySlug: "content",
     image: "/concepts/knowledge-color.webp",
-    price: 0,
+    creditPrice: 0,
     date: "2024.11.20",
     tagline: "让知识真正为你所用。",
     deliverables: ["方法教程", "整理模板", "实际示例"],
@@ -101,6 +101,6 @@ export const conceptCases: ConceptCase[] = [
   },
 ];
 
-export function formatConceptPrice(price: number) {
-  return price === 0 ? "免费" : `¥${price}`;
+export function formatConceptCredits(credits: number) {
+  return credits === 0 ? "免费" : `${credits.toLocaleString("zh-CN")} 积分`;
 }

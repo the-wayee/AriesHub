@@ -6,6 +6,7 @@ import { SiteFooter, SiteHeader } from "@/components/site-shell";
 import "./globals.css";
 import "./independent.css";
 import "./cosmos.css";
+import "./community.css";
 
 export const metadata: Metadata = {
   title: {

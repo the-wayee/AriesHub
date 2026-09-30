@@ -17,9 +17,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { BrandOrbit } from "./brand-orbit";
 import { conceptCases } from "@/lib/concept-cases";
+import { useAuthSession } from "@/components/auth-session";
 gsap.registerPlugin(ScrollTrigger);
 const topics = ["AI 编程", "内容创作", "自动化", "知识管理"];
 export function Landing() {
+  const { hasSession } = useAuthSession();
   const root = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -95,8 +97,11 @@ export function Landing() {
             与同路人一起。
           </h1>
           <p className="hero-subtitle">分享实践，交流想法。</p>
-          <Link className="cosmos-cta" href="/register">
-            加入社区
+          <Link
+            className="cosmos-cta"
+            href={hasSession ? "/home" : "/register"}
+          >
+            {hasSession ? "进入社区" : "加入社区"}
             <ArrowUpRight size={17} />
           </Link>
         </div>
@@ -302,8 +307,11 @@ export function Landing() {
         <BrandOrbit compact />
         <div className="footer-copy">
           <p>下一次实践，一起开始。</p>
-          <Link className="cosmos-cta" href="/register">
-            加入 AriesHub
+          <Link
+            className="cosmos-cta"
+            href={hasSession ? "/home" : "/register"}
+          >
+            {hasSession ? "进入 AriesHub" : "加入 AriesHub"}
             <ArrowUpRight />
           </Link>
           <small>

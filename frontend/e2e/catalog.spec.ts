@@ -14,7 +14,7 @@ test("landing page leads through the case preview to the checkout prototype", as
   ).toBeVisible();
   await page.getByRole("link", { name: "查看购买信息" }).click();
   await expect(
-    page.getByRole("heading", { name: "确认这份案例" }),
+    page.getByRole("heading", { name: /为下一次实践/ }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "支付功能准备中" }),
@@ -25,16 +25,15 @@ test("landing page leads through the case preview to the checkout prototype", as
 test("category and search filters work without the backend", async ({
   page,
 }) => {
-  await page.goto("/cases");
-  await expect(page.locator(".archive-case")).toHaveCount(4);
-  await page.getByRole("link", { name: "自动化", exact: true }).first().click();
-  await expect(page.locator(".archive-case")).toHaveCount(1);
-  await page.getByRole("searchbox", { name: "搜索案例" }).fill("工作流");
-  await page.getByRole("button", { name: "搜索" }).click();
-  await expect(page.locator(".archive-case")).toHaveCount(1);
+  await page.goto("/discover");
+  await expect(page.locator(".hub-content-card")).toHaveCount(4);
+  await page.getByRole("button", { name: "自动化", exact: true }).click();
+  await expect(page.locator(".hub-content-card")).toHaveCount(1);
+  await page.goto("/discover?q=工作流");
+  await expect(page.locator(".hub-content-card")).toHaveCount(1);
   await page.goto("/cases?q=不存在的案例");
   await expect(
-    page.getByRole("heading", { name: "没有找到匹配的案例。" }),
+    page.getByRole("heading", { name: "没有找到匹配的内容" }),
   ).toBeVisible();
 });
 
@@ -43,7 +42,7 @@ test("free case opens the reading prototype", async ({ page }) => {
   await page.getByRole("link", { name: "开始阅读" }).click();
   await expect(page).toHaveURL(/\/learn\/personal-knowledge$/);
   await expect(
-    page.getByRole("heading", { name: "从一个具体问题开始" }),
+    page.getByRole("heading", { name: "梳理已有资料" }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -53,7 +52,14 @@ test("free case opens the reading prototype", async ({ page }) => {
 });
 
 test("concept routes render on desktop and mobile", async ({ page }) => {
-  for (const path of ["/community", "/members", "/my-content", "/studio"]) {
+  for (const path of [
+    "/home",
+    "/discover",
+    "/community",
+    "/members",
+    "/my-content",
+    "/studio",
+  ]) {
     const response = await page.goto(path);
     expect(response?.status()).toBe(200);
     await expect(page.locator("h1").first()).toBeVisible();

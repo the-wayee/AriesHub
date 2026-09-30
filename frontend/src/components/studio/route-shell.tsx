@@ -2,7 +2,9 @@
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { PageMotion } from "@/components/page-motion";
+import { AuthSessionProvider } from "@/components/auth-session";
 import { LandingHeader } from "./landing-header";
+import { CommunityShell } from "@/components/community/community-shell";
 export function RouteShell({
   children,
   header,
@@ -16,23 +18,44 @@ export function RouteShell({
 }) {
   const path = usePathname();
   const auth = path === "/login" || path === "/register";
-  if (path === "/" || auth)
-    return (
+  const community = [
+    "/home",
+    "/discover",
+    "/cases",
+    "/learn",
+    "/checkout",
+    "/community",
+    "/my-content",
+    "/members",
+    "/account",
+  ].some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+  let content: ReactNode;
+  if (path === "/" || auth) {
+    content = (
       <div className="cosmos-site">
         <a className="skip-link" href="#main">
           跳到主要内容
         </a>
-        {!auth && <LandingHeader hasSession={hasSession} />}
+        {!auth && <LandingHeader />}
         <main id="main">{children}</main>
       </div>
     );
+  } else if (community) {
+    content = <CommunityShell>{children}</CommunityShell>;
+  } else {
+    content = (
+      <>
+        {header}
+        <main id="main" className="wrap">
+          <PageMotion>{children}</PageMotion>
+        </main>
+        {footer}
+      </>
+    );
+  }
   return (
-    <>
-      {header}
-      <main id="main" className="wrap">
-        <PageMotion>{children}</PageMotion>
-      </main>
-      {footer}
-    </>
+    <AuthSessionProvider initialHasSession={hasSession}>
+      {content}
+    </AuthSessionProvider>
   );
 }

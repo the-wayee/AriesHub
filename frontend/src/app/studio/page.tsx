@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { conceptCases, formatConceptPrice } from "@/lib/concept-cases";
+import { conceptCases, formatConceptCredits } from "@/lib/concept-cases";
 
 export const metadata: Metadata = { title: "创作者工作台" };
 
@@ -43,7 +43,7 @@ export default function StudioPage() {
         <div className="studio-table-head">
           <span>标题</span>
           <span>状态</span>
-          <span>价格</span>
+          <span>积分</span>
           <span>操作</span>
         </div>
         {conceptCases.map((item, index) => (
@@ -59,7 +59,7 @@ export default function StudioPage() {
               </div>
             </div>
             <span>{index === 1 ? "● 草稿" : "● 已发布"}</span>
-            <span>{formatConceptPrice(item.price)}</span>
+            <span>{formatConceptCredits(item.creditPrice)}</span>
             <Link href={`/cases/${item.slug}`}>预览 ↗</Link>
           </div>
         ))}

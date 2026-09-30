@@ -263,6 +263,24 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/discussions/comments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Returns the public nested comment tree for a registered target */
+    get: operations["listComments"];
+    put?: never;
+    /** Creates a root comment or a reply as the logged-in member */
+    post: operations["createComment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -425,6 +443,26 @@ export interface components {
       status: "UP";
       /** @enum {string} */
       database: "UP";
+    };
+    CreateCommentRequest: {
+      /** @example PUBLICATION */
+      targetType: string;
+      /** @example free-case */
+      targetKey: string;
+      /** Format: int64 */
+      parentId?: number | null;
+      body: string;
+    };
+    CommentNode: {
+      id: string;
+      parentId?: string | null;
+      depth: number;
+      authorId: string;
+      authorName: string;
+      body: string;
+      /** Format: date-time */
+      createdAt: string;
+      replies: components["schemas"]["CommentNode"][];
     };
   };
   responses: {
@@ -1158,6 +1196,116 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  listComments: {
+    parameters: {
+      query: {
+        targetType: string;
+        targetKey: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Nested root comments and replies */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CommentNode"][];
+        };
+      };
+      /** @description Invalid target */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  createComment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateCommentRequest"];
+      };
+    };
+    responses: {
+      /** @description Created comment node */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CommentNode"];
+        };
+      };
+      /** @description Invalid body or maximum reply depth reached */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Login required */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Target or parent comment not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Discussion thread is locked */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
           [name: string]: unknown;
         };
         content: {

@@ -89,8 +89,11 @@ export function AuthForm({ mode }: { mode: "login" | "register" }) {
       setErrorRequestId(result.error.requestId ?? "");
       return;
     }
-    window.dispatchEvent(new Event("arieshub:auth"));
+    window.dispatchEvent(
+      new CustomEvent("arieshub:auth", { detail: result.data }),
+    );
     router.push("/account");
+    router.refresh();
   }
 
   return (

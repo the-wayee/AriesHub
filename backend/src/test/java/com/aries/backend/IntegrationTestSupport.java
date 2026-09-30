@@ -49,7 +49,11 @@ abstract class IntegrationTestSupport {
 
     @BeforeEach
     void fixtures() {
-        jdbc.execute("TRUNCATE case_contents, cases, categories, users RESTART IDENTITY CASCADE");
+        jdbc.execute("""
+                TRUNCATE content_entitlements, credit_offers, credit_ledger_entries, credit_accounts,
+                    comments, discussion_threads, case_contents, cases, categories, users
+                RESTART IDENTITY CASCADE
+                """);
         redisTemplate.execute((RedisCallback<Void>) connection -> {
             connection.serverCommands().flushDb();
             return null;

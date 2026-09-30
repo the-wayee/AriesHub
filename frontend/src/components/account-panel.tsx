@@ -23,8 +23,9 @@ export function AccountPanel() {
   async function logout() {
     const result = await authRequest<void>("/logout", { method: "POST" });
     if (!result.ok) return;
-    window.dispatchEvent(new Event("arieshub:auth"));
+    window.dispatchEvent(new CustomEvent("arieshub:auth", { detail: null }));
     router.push("/");
+    router.refresh();
   }
 
   if (user === undefined) {

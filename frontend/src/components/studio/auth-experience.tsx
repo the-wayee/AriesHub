@@ -269,8 +269,11 @@ export function AuthExperience({
       showError(result.error);
       return;
     }
-    window.dispatchEvent(new Event("arieshub:auth"));
-    router.push("/account");
+    window.dispatchEvent(
+      new CustomEvent("arieshub:auth", { detail: result.data }),
+    );
+    router.push("/home");
+    router.refresh();
   }
   const emailField = (
     <div className="studio-field">

@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Asterisk, Compass, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AuthNav } from "@/components/auth-nav";
-export function LandingHeader({ hasSession }: { hasSession: boolean }) {
+import { useAuthSession } from "@/components/auth-session";
+export function LandingHeader() {
+  const { hasSession } = useAuthSession();
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -62,14 +64,17 @@ export function LandingHeader({ hasSession }: { hasSession: boolean }) {
                 <ArrowUpRight size={16} />
               </a>
             ))}
-            <Link href="/register" onClick={() => setOpen(false)}>
-              加入这场探索
+            <Link
+              href={hasSession ? "/home" : "/register"}
+              onClick={() => setOpen(false)}
+            >
+              {hasSession ? "回到社区" : "加入这场探索"}
               <Asterisk size={16} />
             </Link>
           </div>
         )}
       </div>
-      <AuthNav initialHasSession={hasSession} />
+      <AuthNav />
     </header>
   );
 }
