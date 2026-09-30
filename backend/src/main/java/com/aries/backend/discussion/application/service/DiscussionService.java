@@ -67,11 +67,7 @@ public class DiscussionService {
                 .filter(Comment::isRoot)
                 .filter(comment -> comment.status() != Comment.Status.HIDDEN)
                 .orElseThrow(() -> new BusinessException(COMMENT_NOT_FOUND));
-        boolean visible = discussions.findThread(root.threadId())
-                .filter(thread -> thread.status() != DiscussionThread.Status.HIDDEN)
-                .filter(thread -> targets.exists(thread.target()))
-                .isPresent();
-        if (!visible) throw new BusinessException(COMMENT_NOT_FOUND);
+        requireVisibleThread(root.threadId());
 
         long viewer = currentUserIdOrZero();
         long total = reads.countReplies(rootId);
@@ -130,10 +126,26 @@ public class DiscussionService {
         if (comment.status() != Comment.Status.PUBLISHED) {
             throw new BusinessException(COMMENT_NOT_FOUND);
         }
+        requireVisibleThread(comment.threadId());
+        // 隐藏根评论后，其下回复也不再公开，不能通过回复 id 绕过可见性检查。
+        if (!comment.isRoot()) {
+            discussions.findComment(comment.rootId())
+                    .filter(Comment::isRoot)
+                    .filter(root -> root.threadId() == comment.threadId())
+                    .filter(root -> root.status() != Comment.Status.HIDDEN)
+                    .orElseThrow(() -> new BusinessException(COMMENT_NOT_FOUND));
+        }
         return discussions.toggleLike(commentId, userId);
     }
 
     // ---- 内部 ----
+
+    private void requireVisibleThread(long threadId) {
+        discussions.findThread(threadId)
+                .filter(thread -> thread.status() != DiscussionThread.Status.HIDDEN)
+                .filter(thread -> targets.exists(thread.target()))
+                .orElseThrow(() -> new BusinessException(COMMENT_NOT_FOUND));
+    }
 
     private DiscussionThread writableThread(DiscussionTarget target) {
         if (!targets.exists(target)) throw new BusinessException(DISCUSSION_TARGET_NOT_FOUND);

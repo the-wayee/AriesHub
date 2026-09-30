@@ -294,6 +294,32 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.code").value("DISCUSSION_THREAD_CLOSED"));
     }
 
+    @Test void adminsCanLockATargetBeforeItsFirstComment() throws Exception {
+        Cookie admin = register("admin@example.com", "admin1234", "管理员");
+        assertThat(database.threadId("PUBLICATION", "free-case")).isNull();
+
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mvc.perform(post("/api/v1/admin/discussions/threads/lock").cookie(admin)
+                            .contentType("application/json")
+                            .content("""
+                                    {"targetType":"PUBLICATION","targetKey":"free-case"}
+                                    """))
+                    .andExpect(status().isNoContent());
+        }
+        assertThat(database.threadStatus(database.threadId("PUBLICATION", "free-case")))
+                .isEqualTo("LOCKED");
+        mvc.perform(get(TARGET))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(0));
+        mvc.perform(post("/api/v1/discussions/comments").cookie(admin)
+                        .contentType("application/json")
+                        .content("""
+                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"首次评论"}
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("DISCUSSION_THREAD_CLOSED"));
+    }
+
     @Test void orphanTargetsAndCrossThreadRepliesAreRejected() throws Exception {
         Cookie member = register("boundaries@example.com", "discussion123", "边界成员");
         mvc.perform(post("/api/v1/discussions/comments").cookie(member)
@@ -353,6 +379,12 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
 
+        mvc.perform(post("/api/v1/discussions/comments/" + rootId + "/like").cookie(member))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
+        assertThat(database.likeCount(rootId)).isZero();
+        assertThat(database.activeLikes(rootId)).isZero();
+
         // 草稿内容同理：即使库里已有线程和评论，也读不到。
         long authorId = database.userIdByEmail("unpublished@example.com");
         database.insertThread("PUBLICATION", "draft-case", "OPEN");
@@ -391,6 +423,34 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
         Long replyId = database.commentIdByBody("它下面的回复");
         mvc.perform(get("/api/v1/discussions/comments/" + replyId + "/replies"))
                 .andExpect(status().isNotFound());
+
+        mvc.perform(post("/api/v1/discussions/comments/" + replyId + "/like").cookie(member))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
+        assertThat(database.likeCount(replyId)).isZero();
+        assertThat(database.activeLikes(replyId)).isZero();
+    }
+
+    @Test void likesRespectThreadVisibilityButRemainAvailableInLockedThreads() throws Exception {
+        Cookie member = register("thread-likes@example.com", "thread1234", "线程点赞成员");
+        long authorId = database.userIdByEmail("thread-likes@example.com");
+        database.insertThread("PUBLICATION", "free-case", "LOCKED");
+        Long lockedThread = database.threadId("PUBLICATION", "free-case");
+        database.insertRootComment(lockedThread, authorId, "锁定线程内的评论", 0);
+        Long lockedComment = database.commentIdByBody("锁定线程内的评论");
+        mvc.perform(post("/api/v1/discussions/comments/" + lockedComment + "/like").cookie(member))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.liked").value(true));
+
+        database.insertThread("PUBLICATION", "credit-publication", "HIDDEN");
+        Long hiddenThread = database.threadId("PUBLICATION", "credit-publication");
+        database.insertRootComment(hiddenThread, authorId, "隐藏线程内的评论", 0);
+        Long hiddenComment = database.commentIdByBody("隐藏线程内的评论");
+        mvc.perform(post("/api/v1/discussions/comments/" + hiddenComment + "/like").cookie(member))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
+        assertThat(database.likeCount(hiddenComment)).isZero();
+        assertThat(database.activeLikes(hiddenComment)).isZero();
     }
 
     /** 回复已删除的评论是状态冲突，不是正文有问题。 */

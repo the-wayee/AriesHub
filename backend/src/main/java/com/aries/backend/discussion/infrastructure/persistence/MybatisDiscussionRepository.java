@@ -38,22 +38,32 @@ public class MybatisDiscussionRepository implements DiscussionRepository {
         return Optional.ofNullable(threads.selectById(threadId)).map(this::toDomain);
     }
 
+    /**
+     * 评论区按需创建：内容发布时不建，第一条评论或第一次锁帖时才建。
+     *
+     * <p>先查后建：评论区绝大多数时候已经存在，常见路径只有一条 SELECT。
+     * 查不到时用 {@code ON CONFLICT DO NOTHING} 插入，并发首评由唯一索引仲裁，
+     * 再查一次拿到的可能是另一个请求刚建的那一行。
+     */
     @Override
     public DiscussionThread getOrCreateThread(DiscussionTarget target) {
+        DiscussionThreadPO existing = selectThread(target);
+        if (existing != null) return toDomain(existing);
         threads.insertIfAbsent(target.type(), target.key());
         return toDomain(selectThread(target));
     }
 
+    /** 尚无人评论时也允许预先锁帖：复用 getOrCreateThread，创建评论区的逻辑只有一处。 */
     @Override
     public DiscussionThread lockThread(DiscussionTarget target) {
+        DiscussionThread thread = getOrCreateThread(target);
         threads.update(null, Wrappers.<DiscussionThreadPO>lambdaUpdate()
-                .eq(DiscussionThreadPO::getTargetType, target.type())
-                .eq(DiscussionThreadPO::getTargetKey, target.key())
+                .eq(DiscussionThreadPO::getId, thread.id())
                 .set(DiscussionThreadPO::getStatus, DiscussionThread.Status.LOCKED.name())
                 // 必须显式写 updated_at：updateFill 只在传入实体时生效，
                 // update(null, wrapper) 不会触发自动填充，审计时间会停在旧值。
                 .setSql("updated_at = now()"));
-        return toDomain(selectThread(target));
+        return new DiscussionThread(thread.id(), thread.target(), DiscussionThread.Status.LOCKED);
     }
 
     @Override
