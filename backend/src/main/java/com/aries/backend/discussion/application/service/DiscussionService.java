@@ -2,7 +2,6 @@ package com.aries.backend.discussion.application.service;
 
 import com.aries.backend.discussion.application.port.DiscussionIdentityProvider;
 import com.aries.backend.discussion.application.port.DiscussionReadPort;
-import com.aries.backend.discussion.application.port.DiscussionTargetResolver;
 import com.aries.backend.discussion.application.query.CommentPageQuery;
 import com.aries.backend.discussion.application.view.DiscussionViews.CommentPage;
 import com.aries.backend.discussion.application.view.DiscussionViews.CommentView;
@@ -24,7 +23,7 @@ import static com.aries.backend.discussion.application.exception.DiscussionError
 /**
  * 评论用例。读取按「根评论分页 + 其下回复平铺」组织，写入覆盖发表、回复、点赞和三种审核动作。
  *
- * <p>目标校验按 {@code type} 路由到对应的 {@link DiscussionTargetResolver}：接入新的可评论对象只需
+ * <p>目标校验交给 {@link DiscussionTargets} 按 {@code type} 路由：接入新的可评论对象只需
  * 在组合层新增一个实现类，本类不感知任何具体业务模块。
  *
  * <p>{@code like_count} 是反规范化投影，事实以 {@code comment_likes} 为准。计数只做原子自增；
@@ -36,10 +35,7 @@ public class DiscussionService {
     private final DiscussionRepository discussions;
     private final DiscussionReadPort reads;
     private final DiscussionIdentityProvider identities;
-    private final List<DiscussionTargetResolver> resolvers;
-
-    /** 按 target type 索引的解析器；首次使用时构建一次，之后只读。 */
-    private volatile Map<String, DiscussionTargetResolver> resolverByType;
+    private final DiscussionTargets targets;
 
     @Transactional(readOnly = true)
     public CommentPage comments(DiscussionTarget target, CommentPageQuery query) {
@@ -102,7 +98,7 @@ public class DiscussionService {
     /** 管理员锁帖：线程保留可见，但不再接受新的评论和回复。 */
     @Transactional
     public void lockThread(DiscussionTarget target) {
-        if (!resolve(target)) throw new BusinessException(DISCUSSION_TARGET_NOT_FOUND);
+        if (!targets.exists(target)) throw new BusinessException(DISCUSSION_TARGET_NOT_FOUND);
         discussions.lockThread(target);
     }
 
@@ -119,7 +115,7 @@ public class DiscussionService {
     // ---- 内部 ----
 
     private DiscussionThread writableThread(DiscussionTarget target) {
-        if (!resolve(target)) throw new BusinessException(DISCUSSION_TARGET_NOT_FOUND);
+        if (!targets.exists(target)) throw new BusinessException(DISCUSSION_TARGET_NOT_FOUND);
         DiscussionThread thread = discussions.getOrCreateThread(target);
         if (!thread.acceptsComments()) throw new BusinessException(DISCUSSION_THREAD_CLOSED);
         return thread;
@@ -135,24 +131,6 @@ public class DiscussionService {
     private Comment requireComment(long commentId) {
         return discussions.findComment(commentId)
                 .orElseThrow(() -> new BusinessException(COMMENT_NOT_FOUND));
-    }
-
-    /** 按类型路由目标校验；没有对应解析器时视为目标不存在。 */
-    private boolean resolve(DiscussionTarget target) {
-        DiscussionTargetResolver resolver = resolverIndex().get(target.type());
-        return resolver != null && resolver.exists(target);
-    }
-
-    private Map<String, DiscussionTargetResolver> resolverIndex() {
-        Map<String, DiscussionTargetResolver> index = resolverByType;
-        if (index == null) {
-            index = new HashMap<>();
-            for (DiscussionTargetResolver resolver : resolvers) {
-                index.put(resolver.targetType(), resolver);
-            }
-            resolverByType = Map.copyOf(index);
-        }
-        return index;
     }
 
     /**

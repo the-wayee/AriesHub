@@ -54,7 +54,7 @@ com.aries.backend
 
 回复是单层的：所有回复 `depth = 1` 并共享 `root_id`，回复一条回复时只改变 `parent_id`。这样根评论可以独立分页，回复按 `root_id` 批量读取。`HIDDEN` 与 `DELETED` 语义不同——前者整条不可见，后者保留占位行、正文置空而其下回复继续展示。
 
-`discussion` 不依赖 `identity`，也不在应用层引用 Sa-Token：登录态与角色经 `DiscussionIdentityProvider` 由 `composition` 桥接。`DiscussionTargetResolver` 与 `DiscussionIdentityProvider` 都由 `composition/DiscussionContextAdapter` 实现。
+`discussion` 不依赖 `identity`，也不在应用层引用 Sa-Token：登录态与角色经 `DiscussionIdentityProvider` 由 `composition` 桥接。`composition` 里每个类只做一件事：`DiscussionIdentityAdapter` 实现身份桥接；每种可评论对象各有一个 `DiscussionTargetResolver` 实现（目前只有 `PublicationDiscussionTarget`）。`DiscussionTargets` 在启动时按 `targetType()` 建立路由，同一类型重复注册会直接启动失败。给新对象加评论只需在 `composition` 新增一个解析器类。
 
 内容详情：Controller → `CatalogQueryService` → `PublicationRepository` 加载 `Publication` → 聚合判断公开可见 → 查询端口返回公开摘要与预览。
 
