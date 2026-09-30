@@ -9,7 +9,7 @@
 - 前端：Next.js 16.3.6、React 19.2.8、TypeScript、Tailwind CSS 4；前端 API 类型从 OpenAPI 生成。
 - Sa-Token 使用 HttpOnly Cookie 保存浏览器凭证，服务端登录态、验证码及认证限流保存在 Redis；密码使用 BCrypt 摘要保存在 PostgreSQL。管理员可以新建、编辑、发布和下架当前内容；评论支持根评论分页、单层回复、点赞，以及作者自删、管理员隐藏与锁帖。积分余额与内容价格已落到 `users` / `publications`，流水与解锁表已建立；积分应用接口与支付尚未实现。
 
-文档：[项目规划](doc/PROJECT.md) · [后端分层约定](doc/BACKEND_ARCHITECTURE.md) · [验证码与后台验收](doc/M3_VERIFICATION_ADMIN_ACCEPTANCE.md) · [API 契约](doc/openapi.json) · [前端说明](frontend/README.md)。
+文档：[项目规划](doc/PROJECT.md) · [后端分层约定](doc/BACKEND_ARCHITECTURE.md) · [验证码与后台验收](doc/M3_VERIFICATION_ADMIN_ACCEPTANCE.md) · [对象存储配置](doc/OBJECT_STORAGE.md) · [API 契约](doc/openapi.json) · [前端说明](frontend/README.md)。
 
 ## 本地启动
 

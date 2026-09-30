@@ -14,6 +14,9 @@ interface TestDataMapper {
             """)
     void reset();
 
+    @Select("SELECT count(*) FROM stored_files")
+    long storedFileCount();
+
     @Insert("INSERT INTO categories(id, slug, name) VALUES (1, 'coding', 'AI 编程'), (2, 'slides', 'AI 演示')")
     void insertCategories();
 

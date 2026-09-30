@@ -36,8 +36,13 @@ abstract class IntegrationTestSupport {
         registry.add("spring.data.redis.host", redis::getHost);
         registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
         registry.add("spring.data.redis.password", () -> "");
+        // 容器测试在高负载 CI 中容许更长响应；不改变生产的 2 秒超时。
+        registry.add("spring.data.redis.timeout", () -> "10s");
         registry.add("app.security.admin-emails", () -> "admin@example.com");
     }
+
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    com.aries.backend.storage.application.port.ObjectStorage objects;
 
     @Autowired MockMvc mvc;
     @Autowired TestDataMapper database;

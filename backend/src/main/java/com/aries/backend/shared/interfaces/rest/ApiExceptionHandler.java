@@ -63,6 +63,16 @@ public class ApiExceptionHandler {
         return response(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "请求参数不正确，请检查筛选条件或页码", request);
     }
 
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    ResponseEntity<ErrorBody> oversized(Exception error, HttpServletRequest request) {
+        return response(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_TOO_LARGE", "文件超过上传大小限制（最大 20MB）", request);
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.support.MissingServletRequestPartException.class)
+    ResponseEntity<ErrorBody> missingFile(Exception error, HttpServletRequest request) {
+        return response(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "请提供要上传的文件", request);
+    }
+
     @ExceptionHandler(NoResourceFoundException.class)
     ResponseEntity<ErrorBody> notFound(Exception error, HttpServletRequest request) {
         return response(HttpStatus.NOT_FOUND, "NOT_FOUND", "请求的资源不存在", request);

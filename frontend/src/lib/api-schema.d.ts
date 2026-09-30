@@ -372,6 +372,43 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/storage/uploads": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Upload a private avatar (5MB) or attachment (20MB)
+     * @description Requires a session; 20 uploads/user/minute. Images: PNG/JPEG/WebP. Attachments also accept PDF/ZIP. File headers must match Content-Type. Returns a durable file ID; does not change avatar or bind a publication.
+     */
+    post: operations["uploadFile"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/storage/files/{id}/download-url": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get a five-minute private download URL for an owned file */
+    get: operations["getFileDownloadUrl"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -595,6 +632,23 @@ export interface components {
       targetType: string;
       /** @example ai-ppt-outline */
       targetKey: string;
+    };
+    /** @enum {string} */
+    StoredFilePurpose: "AVATAR" | "ATTACHMENT";
+    StoredFile: {
+      /** Format: uuid */
+      id: string;
+      purpose: components["schemas"]["StoredFilePurpose"];
+      filename: string;
+      contentType: string;
+      /** Format: int64 */
+      size: number;
+    };
+    FileDownload: {
+      /** Format: uri */
+      url: string;
+      /** Format: date-time */
+      expiresAt: string;
     };
   };
   responses: {
@@ -1000,7 +1054,8 @@ export interface operations {
       /** @description 目标类型或分页参数不合法 */
       400: {
         headers: {
-          [name: string]: unkno};
+          [name: string]: unknown;
+        };
         content: {
           "application/json": components["schemas"]["Error"];
         };
@@ -1734,6 +1789,98 @@ export interface operations {
       };
       /** @description 服务端异常 */
       500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  uploadFile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "multipart/form-data": {
+          purpose: components["schemas"]["StoredFilePurpose"];
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Uploaded */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StoredFile"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      /** @description Multipart upload exceeds 20MB file or 21MB request limit */
+      413: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Upload rate exceeded; retry after the indicated seconds */
+      429: {
+        headers: {
+          "Retry-After"?: number;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Storage unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getFileDownloadUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Temporary download URL; do not persist it */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FileDownload"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+      /** @description Storage unavailable */
+      503: {
         headers: {
           [name: string]: unknown;
         };

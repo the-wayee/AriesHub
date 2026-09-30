@@ -1,6 +1,6 @@
 # 后端分层与开发约定
 
-当前工程采用按业务边界组织的 DDD 模块化单体。现有业务模块为 `catalog`（Publication 内容目录，含积分价格）、`identity`（用户身份，含积分余额）和 `discussion`（全局评论线程）。积分流水与内容解锁表已建立，应用模块将在下一阶段接入。保持一个 Spring Boot 应用，不为当前规模拆微服务或多个 Maven 模块。
+当前工程采用按业务边界组织的 DDD 模块化单体。现有业务模块为 `catalog`（Publication 内容目录，含积分价格）、`identity`（用户身份，含积分余额）、`discussion`（全局评论线程）和 `storage`（文件元数据与对象存储）。积分流水与内容解锁表已建立，应用模块将在下一阶段接入。保持一个 Spring Boot 应用，不为当前规模拆微服务或多个 Maven 模块。
 
 ## 目录和依赖
 
@@ -32,6 +32,7 @@ com.aries.backend
 │   ├── application                  # 树组装、目标和身份端口
 │   ├── domain                       # 线程、评论层级规则
 │   └── infrastructure/persistence   # 评论写入仓储与只读投影
+├── storage                          # 私有文件上传、归属与临时下载；S3 SDK 位于 infrastructure
 ├── composition                      # 唯一允许组合多个业务模块的适配层
 └── shared
     ├── application/exception        # 与 HTTP 无关的业务失败
@@ -99,3 +100,7 @@ com.aries.backend
 包迁移、类重命名或 XML 重命名后使用 `clean` 清除旧 class 与资源，避免旧 Mapper 残留影响 Spring 启动。
 
 参考：[Lombok 更新记录](https://projectlombok.org/changelog)、[MyBatis-Plus 安装说明](https://baomidou.com/getting-started/install/)。
+
+## 对象存储
+
+`storage` 通过 `ObjectStorage` 应用端口隔离 S3 SDK，身份通过 composition 桥接。`StoredFileRepository` 使用 MyBatis-Plus 存储文件元数据，文件所有者才可取得短期下载签名。头像与内容附件后续保存文件 ID，并由各业务模块判断展示或解锁权限。配置与接口说明见 [对象存储](OBJECT_STORAGE.md)。
