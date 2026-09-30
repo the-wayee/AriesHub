@@ -95,7 +95,11 @@ class CatalogIntegrationTests extends IntegrationTestSupport {
     }
 
     @Test void databaseRejectsInvalidCreditPricingAndAccessTypes() {
-        assertThatThrownBy(() -> database.updateCreditOfferPrice("credit-publication", 0))
+        // CREDIT 内容不能是 0 积分：约束已从 Java 的 Publication.validate() 下沉到数据库。
+        assertThatThrownBy(() -> database.updatePublicationCreditPrice("credit-publication", 0))
+            .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        // FREE 内容不能带价格。
+        assertThatThrownBy(() -> database.updatePublicationCreditPrice("free-case", 10))
             .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
         assertThatThrownBy(() -> database.updatePublicationAccessType(11, "PAID"))
             .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);

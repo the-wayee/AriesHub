@@ -10,27 +10,23 @@
 
     <select id="publications" resultType="com.aries.backend.catalog.application.view.AdminCatalogViews$AdminPublicationSummary">
         SELECT p.id::text AS id, p.slug, p.title, cat.name AS category_name,
-               p.publication_type, p.access_type, COALESCE(offer.credit_price, 0) AS credit_price,
+               p.publication_type, p.access_type, p.credit_price,
                p.status, p.delivery_status, p.published_at, p.updated_at
         FROM publications p
         JOIN categories cat ON cat.id = p.category_id AND cat.is_deleted = false
-        LEFT JOIN credit_offers offer ON offer.target_type = 'PUBLICATION' AND offer.target_key = p.slug
-            AND offer.status = 'ACTIVE' AND offer.is_deleted = false
         WHERE p.is_deleted = false
         ORDER BY p.updated_at DESC, p.id DESC
     </select>
 
     <select id="find" resultType="com.aries.backend.catalog.application.view.AdminCatalogViews$AdminPublicationDetail">
         SELECT p.id::text AS id, p.category_id::text AS category_id, p.slug, p.title, p.summary,
-               p.publication_type, p.access_type, COALESCE(offer.credit_price, 0) AS credit_price,
+               p.publication_type, p.access_type, p.credit_price,
                p.status, p.delivery_status, p.published_at,
                body.preview_markdown, body.full_markdown, body.requirements, body.deliverables,
                body.version, p.created_at, p.updated_at
         FROM publications p
         JOIN categories cat ON cat.id = p.category_id AND cat.is_deleted = false
         JOIN publication_contents body ON body.publication_id = p.id AND body.is_deleted = false
-        LEFT JOIN credit_offers offer ON offer.target_type = 'PUBLICATION' AND offer.target_key = p.slug
-            AND offer.status = 'ACTIVE' AND offer.is_deleted = false
         WHERE p.is_deleted = false AND p.id = #{id}
     </select>
 </mapper>

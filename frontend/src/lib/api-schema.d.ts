@@ -147,10 +147,16 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Returns the public nested comment tree for a registered target */
+    /**
+     * 按根评论分页返回讨论；每条根评论附带回复总数与前两条回复预览
+     * @description 回复是单层的：所有回复平铺在其根评论下，replyCount 是精确总数。作者自删的评论以 deleted 占位保留，其下回复仍然可见。
+     */
     get: operations["listComments"];
     put?: never;
-    /** Creates a root comment or a reply as the logged-in member */
+    /**
+     * 发表根评论，或回复某条评论
+     * @description parentId 是根评论的 id；回复一条回复时仍挂在同一个根评论下，返回的 parentId 用于显示「回复 @某人」。
+     */
     post: operations["createComment"];
     delete?: never;
     options?: never;
@@ -281,6 +287,91 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/discussions/comments/{rootId}/replies": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 「展开全部回复」：分页返回某条根评论下的回复 */
+    get: operations["listReplies"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/discussions/comments/{id}/like": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 切换点赞状态，返回切换后是否已点赞 */
+    post: operations["toggleCommentLike"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/discussions/comments/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /** 删除自己的评论；保留占位行，其下回复继续可见 */
+    delete: operations["deleteComment"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/discussions/comments/{id}/hide": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 管理员隐藏评论；整条不再对外可见 */
+    post: operations["hideComment"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/discussions/threads/lock": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 管理员锁定讨论；线程仍可读，但不再接受评论与回复 */
+    post: operations["lockThread"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -363,22 +454,14 @@ export interface components {
     CreateCommentRequest: {
       /** @example PUBLICATION */
       targetType: string;
-      /** @example free-publication */
+      /** @example ai-ppt-outline */
       targetKey: string;
-      /** Format: int64 */
+      /**
+       * Format: int64
+       * @description 根评论的 id；省略则发表根评论
+       */
       parentId?: number | null;
       body: string;
-    };
-    CommentNode: {
-      id: string;
-      parentId?: string | null;
-      depth: number;
-      authorId: string;
-      authorName: string;
-      body: string;
-      /** Format: date-time */
-      createdAt: string;
-      replies: components["schemas"]["CommentNode"][];
     };
     PublicationSummary: {
       /** @description PostgreSQL bigint ID serialized as a string. */
@@ -463,6 +546,56 @@ export interface components {
     };
     /** @enum {string} */
     PublicationType: "CASE_STUDY" | "ARTICLE" | "COURSE";
+    /** @description 单条评论。大整数标识以字符串返回，避免前端丢精度。deleted 为真时 body 为空字符串，表示「该评论已删除」。 */
+    CommentView: {
+      id: string;
+      /** @description 被回复的评论；回复一条回复时指向那条回复，用于显示「回复 @某人」 */
+      parentId?: string | null;
+      /** @description 所属根评论；根评论自身为 null */
+      rootId?: string | null;
+      /** @description 0 = 根评论，1 = 其下的回复；结构是单层的 */
+      depth: number;
+      authorId: string;
+      authorName: string;
+      /** @description 已删除的评论为空字符串 */
+      body: string;
+      likeCount: number;
+      /** @description 当前登录用户是否点过赞；匿名访问恒为 false */
+      likedByMe: boolean;
+      deleted: boolean;
+      /** @description 当前用户能否删除这条评论 */
+      canDelete: boolean;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    RootCommentView: {
+      comment: components["schemas"]["CommentView"];
+      /** @description 回复总数；大于 previewReplies 长度时前端显示「展开全部」 */
+      replyCount: number;
+      previewReplies: components["schemas"]["CommentView"][];
+    };
+    CommentPage: {
+      items: components["schemas"]["RootCommentView"][];
+      page: number;
+      size: number;
+      /** Format: int64 */
+      total: number;
+      totalPages: number;
+    };
+    ReplyPage: {
+      items: components["schemas"]["CommentView"][];
+      page: number;
+      size: number;
+      /** Format: int64 */
+      total: number;
+      totalPages: number;
+    };
+    LockThreadRequest: {
+      /** @example PUBLICATION */
+      targetType: string;
+      /** @example ai-ppt-outline */
+      targetKey: string;
+    };
   };
   responses: {
     /** @description Invalid request */
@@ -844,6 +977,10 @@ export interface operations {
       query: {
         targetType: string;
         targetKey: string;
+        page?: number;
+        size?: number;
+        /** @description LATEST 按时间倒序；HOT 与 COMPREHENSIVE 按点赞数优先，后者以时间作为次级键 */
+        sort?: "LATEST" | "HOT" | "COMPREHENSIVE";
       };
       header?: never;
       path?: never;
@@ -851,16 +988,16 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Nested root comments and replies */
+      /** @description 根评论分页 */
       200: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["CommentNode"][];
+          "application/json": components["schemas"]["CommentPage"];
         };
       };
-      /** @description Invalid target */
+      /** @description 目标类型或分页参数不合法 */
       400: {
         headers: {
           [name: string]: unknown;
@@ -869,7 +1006,7 @@ export interface operations {
           "application/json": components["schemas"]["Error"];
         };
       };
-      /** @description Unexpected server error */
+      /** @description 服务端异常 */
       500: {
         headers: {
           [name: string]: unknown;
@@ -893,16 +1030,16 @@ export interface operations {
       };
     };
     responses: {
-      /** @description Created comment node */
+      /** @description 创建后的评论 */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["CommentNode"];
+          "application/json": components["schemas"]["CommentView"];
         };
       };
-      /** @description Invalid comment body */
+      /** @description 正文不符合要求 */
       400: {
         headers: {
           [name: string]: unknown;
@@ -911,7 +1048,7 @@ export interface operations {
           "application/json": components["schemas"]["Error"];
         };
       };
-      /** @description Login required */
+      /** @description 需要登录 */
       401: {
         headers: {
           [name: string]: unknown;
@@ -920,7 +1057,7 @@ export interface operations {
           "application/json": components["schemas"]["Error"];
         };
       };
-      /** @description Target or parent comment not found */
+      /** @description 目标或父评论不存在 */
       404: {
         headers: {
           [name: string]: unknown;
@@ -929,7 +1066,7 @@ export interface operations {
           "application/json": components["schemas"]["Error"];
         };
       };
-      /** @description Discussion thread is locked */
+      /** @description 讨论已锁定 */
       409: {
         headers: {
           [name: string]: unknown;
@@ -938,7 +1075,7 @@ export interface operations {
           "application/json": components["schemas"]["Error"];
         };
       };
-      /** @description Unexpected server error */
+      /** @description 服务端异常 */
       500: {
         headers: {
           [name: string]: unknown;
@@ -1306,6 +1443,281 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  listReplies: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+        /** @description LATEST 按时间倒序；HOT 与 COMPREHENSIVE 按点赞数优先，后者以时间作为次级键 */
+        sort?: "LATEST" | "HOT" | "COMPREHENSIVE";
+      };
+      header?: never;
+      path: {
+        rootId: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description 回复分页 */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ReplyPage"];
+        };
+      };
+      /** @description 分页参数不合法 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 服务端异常 */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  toggleCommentLike: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description 切换结果 */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            liked: boolean;
+          };
+        };
+      };
+      /** @description 需要登录 */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 评论不存在或不可见 */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 服务端异常 */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  deleteComment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description 已删除 */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description 需要登录 */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 不是作者本人，也不是管理员 */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 评论不存在 */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 服务端异常 */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  hideComment: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description 已隐藏 */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description 需要登录 */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 需要管理员角色 */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 评论不存在 */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 服务端异常 */
+      500: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  lockThread: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["LockThreadRequest"];
+      };
+    };
+    responses: {
+      /** @description 已锁定 */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description 目标参数不合法 */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 需要登录 */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 需要管理员角色 */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 目标不存在 */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 服务端异常 */
+      500: {
+        headers: {
           [name: string]: unknown;
         };
         content: {

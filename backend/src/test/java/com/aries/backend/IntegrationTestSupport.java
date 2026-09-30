@@ -88,10 +88,8 @@ abstract class IntegrationTestSupport {
 
     void insert(long id, int category, String slug, String title, String access,
                         String status, String delivery, String content) {
-        database.insertPublication(id, category, slug, title, access, status, delivery);
-        if ("CREDIT".equals(access)) {
-            database.insertCreditOffer(slug, 199);
-        }
+        long creditPrice = "CREDIT".equals(access) ? 199 : 0;
+        database.insertPublication(id, category, slug, title, access, creditPrice, status, delivery);
         database.insertPublicationContent(id, content);
     }
 

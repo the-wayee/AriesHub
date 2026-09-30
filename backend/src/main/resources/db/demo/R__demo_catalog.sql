@@ -16,10 +16,8 @@ SELECT id, 'organize-materials', '给散落的素材，建立一套整理规则'
 '先定义命名和分类规则，再用小批量样本验证，让素材更容易找到。', 'COURSE', 'FREE', 'PUBLISHED', '2026-09-26T09:00:00Z'
 FROM categories WHERE slug = 'automation' ON CONFLICT (slug) DO NOTHING;
 
-INSERT INTO credit_offers(target_type, target_key, credit_price, status)
-VALUES ('PUBLICATION', 'codex-focus-page', 199, 'ACTIVE')
-ON CONFLICT (target_type, target_key) WHERE is_deleted = false
-DO UPDATE SET credit_price = EXCLUDED.credit_price, status = 'ACTIVE', updated_at = now();
+-- 积分内容的价格现在直接写在 publications 上。
+UPDATE publications SET credit_price = 199 WHERE slug = 'codex-focus-page';
 
 INSERT INTO publication_contents (publication_id, preview_markdown, full_markdown, requirements, deliverables)
 SELECT id, $$## 从一份清晰的任务说明开始

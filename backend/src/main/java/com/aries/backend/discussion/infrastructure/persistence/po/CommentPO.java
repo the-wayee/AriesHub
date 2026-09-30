@@ -22,5 +22,6 @@ public class CommentPO extends BasePO {
     private Integer depth;
     private String body;
     private String status;
+    private Integer likeCount;
     private OffsetDateTime editedAt;
 }

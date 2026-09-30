@@ -8,13 +8,13 @@ import com.aries.backend.catalog.infrastructure.persistence.po.PublicationConten
 public final class PublicationConverter {
     private PublicationConverter() {}
 
-    public static Publication toDomain(PublicationPO row, PublicationContentPO body, long creditPrice) {
+    public static Publication toDomain(PublicationPO row, PublicationContentPO body) {
         return Publication.builder()
                 .id(row.getId()).categoryId(row.getCategoryId())
                 .slug(row.getSlug()).title(row.getTitle()).summary(row.getSummary())
                 .publicationType(Publication.PublicationType.valueOf(row.getPublicationType()))
                 .accessType(Publication.AccessType.valueOf(row.getAccessType()))
-                .creditPrice(creditPrice)
+                .creditPrice(row.getCreditPrice() == null ? 0 : row.getCreditPrice())
                 .status(Publication.PublicationStatus.valueOf(row.getStatus()))
                 .deliveryStatus(Publication.DeliveryStatus.valueOf(row.getDeliveryStatus()))
                 .publishedAt(row.getPublishedAt())
@@ -33,6 +33,7 @@ public final class PublicationConverter {
         row.setSummary(publication.getSummary());
         row.setPublicationType(publication.getPublicationType().name());
         row.setAccessType(publication.getAccessType().name());
+        row.setCreditPrice(publication.getCreditPrice());
         row.setStatus(publication.getStatus().name());
         row.setDeliveryStatus(publication.getDeliveryStatus().name());
         row.setPublishedAt(publication.getPublishedAt());

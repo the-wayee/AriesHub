@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AriesHub API",
-    "version": "0.4.0",
-    "description": "Public content catalog, Redis-backed cookie identity, global discussion trees and administrator content API. Credit ledger tables exist; credit application and payment APIs are not implemented."
+    "version": "0.5.0",
+    "description": "Public content catalog, Redis-backed cookie identity, flat paged discussions with comment likes, administrator content and moderation API. Credit balance lives on users and pricing on publications; the credit ledger and unlock tables exist but the credit application API is not implemented yet."
   },
   "servers": [
     {
@@ -436,7 +436,8 @@
     "/discussions/comments": {
       "get": {
         "operationId": "listComments",
-        "summary": "Returns the public nested comment tree for a registered target",
+        "summary": "按根评论分页返回讨论；每条根评论附带回复总数与前两条回复预览",
+        "description": "回复是单层的：所有回复平铺在其根评论下，replyCount 是精确总数。作者自删的评论以 deleted 占位保留，其下回复仍然可见。",
         "parameters": [
           {
             "name": "targetType",
@@ -455,26 +456,60 @@
             "schema": {
               "type": "string",
               "maxLength": 120,
-              "example": "free-publication"
+              "example": "ai-ppt-outline"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "LATEST 按时间倒序；HOT 与 COMPREHENSIVE 按点赞数优先，后者以时间作为次级键",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "LATEST",
+                "HOT",
+                "COMPREHENSIVE"
+              ],
+              "default": "COMPREHENSIVE"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "Nested root comments and replies",
+            "description": "根评论分页",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/CommentNode"
-                  }
+                  "$ref": "#/components/schemas/CommentPage"
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid target",
+            "description": "目标类型或分页参数不合法",
             "content": {
               "application/json": {
                 "schema": {
@@ -484,7 +519,7 @@
             }
           },
           "500": {
-            "description": "Unexpected server error",
+            "description": "服务端异常",
             "content": {
               "application/json": {
                 "schema": {
@@ -497,7 +532,8 @@
       },
       "post": {
         "operationId": "createComment",
-        "summary": "Creates a root comment or a reply as the logged-in member",
+        "summary": "发表根评论，或回复某条评论",
+        "description": "parentId 是根评论的 id；回复一条回复时仍挂在同一个根评论下，返回的 parentId 用于显示「回复 @某人」。",
         "security": [
           {
             "cookieAuth": []
@@ -515,17 +551,17 @@
         },
         "responses": {
           "201": {
-            "description": "Created comment node",
+            "description": "创建后的评论",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CommentNode"
+                  "$ref": "#/components/schemas/CommentView"
                 }
               }
             }
           },
           "400": {
-            "description": "Invalid comment body",
+            "description": "正文不符合要求",
             "content": {
               "application/json": {
                 "schema": {
@@ -535,7 +571,7 @@
             }
           },
           "401": {
-            "description": "Login required",
+            "description": "需要登录",
             "content": {
               "application/json": {
                 "schema": {
@@ -545,7 +581,7 @@
             }
           },
           "404": {
-            "description": "Target or parent comment not found",
+            "description": "目标或父评论不存在",
             "content": {
               "application/json": {
                 "schema": {
@@ -555,7 +591,7 @@
             }
           },
           "409": {
-            "description": "Discussion thread is locked",
+            "description": "讨论已锁定",
             "content": {
               "application/json": {
                 "schema": {
@@ -565,7 +601,7 @@
             }
           },
           "500": {
-            "description": "Unexpected server error",
+            "description": "服务端异常",
             "content": {
               "application/json": {
                 "schema": {
@@ -1270,6 +1306,379 @@
           }
         ]
       }
+    },
+    "/discussions/comments/{rootId}/replies": {
+      "get": {
+        "operationId": "listReplies",
+        "summary": "「展开全部回复」：分页返回某条根评论下的回复",
+        "parameters": [
+          {
+            "name": "rootId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "LATEST 按时间倒序；HOT 与 COMPREHENSIVE 按点赞数优先，后者以时间作为次级键",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "LATEST",
+                "HOT",
+                "COMPREHENSIVE"
+              ],
+              "default": "COMPREHENSIVE"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "回复分页",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplyPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "分页参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务端异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/discussions/comments/{id}/like": {
+      "post": {
+        "operationId": "toggleCommentLike",
+        "summary": "切换点赞状态，返回切换后是否已点赞",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "切换结果",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "liked"
+                  ],
+                  "properties": {
+                    "liked": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "需要登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "评论不存在或不可见",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务端异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/discussions/comments/{id}": {
+      "delete": {
+        "operationId": "deleteComment",
+        "summary": "删除自己的评论；保留占位行，其下回复继续可见",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "已删除"
+          },
+          "401": {
+            "description": "需要登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "不是作者本人，也不是管理员",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "评论不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务端异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/discussions/comments/{id}/hide": {
+      "post": {
+        "operationId": "hideComment",
+        "summary": "管理员隐藏评论；整条不再对外可见",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "已隐藏"
+          },
+          "401": {
+            "description": "需要登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "需要管理员角色",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "评论不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务端异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/discussions/threads/lock": {
+      "post": {
+        "operationId": "lockThread",
+        "summary": "管理员锁定讨论；线程仍可读，但不再接受评论与回复",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LockThreadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "已锁定"
+          },
+          "400": {
+            "description": "目标参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "需要登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "需要管理员角色",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "目标不存在",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "服务端异常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1553,7 +1962,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 120,
-            "example": "free-publication"
+            "example": "ai-ppt-outline"
           },
           "parentId": {
             "type": [
@@ -1561,60 +1970,13 @@
               "null"
             ],
             "format": "int64",
-            "minimum": 1
+            "minimum": 1,
+            "description": "根评论的 id；省略则发表根评论"
           },
           "body": {
             "type": "string",
             "minLength": 1,
             "maxLength": 4000
-          }
-        }
-      },
-      "CommentNode": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "id",
-          "depth",
-          "authorId",
-          "authorName",
-          "body",
-          "createdAt",
-          "replies"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "parentId": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "depth": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 5
-          },
-          "authorId": {
-            "type": "string"
-          },
-          "authorName": {
-            "type": "string"
-          },
-          "body": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "replies": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CommentNode"
-            }
           }
         }
       },
@@ -1950,6 +2312,187 @@
           "ARTICLE",
           "COURSE"
         ]
+      },
+      "CommentView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "depth",
+          "authorId",
+          "authorName",
+          "body",
+          "likeCount",
+          "likedByMe",
+          "deleted",
+          "canDelete",
+          "createdAt"
+        ],
+        "description": "单条评论。大整数标识以字符串返回，避免前端丢精度。deleted 为真时 body 为空字符串，表示「该评论已删除」。",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "parentId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "被回复的评论；回复一条回复时指向那条回复，用于显示「回复 @某人」"
+          },
+          "rootId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "所属根评论；根评论自身为 null"
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "0 = 根评论，1 = 其下的回复；结构是单层的"
+          },
+          "authorId": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string",
+            "description": "已删除的评论为空字符串"
+          },
+          "likeCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "likedByMe": {
+            "type": "boolean",
+            "description": "当前登录用户是否点过赞；匿名访问恒为 false"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "canDelete": {
+            "type": "boolean",
+            "description": "当前用户能否删除这条评论"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RootCommentView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "comment",
+          "replyCount",
+          "previewReplies"
+        ],
+        "properties": {
+          "comment": {
+            "$ref": "#/components/schemas/CommentView"
+          },
+          "replyCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "回复总数；大于 previewReplies 长度时前端显示「展开全部」"
+          },
+          "previewReplies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommentView"
+            }
+          }
+        }
+      },
+      "CommentPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "size",
+          "total",
+          "totalPages"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RootCommentView"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer"
+          }
+        }
+      },
+      "ReplyPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "size",
+          "total",
+          "totalPages"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommentView"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer"
+          }
+        }
+      },
+      "LockThreadRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "targetType",
+          "targetKey"
+        ],
+        "properties": {
+          "targetType": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]{1,39}$",
+            "example": "PUBLICATION"
+          },
+          "targetKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "example": "ai-ppt-outline"
+          }
+        }
       }
     },
     "parameters": {

@@ -21,6 +21,7 @@ public class PublicationPO extends BasePO {
     private String summary;
     private String publicationType;
     private String accessType;
+    private Long creditPrice;
     private String status;
     private String deliveryStatus;
     private OffsetDateTime publishedAt;

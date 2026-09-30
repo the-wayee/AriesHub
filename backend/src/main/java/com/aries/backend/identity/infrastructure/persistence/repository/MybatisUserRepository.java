@@ -11,7 +11,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /** 用户仓储的 PostgreSQL 实现。 */
 @Repository
@@ -29,6 +32,16 @@ public class MybatisUserRepository implements UserRepository {
         return Optional.ofNullable(mapper.selectOne(Wrappers.<UserPO>lambdaQuery()
                         .eq(UserPO::getEmail, email.value())))
                 .map(UserConverter::toDomain);
+    }
+
+    @Override
+    public Map<Long, String> findNicknamesByIds(Set<Long> ids) {
+        if (ids.isEmpty()) return Map.of();
+        return mapper.selectList(Wrappers.<UserPO>lambdaQuery()
+                        .select(UserPO::getId, UserPO::getNickname)
+                        .in(UserPO::getId, ids))
+                .stream()
+                .collect(Collectors.toMap(UserPO::getId, UserPO::getNickname));
     }
 
     @Override

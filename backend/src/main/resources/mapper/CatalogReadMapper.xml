@@ -4,7 +4,7 @@
     <sql id="publicColumns">
         p.id::text AS id, p.slug, p.title, p.summary, cat.slug AS category_slug,
         cat.name AS category_name, p.access_type, p.publication_type,
-        COALESCE(offer.credit_price, 0) AS credit_price, p.published_at
+        p.credit_price, p.published_at
     </sql>
     <sql id="visible">
         p.status = 'PUBLISHED' AND p.delivery_status = 'AVAILABLE' AND p.is_deleted = false
@@ -27,8 +27,6 @@
     <select id="list" resultType="com.aries.backend.catalog.application.view.CatalogViews$PublicationSummary">
         SELECT <include refid="publicColumns"/>
         FROM publications p JOIN categories cat ON cat.id = p.category_id
-        LEFT JOIN credit_offers offer ON offer.target_type = 'PUBLICATION' AND offer.target_key = p.slug
-            AND offer.status = 'ACTIVE' AND offer.is_deleted = false
         WHERE cat.is_deleted = false AND <include refid="filters"/>
         ORDER BY p.published_at DESC, p.id DESC LIMIT #{query.size} OFFSET #{query.offset}
     </select>
@@ -39,8 +37,6 @@
     <select id="findPublicSummary" resultType="com.aries.backend.catalog.application.view.CatalogViews$PublicationSummary">
         SELECT <include refid="publicColumns"/>
         FROM publications p JOIN categories cat ON cat.id = p.category_id
-        LEFT JOIN credit_offers offer ON offer.target_type = 'PUBLICATION' AND offer.target_key = p.slug
-            AND offer.status = 'ACTIVE' AND offer.is_deleted = false
         WHERE cat.is_deleted = false AND <include refid="visible"/> AND p.id = #{id}
     </select>
     <select id="preview" resultType="com.aries.backend.catalog.application.view.CatalogViews$Preview">

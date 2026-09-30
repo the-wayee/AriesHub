@@ -1,6 +1,6 @@
 # 后端分层与开发约定
 
-当前工程采用按业务边界组织的 DDD 模块化单体。现有业务模块为 `catalog`（Publication 内容目录）、`identity`（用户身份）和 `discussion`（全局评论树）；积分账户与权益表已建立，应用模块将在下一阶段接入。保持一个 Spring Boot 应用，不为当前规模拆微服务或多个 Maven 模块。
+当前工程采用按业务边界组织的 DDD 模块化单体。现有业务模块为 `catalog`（Publication 内容目录，含积分价格）、`identity`（用户身份，含积分余额）和 `discussion`（全局评论线程）。积分流水与内容解锁表已建立，应用模块将在下一阶段接入。保持一个 Spring Boot 应用，不为当前规模拆微服务或多个 Maven 模块。
 
 ## 目录和依赖
 
@@ -31,7 +31,7 @@ com.aries.backend
 │   ├── interfaces/rest              # 公开读取、登录后评论
 │   ├── application                  # 树组装、目标和身份端口
 │   ├── domain                       # 线程、评论层级规则
-│   └── infrastructure/persistence   # 评论仓储
+│   └── infrastructure/persistence   # 评论写入仓储与只读投影
 ├── composition                      # 唯一允许组合多个业务模块的适配层
 └── shared
     ├── application/exception        # 与 HTTP 无关的业务失败
@@ -50,7 +50,11 @@ com.aries.backend
 
 ## 当前用例
 
-评论：公开读取 `/api/v1/discussions/comments`；登录成员可发布根评论或回复。接口使用 `targetType + targetKey` 定位挂载对象，`composition` 校验目标真实存在且可见。仓储保存 `parent_id + root_id + depth`，其中 depth 是派生信息而非回复上限，应用层返回嵌套树。
+评论：公开读取 `/api/v1/discussions/comments`，返回根评论分页，每条带回复总数与前两条预览；`GET /comments/{rootId}/replies` 分页展开全部回复；`POST /comments/{id}/like` 切换点赞。登录成员可发布根评论或回复，作者可删除自己的评论，管理员通过 `/api/v1/admin/discussions/**` 隐藏评论或锁定讨论。接口使用 `targetType + targetKey` 定位挂载对象，应用层按类型路由到对应的 `DiscussionTargetResolver`，`composition` 提供校验实现。
+
+回复是单层的：所有回复 `depth = 1` 并共享 `root_id`，回复一条回复时只改变 `parent_id`。这样根评论可以独立分页，回复按 `root_id` 批量读取。`HIDDEN` 与 `DELETED` 语义不同——前者整条不可见，后者保留占位行、正文置空而其下回复继续展示。
+
+`discussion` 不依赖 `identity`，也不在应用层引用 Sa-Token：登录态与角色经 `DiscussionIdentityProvider` 由 `composition` 桥接。`DiscussionTargetResolver` 与 `DiscussionIdentityProvider` 都由 `composition/DiscussionContextAdapter` 实现。
 
 内容详情：Controller → `CatalogQueryService` → `PublicationRepository` 加载 `Publication` → 聚合判断公开可见 → 查询端口返回公开摘要与预览。
 
@@ -77,6 +81,9 @@ com.aries.backend
 - 本次联表分页使用绑定参数的 `LIMIT/OFFSET` 与相同条件的计数查询，不引入未使用的分页插件。
 - 用户输入必须参数绑定，不使用 `${}` 拼接 SQL；ILIKE 的 `%`、`_` 和转义符按普通字符处理。
 - 限制页大小和查询超时；数据库变更通过 Flyway，生产禁止自动更新表结构。
+- 单表增删改查在 Repository 里用 `BaseMapper` + Lambda Wrapper 完成，不在 Mapper 里手写 SQL。只有 Wrapper 表达不了的语句才用注解或 XML：列对列的自引用表达式（如 `like_count = like_count + ?` 的原子计数）、`ON CONFLICT` 幂等插入、联表与聚合投影。
+- `update(null, wrapper)` **不会**触发 `updateFill`（它需要实体作为填充载体），`updated_at` 会停在旧值。只用 Wrapper 更新时，必须在同一个 Wrapper 里 `.setSql("updated_at = now()")`；传入实体的 `updateById` 则会自动填充。
+- 不需要逻辑删除语义的表（如点赞，取消即删行）不要继承 `BasePO`，否则 `@TableLogic` 会把删除变成软删，唯一约束也只能退化成偏索引。
 - PO 继承 `BasePO` 后，`MetaObjectHandler` 自动填充 `created_at`、`updated_at` 和 `is_deleted`；`@TableLogic` 让普通查询自动排除已删除记录，并将删除转换为逻辑删除。Flyway 仍负责建立实际列、默认值、索引和约束。
 
 ## 中文注释

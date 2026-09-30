@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aries.backend.discussion.infrastructure.persistence.mapper.DiscussionReadMapper">
+
+    <!--
+      可见性规则集中在这里，只定义一次。早期版本在 SQL 里过滤 PUBLISHED、又在服务层重复判断 HIDDEN，
+      两处分头维护，加入 DELETED 时必然漏改一边。
+
+      HIDDEN 与 DELETED 的语义不同，不能合并成一个 status 判断：
+      - HIDDEN（管理员禁止展示）：整条不可见，读者看不到痕迹。
+      - DELETED（作者自删）：行作为「占位」保留，正文清空但可见，
+        这样它下面的回复不会因为父行消失而断链。回复是别人的发言，不该被作者一键抹掉。
+
+      谓词一律带表别名：pageRoots 会对 comments 自连接，不带别名的 is_deleted 会被判为歧义列。
+    -->
+    <sql id="visibleC">
+        c.status &lt;&gt; 'HIDDEN' AND c.is_deleted = false
+    </sql>
+
+    <sql id="visibleChild">
+        child.status &lt;&gt; 'HIDDEN' AND child.is_deleted = false
+    </sql>
+
+    <!--
+      当前用户是否点过赞。comment_likes 是物理删除的普通表（取消点赞即删行），
+      所以这里没有 is_deleted 条件；匿名访客的 userId 为 0，不会匹配到任何行。
+    -->
+    <sql id="likedByMe">
+        EXISTS (
+            SELECT 1 FROM comment_likes l
+            WHERE l.comment_id = c.id AND l.user_id = #{userId}
+        ) AS liked_by_me
+    </sql>
+
+    <!--
+      本页根评论 + 回复总数。回复数用 count(子行 id) 而不是 count(*)：
+      LEFT JOIN 下没有回复时 count(*) 会得到 1，count(child.id) 才是 0。
+      已删除的回复同样计入总数——它在界面上以「该评论已删除」出现。
+    -->
+    <select id="pageRoots" resultType="com.aries.backend.discussion.infrastructure.persistence.mapper.DiscussionReadMapper$RootRow">
+        SELECT c.id, c.author_id, c.body, c.like_count, c.status,
+               <include refid="likedByMe"/>,
+               c.created_at,
+               count(child.id) AS reply_count
+        FROM comments c
+        LEFT JOIN comments child ON child.root_id = c.id
+            AND child.depth = 1 AND <include refid="visibleChild"/>
+        WHERE c.thread_id = #{threadId} AND c.depth = 0 AND <include refid="visibleC"/>
+        GROUP BY c.id
+        <choose>
+            <when test="query.latest">
+                ORDER BY c.created_at DESC, c.id DESC
+            </when>
+            <otherwise>
+                ORDER BY c.like_count DESC, c.created_at DESC, c.id DESC
+            </otherwise>
+        </choose>
+        LIMIT #{query.size} OFFSET #{query.offset}
+    </select>
+
+    <select id="countRoots" resultType="long">
+        SELECT count(*) FROM comments c
+        WHERE c.thread_id = #{threadId} AND c.depth = 0 AND <include refid="visibleC"/>
+    </select>
+
+    <!-- 预览回复：一次取回本页所有根评论各自的前若干条。 -->
+    <select id="previewReplies" resultType="com.aries.backend.discussion.infrastructure.persistence.mapper.DiscussionReadMapper$CommentRow">
+        SELECT * FROM (
+            SELECT c.id, c.parent_id, c.root_id, c.depth, c.author_id, c.body, c.like_count, c.status,
+                   <include refid="likedByMe"/>,
+                   c.created_at,
+                   row_number() OVER (PARTITION BY c.root_id ORDER BY c.created_at, c.id) AS rn
+            FROM comments c
+            WHERE c.root_id IN
+                <foreach item="id" collection="rootIds" open="(" separator="," close=")">#{id}</foreach>
+              AND c.depth = 1 AND <include refid="visibleC"/>
+        ) ranked
+        WHERE rn &lt;= #{limit}
+        ORDER BY root_id, rn
+    </select>
+
+    <!-- 展开全部回复：单层，按时间升序。 -->
+    <select id="pageReplies" resultType="com.aries.backend.discussion.infrastructure.persistence.mapper.DiscussionReadMapper$CommentRow">
+        SELECT c.id, c.parent_id, c.root_id, c.depth, c.author_id, c.body, c.like_count, c.status,
+               <include refid="likedByMe"/>,
+               c.created_at
+        FROM comments c
+        WHERE c.root_id = #{rootId} AND c.depth = 1 AND <include refid="visibleC"/>
+        ORDER BY c.created_at, c.id
+        LIMIT #{query.size} OFFSET #{query.offset}
+    </select>
+
+    <select id="countReplies" resultType="long">
+        SELECT count(*) FROM comments c
+        WHERE c.root_id = #{rootId} AND c.depth = 1 AND <include refid="visibleC"/>
+    </select>
+</mapper>

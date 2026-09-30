@@ -18,7 +18,6 @@ import java.util.Optional;
 public class MybatisPublicationRepository implements PublicationRepository {
     private final PublicationMapper mapper;
     private final PublicationContentMapper contents;
-    private final MybatisCreditOfferRepository offers;
 
     @Override
     public Optional<Publication> findById(long id) {
@@ -35,21 +34,15 @@ public class MybatisPublicationRepository implements PublicationRepository {
     public Optional<Publication> findForEditing(long id) {
         PublicationPO row = mapper.selectById(id);
         return row == null ? Optional.empty() :
-                Optional.of(PublicationConverter.toDomain(row, contents.selectById(id), offers.priceFor(row.getSlug())));
+                Optional.of(PublicationConverter.toDomain(row, contents.selectById(id)));
     }
 
     @Override
     public Publication save(Publication publication) {
-        String previousSlug = null;
-        if (publication.getId() != 0) {
-            PublicationPO previous = mapper.selectById(publication.getId());
-            previousSlug = previous == null ? null : previous.getSlug();
-        }
         PublicationPO row = PublicationConverter.toPO(publication);
         if (publication.getId() == 0) mapper.insert(row);
         else mapper.updateById(row);
 
-        offers.save(previousSlug, publication);
         Publication.Content content = publication.getContent();
         if (content != null) {
             PublicationContentPO body = PublicationConverter.toContentPO(row.getId(), content);
@@ -60,6 +53,6 @@ public class MybatisPublicationRepository implements PublicationRepository {
     }
 
     private Publication toDomain(PublicationPO row) {
-        return PublicationConverter.toDomain(row, null, offers.priceFor(row.getSlug()));
+        return PublicationConverter.toDomain(row, null);
     }
 }
