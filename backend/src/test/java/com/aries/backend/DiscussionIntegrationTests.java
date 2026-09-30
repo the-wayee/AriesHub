@@ -331,6 +331,91 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
     }
 
+    /** 内容下架或退回草稿后，按原 slug 不能再读出评论，也不能按根评论 id 读出回复。 */
+    @Test void commentsOfUnpublishedTargetsAreNotReadable() throws Exception {
+        Cookie member = register("unpublished@example.com", "unpub1234", "下架测试");
+        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
+                        .contentType("application/json")
+                        .content("""
+                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"下架前的评论"}
+                                """))
+                .andExpect(status().isCreated());
+        Long rootId = database.commentIdByBody("下架前的评论");
+        mvc.perform(get("/api/v1/discussions/comments/" + rootId + "/replies"))
+                .andExpect(status().isOk());
+
+        database.updatePublicationStatus(11, "ARCHIVED");
+
+        mvc.perform(get(TARGET))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("DISCUSSION_TARGET_NOT_FOUND"));
+        mvc.perform(get("/api/v1/discussions/comments/" + rootId + "/replies"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
+
+        // 草稿内容同理：即使库里已有线程和评论，也读不到。
+        long authorId = database.userIdByEmail("unpublished@example.com");
+        database.insertThread("PUBLICATION", "draft-case", "OPEN");
+        database.insertRootComment(database.threadId("PUBLICATION", "draft-case"), authorId, "草稿下的评论", 0);
+        mvc.perform(get("/api/v1/discussions/comments?targetType=PUBLICATION&targetKey=draft-case"))
+                .andExpect(status().isNotFound());
+    }
+
+    /** 被隐藏的根评论，其下回复也不能按 id 单独读出。 */
+    @Test void repliesOfHiddenRootsAreNotReadable() throws Exception {
+        Cookie member = register("hidden-root@example.com", "hidden1234", "隐藏测试");
+        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
+                        .contentType("application/json")
+                        .content("""
+                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"将被隐藏的根评论"}
+                                """))
+                .andExpect(status().isCreated());
+        Long rootId = database.commentIdByBody("将被隐藏的根评论");
+        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
+                        .contentType("application/json")
+                        .content("""
+                                {"targetType":"PUBLICATION","targetKey":"free-case",
+                                 "parentId":%d,"body":"它下面的回复"}
+                                """.formatted(rootId)))
+                .andExpect(status().isCreated());
+
+        Cookie admin = register("admin@example.com", "admin1234", "管理员");
+        mvc.perform(post("/api/v1/admin/discussions/comments/" + rootId + "/hide").cookie(admin))
+                .andExpect(status().isNoContent());
+
+        mvc.perform(get("/api/v1/discussions/comments/" + rootId + "/replies"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
+
+        // 回复 id 不能当根评论 id 用来绕过检查。
+        Long replyId = database.commentIdByBody("它下面的回复");
+        mvc.perform(get("/api/v1/discussions/comments/" + replyId + "/replies"))
+                .andExpect(status().isNotFound());
+    }
+
+    /** 回复已删除的评论是状态冲突，不是正文有问题。 */
+    @Test void replyingToADeletedCommentIsNotReplyable() throws Exception {
+        Cookie member = register("not-replyable@example.com", "reply1234", "回复测试");
+        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
+                        .contentType("application/json")
+                        .content("""
+                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"马上删除"}
+                                """))
+                .andExpect(status().isCreated());
+        Long rootId = database.commentIdByBody("马上删除");
+        mvc.perform(delete("/api/v1/discussions/comments/" + rootId).cookie(member))
+                .andExpect(status().isNoContent());
+
+        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
+                        .contentType("application/json")
+                        .content("""
+                                {"targetType":"PUBLICATION","targetKey":"free-case",
+                                 "parentId":%d,"body":"正文本身没问题"}
+                                """.formatted(rootId)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("COMMENT_NOT_REPLYABLE"));
+    }
+
     /** 领域规则的拒绝是 4xx，不能落到全局兜底变成 500。 */
     @Test void invalidCommentBodiesReturnBadRequest() throws Exception {
         Cookie member = register("invalid@example.com", "invalid123", "校验成员");

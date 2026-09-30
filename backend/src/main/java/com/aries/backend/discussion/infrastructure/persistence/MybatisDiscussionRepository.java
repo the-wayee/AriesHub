@@ -34,6 +34,11 @@ public class MybatisDiscussionRepository implements DiscussionRepository {
     }
 
     @Override
+    public Optional<DiscussionThread> findThread(long threadId) {
+        return Optional.ofNullable(threads.selectById(threadId)).map(this::toDomain);
+    }
+
+    @Override
     public DiscussionThread getOrCreateThread(DiscussionTarget target) {
         threads.insertIfAbsent(target.type(), target.key());
         return toDomain(selectThread(target));

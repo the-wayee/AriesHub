@@ -20,6 +20,16 @@ public record Comment(long id, long threadId, long authorId, Long parentId, Long
                       int likeCount, int replyCount, OffsetDateTime createdAt) {
     public enum Status { PUBLISHED, HIDDEN, DELETED }
 
+    /** 正文为空白或超长。 */
+    public static class InvalidBody extends IllegalArgumentException {
+        InvalidBody(String message) { super(message); }
+    }
+
+    /** 被回复的评论已隐藏、已删除或不属于当前讨论。与正文问题分开，便于给出准确提示。 */
+    public static class NotReplyable extends IllegalArgumentException {
+        NotReplyable() { super("不能回复该评论"); }
+    }
+
     /** 根评论。 */
     public static Comment root(long threadId, long authorId, String body) {
         return new Comment(0, threadId, authorId, null, null, 0,
@@ -33,7 +43,7 @@ public record Comment(long id, long threadId, long authorId, Long parentId, Long
      */
     public static Comment reply(long threadId, long authorId, Comment parent, String body) {
         if (parent.threadId != threadId || parent.id <= 0 || parent.status != Status.PUBLISHED) {
-            throw new IllegalArgumentException("不能回复该评论");
+            throw new NotReplyable();
         }
         long root = parent.depth == 0 ? parent.id : parent.rootId;
         return new Comment(0, threadId, authorId, parent.id, root, 1,
@@ -43,6 +53,10 @@ public record Comment(long id, long threadId, long authorId, Long parentId, Long
     public Comment withStatus(Status next) {
         return new Comment(id, threadId, authorId, parentId, rootId, depth, body, next,
                 likeCount, replyCount, createdAt);
+    }
+
+    public boolean isRoot() {
+        return depth == 0;
     }
 
     public boolean isDeleted() {
@@ -63,11 +77,11 @@ public record Comment(long id, long threadId, long authorId, Long parentId, Long
 
     private static String normalized(String body) {
         if (body == null || body.isBlank()) {
-            throw new IllegalArgumentException("评论内容不能为空");
+            throw new InvalidBody("评论内容不能为空");
         }
         String trimmed = body.trim();
         if (trimmed.length() > 4000) {
-            throw new IllegalArgumentException("评论内容过长");
+            throw new InvalidBody("评论内容过长");
         }
         return trimmed;
     }

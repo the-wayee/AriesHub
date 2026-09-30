@@ -1000,6 +1000,14 @@ export interface operations {
       /** @description 目标类型或分页参数不合法 */
       400: {
         headers: {
+          [name: string]: unkno};
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 目标不存在或未公开（草稿、下架、暂停交付） */
+      404: {
+        headers: {
           [name: string]: unknown;
         };
         content: {
@@ -1066,7 +1074,7 @@ export interface operations {
           "application/json": components["schemas"]["Error"];
         };
       };
-      /** @description 讨论已锁定 */
+      /** @description 讨论已锁定（DISCUSSION_THREAD_CLOSED），或被回复的评论已隐藏、已删除（COMMENT_NOT_REPLYABLE） */
       409: {
         headers: {
           [name: string]: unknown;
@@ -1478,6 +1486,15 @@ export interface operations {
       };
       /** @description 分页参数不合法 */
       400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description 根评论不存在、已隐藏，或其所在讨论与目标不可见 */
+      404: {
         headers: {
           [name: string]: unknown;
         };

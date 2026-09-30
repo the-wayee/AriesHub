@@ -37,10 +37,15 @@ public class DiscussionService {
     private final DiscussionIdentityProvider identities;
     private final DiscussionTargets targets;
 
+    /**
+     * 读评论同样要校验目标可见：否则内容下架或退回草稿后，
+     * 按原 slug 仍能读出它的全部评论。
+     */
     @Transactional(readOnly = true)
     public CommentPage comments(DiscussionTarget target, CommentPageQuery query) {
+        if (!targets.exists(target)) throw new BusinessException(DISCUSSION_TARGET_NOT_FOUND);
         DiscussionThread thread = discussions.findThread(target).orElse(null);
-        // 隐藏的线程对访客表现为空列表而非 404：目标本身仍然存在且可访问。
+        // 还没人评论过，或线程被隐藏：目标本身可访问，表现为空列表。
         if (thread == null || thread.status() == DiscussionThread.Status.HIDDEN) {
             return new CommentPage(List.of(), query.getPage(), query.getSize(), 0, 0);
         }
@@ -51,8 +56,23 @@ public class DiscussionService {
                 query.getPage(), query.getSize(), total, pages(total, query.getSize()));
     }
 
+    /**
+     * 回复只按根评论 id 读取，所以要把列表接口的可见性检查在这里补齐：
+     * 根评论存在且未被隐藏、所在线程未被隐藏、挂载目标仍然公开。
+     * 任一不满足都表现为「评论不存在」，不透露具体原因。
+     */
     @Transactional(readOnly = true)
     public ReplyPage replies(long rootId, CommentPageQuery query) {
+        Comment root = discussions.findComment(rootId)
+                .filter(Comment::isRoot)
+                .filter(comment -> comment.status() != Comment.Status.HIDDEN)
+                .orElseThrow(() -> new BusinessException(COMMENT_NOT_FOUND));
+        boolean visible = discussions.findThread(root.threadId())
+                .filter(thread -> thread.status() != DiscussionThread.Status.HIDDEN)
+                .filter(thread -> targets.exists(thread.target()))
+                .isPresent();
+        if (!visible) throw new BusinessException(COMMENT_NOT_FOUND);
+
         long viewer = currentUserIdOrZero();
         long total = reads.countReplies(rootId);
         List<CommentView> items = decorate(reads.replies(rootId, viewer, query), viewer);
@@ -68,9 +88,10 @@ public class DiscussionService {
             draft = parentId == null
                     ? Comment.root(thread.id(), authorId, body)
                     : replyTo(thread, parentId, authorId, body);
-        } catch (IllegalArgumentException rejected) {
-            // 领域规则的拒绝（正文空白/过长、回复已删除的评论）是 4xx，
-            // 不能落到 ApiExceptionHandler 的兜底分支变成 500。
+        } catch (Comment.NotReplyable rejected) {
+            throw new BusinessException(COMMENT_NOT_REPLYABLE);
+        } catch (Comment.InvalidBody rejected) {
+            // 领域规则的拒绝是 4xx，不能落到 ApiExceptionHandler 的兜底分支变成 500。
             throw new BusinessException(COMMENT_BODY_INVALID);
         }
         Comment saved = discussions.save(draft);

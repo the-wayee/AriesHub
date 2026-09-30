@@ -22,14 +22,15 @@ public class DiscussionIdentityAdapter implements DiscussionIdentityProvider {
     private final SessionManager sessions;
     private final UserRepository users;
 
-    /** 匿名访问返回 null；Sa-Token 在未登录时抛异常，这里把它收敛成「没有登录态」。 */
+    /**
+     * 匿名访问返回 null。
+     *
+     * <p>不能用 try/catch 把异常统一当成未登录：Redis 等会话存储故障也是运行时异常，
+     * 吞掉后读接口会把所有人显示成未登录，写接口返回 401 而不是 503，故障被伪装成登出。
+     */
     @Override
     public Long currentUserId() {
-        try {
-            return sessions.currentUserId();
-        } catch (RuntimeException notLoggedIn) {
-            return null;
-        }
+        return sessions.findCurrentUserId().orElse(null);
     }
 
     @Override

@@ -518,6 +518,16 @@
               }
             }
           },
+          "404": {
+            "description": "目标不存在或未公开（草稿、下架、暂停交付）",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
           "500": {
             "description": "服务端异常",
             "content": {
@@ -591,7 +601,7 @@
             }
           },
           "409": {
-            "description": "讨论已锁定",
+            "description": "讨论已锁定（DISCUSSION_THREAD_CLOSED），或被回复的评论已隐藏、已删除（COMMENT_NOT_REPLYABLE）",
             "content": {
               "application/json": {
                 "schema": {
@@ -1373,6 +1383,16 @@
           },
           "400": {
             "description": "分页参数不合法",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "根评论不存在、已隐藏，或其所在讨论与目标不可见",
             "content": {
               "application/json": {
                 "schema": {

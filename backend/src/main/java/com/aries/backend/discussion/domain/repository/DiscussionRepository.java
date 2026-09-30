@@ -14,6 +14,8 @@ import java.util.Optional;
 public interface DiscussionRepository {
     Optional<DiscussionThread> findThread(DiscussionTarget target);
 
+    Optional<DiscussionThread> findThread(long threadId);
+
     DiscussionThread getOrCreateThread(DiscussionTarget target);
 
     /** 锁定线程，之后不再接受新的评论和回复。 */
