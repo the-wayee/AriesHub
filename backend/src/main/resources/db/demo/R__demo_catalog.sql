@@ -7,17 +7,16 @@ INSERT INTO publications (category_id, slug, title, summary, publication_type, a
 SELECT id, 'ai-ppt-outline', '把一个主题，整理成一份演示提纲',
 '从听众、结论和证据出发，练习用 AI 构建清晰的 PPT 内容结构。', 'ARTICLE', 'FREE', 'PUBLISHED', '2026-09-28T09:00:00Z'
 FROM categories WHERE slug = 'ai-ppt' ON CONFLICT (slug) DO NOTHING;
-INSERT INTO publications (category_id, slug, title, summary, publication_type, access_type, status, published_at)
+-- 价格必须写在 INSERT 里：CHECK 约束在 ON CONFLICT 判断之前执行，
+-- 先按默认值 0 插入、事后再 UPDATE 价格，会在约束检查时直接失败，即使这行已经存在。
+INSERT INTO publications (category_id, slug, title, summary, publication_type, access_type, credit_price, status, published_at)
 SELECT id, 'codex-focus-page', '用 Codex 做一个专注计时页面',
-'把一个小需求拆成界面、交互和验收步骤，了解从想法到网页的过程。', 'CASE_STUDY', 'CREDIT', 'PUBLISHED', '2026-09-27T09:00:00Z'
+'把一个小需求拆成界面、交互和验收步骤，了解从想法到网页的过程。', 'CASE_STUDY', 'CREDIT', 199, 'PUBLISHED', '2026-09-27T09:00:00Z'
 FROM categories WHERE slug = 'coding' ON CONFLICT (slug) DO NOTHING;
 INSERT INTO publications (category_id, slug, title, summary, publication_type, access_type, status, published_at)
 SELECT id, 'organize-materials', '给散落的素材，建立一套整理规则',
 '先定义命名和分类规则，再用小批量样本验证，让素材更容易找到。', 'COURSE', 'FREE', 'PUBLISHED', '2026-09-26T09:00:00Z'
 FROM categories WHERE slug = 'automation' ON CONFLICT (slug) DO NOTHING;
-
--- 积分内容的价格现在直接写在 publications 上。
-UPDATE publications SET credit_price = 199 WHERE slug = 'codex-focus-page';
 
 INSERT INTO publication_contents (publication_id, preview_markdown, full_markdown, requirements, deliverables)
 SELECT id, $$## 从一份清晰的任务说明开始
