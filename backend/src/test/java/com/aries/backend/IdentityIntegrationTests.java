@@ -28,7 +28,7 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
 
         Cookie session = register("redis-session@example.com", "redis1234", "Redis 会话");
 
-        mvc.perform(get("/api/v1/auth/me").cookie(session))
+        mvc.perform(get("/api/v1/users/me").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("redis-session@example.com"));
     }
@@ -55,7 +55,7 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
 
         Cookie session = registered.getResponse().getCookie("arieshub_token");
         assertThat(session).isNotNull();
-        mvc.perform(get("/api/v1/auth/me").cookie(session))
+        mvc.perform(get("/api/v1/users/me").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("hello@example.com"));
     }
@@ -94,7 +94,7 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
 
         mvc.perform(post("/api/v1/auth/logout").cookie(session))
                 .andExpect(status().isNoContent());
-        mvc.perform(get("/api/v1/auth/me").cookie(session))
+        mvc.perform(get("/api/v1/users/me").cookie(session))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
     }
@@ -113,7 +113,7 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
     }
 
     @Test void protectedIdentityEndpointsRequireLogin() throws Exception {
-        mvc.perform(get("/api/v1/auth/me"))
+        mvc.perform(get("/api/v1/users/me"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
         mvc.perform(post("/api/v1/auth/logout"))

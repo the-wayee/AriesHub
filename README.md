@@ -17,17 +17,24 @@
 
 ### 1. 数据库
 
-项目直接复用本机 `127.0.0.1:5432` 的 PostgreSQL，不启动新的数据库容器。默认账号和密码均为 `postgres`，应用使用独立数据库 `arieshub`。首次运行且数据库尚不存在时执行：
+项目复用现有 `postgres` 容器中的 PostgreSQL 15，映射到本机 `127.0.0.1:5432`。默认账号和密码均为 `postgres`，应用使用独立数据库 `arieshub`。容器停止时执行 `docker start postgres`；首次运行且数据库尚不存在时执行：
 
 ```bash
-createdb -h 127.0.0.1 -p 5432 -U postgres arieshub
+docker exec -e PGPASSWORD=postgres postgres createdb -h 127.0.0.1 -U postgres -O postgres arieshub
 ```
 
 当前电脑上的数据库已创建完成。需要连接其他 PostgreSQL 时可通过 `DB_URL`、`DB_USERNAME`、`DB_PASSWORD` 覆盖默认值。
 
 ### 2. Redis 与邮件
 
-项目复用本机 `127.0.0.1:6379` Redis，默认密码为 `root`，不启动新的 Redis。其他环境可通过 `REDIS_HOST`、`REDIS_PORT`、`REDIS_PASSWORD` 覆盖。
+项目使用 `compose.yaml` 中的 `arieshub-redis` 容器，映射到本机 `127.0.0.1:6379`，密码为 `root`。在仓库根目录启动并验证（首次启动需要能够拉取 Redis 镜像）：
+
+```bash
+docker compose up -d redis
+docker exec -e REDISCLI_AUTH=root arieshub-redis redis-cli ping
+```
+
+返回 `PONG` 表示可用。Redis 启用 AOF 持久化，数据保存在 `arieshub-redis-data` 卷，容器使用 `unless-stopped` 重启策略。其他环境可通过 `REDIS_HOST`、`REDIS_PORT`、`REDIS_PASSWORD` 覆盖。
 
 真实发信使用 Resend。启动前配置 API Key 和已验证的发件地址，并用逗号分隔的邮箱设置首批管理员：
 
@@ -49,6 +56,17 @@ export ADMIN_EMAILS='you@example.com'
 
 默认监听 8080。Flyway 自动建表；显式 `dev` 配置导入三条标为演示的案例。默认配置只建表，不导入演示数据。生产使用独立数据库，不启用 dev，也不复用含演示迁移的开发数据卷。
 
+如果 Maven Central 返回 `403 Forbidden`，可显式使用项目提供的阿里云 Central 镜像配置。Spring Boot `4.1.1` 已发布；此错误是仓库访问失败，保留 POM 中的版本与 `<relativePath/>`。在仓库根目录用 PowerShell 执行：
+
+```powershell
+# Wrapper 下载 Maven 本身时也使用镜像；仅影响当前终端。
+$env:MVNW_REPOURL = 'https://maven.aliyun.com/repository/central'
+.\backend\mvnw.cmd -s backend/.mvn/settings.xml -f backend/pom.xml -U validate
+.\backend\mvnw.cmd -s backend/.mvn/settings.xml -f backend/pom.xml spring-boot:run '-Dspring-boot.run.profiles=dev'
+```
+
+`-U` 强制重试之前失败并被缓存的依赖下载。`-s` 必须显式传入，Maven 不会自动加载 `.mvn/settings.xml`。IntelliJ IDEA 中，将 Maven 的 **User settings file** 设置为此仓库的 `backend/.mvn/settings.xml`，然后重新加载 Maven 项目。镜像配置仅替换 Central；如果已有用户级代理、认证或镜像配置，应将此文件中的 `<mirror>` 合并到原 settings 文件，再使用合并后的文件。
+
 ```bash
 curl http://localhost:8080/api/v1/health
 curl 'http://localhost:8080/api/v1/publications?type=CASE_STUDY&access=FREE&page=1&size=9'
@@ -59,7 +77,7 @@ curl -H 'Content-Type: application/json' \
 curl -i -c cookie.txt -H 'Content-Type: application/json' \
   -d '{"email":"you@example.com","password":"hello1234","nickname":"新成员","code":"123456"}' \
   http://localhost:8080/api/v1/auth/register
-curl -b cookie.txt http://localhost:8080/api/v1/auth/me
+curl -b cookie.txt http://localhost:8080/api/v1/users/me
 ```
 
 ### 4. 前端
@@ -72,7 +90,9 @@ npm ci
 npm run dev
 ```
 
-访问 http://localhost:3000。公开首页、注册、登录、账号页和 `/admin` 内容后台已接入真实 Java API；成员区为新版社区体验，前端讨论页仍是本地原型，尚未调用真实评论接口。
+访问 http://localhost:3200。公开首页、注册、登录、账号页和 `/admin` 内容后台已接入真实 Java API；成员区为新版社区体验，前端讨论页仍是本地原型，尚未调用真实评论接口。
+
+账号设置从右上角用户菜单进入，不占用社区导航 tab。支持上传或移除 OSS 头像、修改昵称与个性签名；资料保存后同步到用户菜单。头像支持 PNG、JPEG、WebP，最大 5 MiB，存储配置见 [对象存储说明](doc/OBJECT_STORAGE.md)。
 
 如需修改 Java 地址，将 `frontend/.env.example` 复制为 `frontend/.env.local`，设置 `BACKEND_ORIGIN` 后重启前端。开发时 `/api/v1/*` 同域转发已配置；生产模式下由部署网关提供该转发，生产部署尚未完成。
 
@@ -96,7 +116,7 @@ npm run typecheck
 npm run build
 ```
 
-浏览器测试要求后端已按 dev 配置启动，并保留默认三条演示数据。测试默认复用或启动 3000 端口前端，覆盖桌面与手机；已有前端使用其他端口时设置 `E2E_PORT`：
+浏览器测试要求后端已按 dev 配置启动，并保留默认三条演示数据。测试默认复用或启动 3200 端口前端，覆盖桌面与手机；已有前端使用其他端口时设置 `E2E_PORT`：
 
 ```bash
 cd frontend
@@ -115,4 +135,4 @@ npm run test:e2e
 - Sa-Token 使用官方 Redis DAO，登录态可跨应用重启及多实例共享；仍受总有效期、活跃超时、主动退出和 Redis 数据保留策略约束。
 - 验证码请求有 60 秒冷却，验证码 10 分钟过期并限制五次错误。Redis 来源限额分别为登录每 10 分钟 60 次、注册每小时 30 次、发码每小时 60 次；规范化邮箱限额分别为登录每 15 分钟 5 次、注册每 15 分钟 5 次、发码每小时 5 次，成功登录会清除该邮箱的登录计数。找回密码和完整 CSRF 防护仍需在公开部署前补齐。当前不信任客户端转发头；同一反向代理后的用户会共享来源限额，公开部署时还应在可信网关按真实客户端地址限流。
 
-下一步把新版文章详情和讨论页接入真实内容与评论接口；随后实现积分余额操作、流水与内容解锁，支付放在积分体系稳定之后。
+当前先完善 UI 与账号基础；之后把新版文章详情和讨论页接入真实内容与评论接口，随后实现积分余额操作、流水与内容解锁，支付放在积分体系稳定之后。

@@ -20,5 +20,6 @@ public interface UserRepository {
     Map<Long, String> findNicknamesByIds(Set<Long> ids);
 
     UserAccount save(UserAccount user);
+    void updateProfile(UserAccount user);
     void updateLastLoginAt(long id, OffsetDateTime loginAt);
 }

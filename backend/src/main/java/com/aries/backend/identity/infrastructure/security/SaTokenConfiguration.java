@@ -23,7 +23,7 @@ public class SaTokenConfiguration implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(new SaInterceptor(handle -> StpUtil.checkLogin()))
-                .addPathPatterns("/api/v1/auth/me", "/api/v1/auth/logout");
+                .addPathPatterns("/api/v1/users/me", "/api/v1/users/me/**", "/api/v1/auth/logout");
     }
 
     @Bean

@@ -7,9 +7,9 @@ export default function AdminPage() {
   return (
     <div className="admin-page">
       <header className="page-heading admin-heading">
-        <p className="eyebrow">ARIESHUB / CONTENT STUDIO</p>
+        <p className="eyebrow">工作台 / 内容管理</p>
         <h1>内容后台</h1>
-        <p>把实践过程整理成案例，再决定何时发布到主站。</p>
+        <p>整理实战案例、文章与课程。从草稿开始，按你的节奏发布。</p>
       </header>
       <AdminPublicationList />
     </div>

@@ -36,7 +36,7 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
                 .andExpect(status().isForbidden());
 
         Cookie admin = register("admin@example.com", "admin1234", "管理员");
-        mvc.perform(get("/api/v1/auth/me").cookie(admin))
+        mvc.perform(get("/api/v1/users/me").cookie(admin))
                 .andExpect(jsonPath("$.role").value("ADMIN"));
         mvc.perform(get("/api/v1/admin/categories").cookie(admin))
                 .andExpect(status().isOk())

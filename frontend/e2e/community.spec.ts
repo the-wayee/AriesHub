@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { mockMemberSession } from "./member-session";
 
 test.beforeEach(async ({ page }) => {
+  await mockMemberSession(page);
   await page.goto("/");
   await page.evaluate(() => localStorage.clear());
 });

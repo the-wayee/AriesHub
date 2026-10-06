@@ -72,7 +72,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/auth/me": {
+  "/users/me": {
     parameters: {
       query?: never;
       header?: never;
@@ -372,26 +372,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/storage/uploads": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Upload a private avatar (5MB) or attachment (20MB)
-     * @description Requires a session; 20 uploads/user/minute. Images: PNG/JPEG/WebP. Attachments also accept PDF/ZIP. File headers must match Content-Type. Returns a durable file ID; does not change avatar or bind a publication.
-     */
-    post: operations["uploadFile"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   "/storage/files/{id}/download-url": {
     parameters: {
       query?: never;
@@ -403,6 +383,60 @@ export interface paths {
     get: operations["getFileDownloadUrl"];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/users/me/profile": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Updates the current member profile; avatar must be an owned AVATAR file */
+    put: operations["updateCurrentProfile"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/users/me/avatar-url": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Returns an owner-only inline avatar URL, valid for five minutes */
+    get: operations["getCurrentAvatarImage"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/users/me/avatar": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * 上传当前用户头像
+     * @description Requires an active session; 20 avatar uploads/user/minute. PNG/JPEG/WebP only, maximum 5 MiB, verified by the user profile use case including file headers. Returns a durable avatar file ID; PUT /users/me/profile binds it. No generic browser-selected upload purpose.
+     */
+    post: operations["uploadAvatar"];
     delete?: never;
     options?: never;
     head?: never;
@@ -476,6 +510,9 @@ export interface components {
       emailVerified: boolean;
       /** Format: date-time */
       createdAt: string;
+      bio: string;
+      /** Format: uuid */
+      avatarFileId: string | null;
     };
     Error: {
       code: string;
@@ -645,6 +682,18 @@ export interface components {
       size: number;
     };
     FileDownload: {
+      /** Format: uri */
+      url: string;
+      /** Format: date-time */
+      expiresAt: string;
+    };
+    UpdateProfile: {
+      nickname: string;
+      bio: string;
+      /** Format: uuid */
+      avatarFileId?: string | null;
+    };
+    AvatarImage: {
       /** Format: uri */
       url: string;
       /** Format: date-time */
@@ -1798,7 +1847,166 @@ export interface operations {
       };
     };
   };
-  uploadFile: {
+  getFileDownloadUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Temporary download URL; do not persist it */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["FileDownload"];
+        };
+      };
+      400: components["responses"]["BadRequest"];
+      401: components["responses"]["Unauthorized"];
+      404: components["responses"]["NotFound"];
+      /** @description Storage unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  updateCurrentProfile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["UpdateProfile"];
+      };
+    };
+    responses: {
+      /** @description Profile saved */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["CurrentUser"];
+        };
+      };
+      /** @description Invalid profile */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Account disabled */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Avatar file missing, foreign or wrong purpose */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Database temporarily unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getCurrentAvatarImage: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Temporary image URL */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AvatarImage"];
+        };
+      };
+      /** @description Not signed in */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Account disabled */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description No avatar */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Storage unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  uploadAvatar: {
     parameters: {
       query?: never;
       header?: never;
@@ -1808,7 +2016,6 @@ export interface operations {
     requestBody: {
       content: {
         "multipart/form-data": {
-          purpose: components["schemas"]["StoredFilePurpose"];
           /** Format: binary */
           file: string;
         };
@@ -1845,40 +2052,6 @@ export interface operations {
           "application/json": components["schemas"]["Error"];
         };
       };
-      /** @description Storage unavailable */
-      503: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["Error"];
-        };
-      };
-    };
-  };
-  getFileDownloadUrl: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Temporary download URL; do not persist it */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["FileDownload"];
-        };
-      };
-      400: components["responses"]["BadRequest"];
-      401: components["responses"]["Unauthorized"];
-      404: components["responses"]["NotFound"];
       /** @description Storage unavailable */
       503: {
         headers: {

@@ -19,6 +19,8 @@ public class UserPO extends BasePO {
     private String email;
     private String passwordHash;
     private String nickname;
+    private String bio;
+    private String avatarFileId;
     private String role;
     private String status;
     private Boolean emailVerified;

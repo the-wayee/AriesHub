@@ -19,7 +19,7 @@ import java.time.ZoneOffset;
 
 import static com.aries.backend.identity.application.exception.IdentityErrorCode.*;
 
-/** 注册、登录和当前用户查询用例。 */
+/** 注册、登录和退出用例。 */
 @Service
 @RequiredArgsConstructor
 public class AuthApplicationService {
@@ -74,19 +74,8 @@ public class AuthApplicationService {
         return CurrentUser.from(user);
     }
 
-    @Transactional(readOnly = true)
-    public CurrentUser currentUser() {
-        long userId = sessions.currentUserId();
-        UserAccount user = users.findById(userId)
-                .orElseThrow(() -> new BusinessException(USER_NOT_FOUND));
-        if (!user.canLogin()) {
-            sessions.logout();
-            throw new BusinessException(ACCOUNT_DISABLED);
-        }
-        return CurrentUser.from(user);
-    }
-
     public void logout() {
         sessions.logout();
     }
+
 }

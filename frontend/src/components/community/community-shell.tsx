@@ -9,7 +9,6 @@ import {
   Compass,
   MessageCircle,
   Search,
-  UserRound,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -63,7 +62,10 @@ export function CommunityShell({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="cosmos-site community-hub" ref={root}>
+    <div
+      className={`cosmos-site community-hub${path === "/account" ? " profile-shell" : ""}`}
+      ref={root}
+    >
       <a className="skip-link" href="#main">
         跳到主要内容
       </a>
@@ -91,32 +93,29 @@ export function CommunityShell({ children }: { children: ReactNode }) {
           <AuthNav />
         </div>
       </header>
-      <nav className="hub-nav" aria-label="社区导航">
-        {navigation.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            aria-current={selected(href) ? "page" : undefined}
-          >
-            <Icon aria-hidden="true" />
-            {label}
-          </Link>
-        ))}
-        <Link
-          href="/account"
-          aria-current={path === "/account" ? "page" : undefined}
-        >
-          <UserRound aria-hidden="true" />
-          账号
-        </Link>
-      </nav>
+      {path !== "/account" && (
+        <nav className="hub-nav" aria-label="社区导航">
+          {navigation.map(({ href, label, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              aria-current={selected(href) ? "page" : undefined}
+            >
+              <Icon aria-hidden="true" />
+              {label}
+            </Link>
+          ))}
+        </nav>
+      )}
       <main id="main" className="hub-main">
         {children}
       </main>
       <footer className="hub-footer">
         <Link href="/">AriesHub</Link>
         <span>一起探索，保持好奇。</span>
-        <small>社区预览 · 互动仅保存在当前浏览器</small>
+        {path !== "/account" && (
+          <small>社区预览 · 互动仅保存在当前浏览器</small>
+        )}
       </footer>
     </div>
   );

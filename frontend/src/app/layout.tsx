@@ -7,6 +7,8 @@ import "./globals.css";
 import "./independent.css";
 import "./cosmos.css";
 import "./community.css";
+import "./account.css";
+import "./admin.css";
 
 export const metadata: Metadata = {
   title: {

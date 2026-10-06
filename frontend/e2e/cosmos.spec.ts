@@ -12,17 +12,38 @@ test("landing discovery, carousel and local assets", async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "内容创作", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
-  const broken = await page
+  // Offscreen lazy images need not be decoded; verify every asset and visible icons.
+  const sources = await page
     .locator(".brand-tile img")
-    .evaluateAll(
-      (images) =>
-        images.filter(
-          (i) =>
-            !(i as HTMLImageElement).complete ||
-            !(i as HTMLImageElement).naturalWidth,
-        ).length,
-    );
-  expect(broken).toBe(0);
+    .evaluateAll((images) => [
+      ...new Set(images.map((i) => (i as HTMLImageElement).src)),
+    ]);
+  for (const source of sources)
+    expect((await page.request.get(source)).status()).toBe(200);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect
+    .poll(() =>
+      page.locator(".brand-tile img").evaluateAll((images) => {
+        const visible = images.filter((i) => {
+          const r = i.getBoundingClientRect();
+          return (
+            r.bottom > 0 &&
+            r.top < innerHeight &&
+            r.right > 0 &&
+            r.left < innerWidth
+          );
+        });
+        return (
+          visible.length > 0 &&
+          visible.every(
+            (i) =>
+              (i as HTMLImageElement).complete &&
+              (i as HTMLImageElement).naturalWidth > 0,
+          )
+        );
+      }),
+    )
+    .toBe(true);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -71,7 +92,7 @@ test("registration demo completes, back preserves data, passwords stay private",
   await page
     .getByRole("button", { name: "加入 AriesHub", exact: true })
     .click();
-  await expect(page).toHaveURL(/my-content\?preview=1/);
+  await expect(page).toHaveURL(/discover\?preview=1/);
   expect(
     await page.evaluate(() =>
       JSON.stringify({ ...localStorage, ...sessionStorage }),
@@ -106,10 +127,15 @@ test("login keeps rate-limit feedback and no verification code", async ({
 });
 test("local film plays through custom controls", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "播放影片", exact: true }).click();
+
+  // The film frame moves with scroll; use keyboard activation after focus settles.
+  await page.getByRole("button", { name: "播放影片", exact: true }).focus();
+  await page
+    .getByRole("button", { name: "播放影片", exact: true })
+    .press("Enter");
   await expect(
     page.getByRole("button", { name: "暂停影片", exact: true }),
-  ).toBeAttached();
+  ).toBeAttached({ timeout: 15000 });
   await expect
     .poll(() =>
       page

@@ -1,4 +1,8 @@
 import { expect, test } from "@playwright/test";
+import { mockMemberSession } from "./member-session";
+test.beforeEach(async ({ page }) => {
+  await mockMemberSession(page);
+});
 
 test("landing page leads through the publication preview to the checkout prototype", async ({
   page,

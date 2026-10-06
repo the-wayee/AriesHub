@@ -46,4 +46,12 @@ public class S3ObjectStorage implements ObjectStorage {
         log.error("对象存储操作失败: operation={}, key={}, exception={}", operation, key, error.getClass().getSimpleName());
         return new BusinessException(StorageErrorCode.STORAGE_UNAVAILABLE);
     }
+
+    @Override public String imageUrl(String key, Duration ttl) {
+        try {
+            return presigner.presignGetObject(GetObjectPresignRequest.builder().signatureDuration(ttl)
+                    .getObjectRequest(GetObjectRequest.builder().bucket(bucket).key(key)
+                            .responseContentDisposition("inline").build()).build()).url().toString();
+        } catch (SdkException error) { throw unavailable("presign-image", key, error); }
+    }
 }

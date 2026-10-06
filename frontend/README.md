@@ -4,9 +4,13 @@ Next.js 16.3.6 + React 19.2.8 + TypeScript + App Router + Tailwind CSS 4，使�
 
 ## 启动
 
-从本目录运行 `npm ci`、`npm run dev`，访问 http://localhost:3000。后端与数据库启动方式见 [仓库说明](../README.md)。本次验证 Node.js 26.5.0 / npm 11.17.0，团队建议使用 Node.js 24 或更高版本。
+从本目录运行 `npm ci`、`npm run dev`，访问 http://localhost:3200。后端与数据库启动方式见 [仓库说明](../README.md)。本次验证 Node.js 26.5.0 / npm 11.17.0，团队建议使用 Node.js 24 或更高版本。
 
 页面已连接真实 Java API；没有后端时显示内容服务暂不可用，不返回模拟成功数据。
+
+成员页面 `/home`、`/community`、`/my-content`、`/members`、`/account`、`/learn/*`、`/checkout/*` 与后台 `/admin/*` 要求登录。Next Proxy 在无 Cookie 时重定向登录；有 Cookie 后仍由 Java `/users/me` 验证，验证前不显示成员内容，失效会话重定向，服务异常显示重试。后台再检查管理员角色；业务 API 的最终授权仍由 Java 执行。`/discover` 与公开详情保持访客可访问。注册演示完成后进入公开探索，不绕过守卫。
+
+账号与后台沿用 Cosmos 黑白极简、画廊方向，规范与来源见 [设计语言](../doc/FRONTEND_DESIGN_LANGUAGE.md)。后台专用样式在 `src/app/admin.css`，账号与用户菜单在 `src/app/account.css`。
 
 ## 页面
 
@@ -14,7 +18,7 @@ Next.js 16.3.6 + React 19.2.8 + TypeScript + App Router + Tailwind CSS 4，使�
 - `/cases`：关键词、分类、免费或付费筛选，分页和空结果提示。
 - `/cases/[slug]`：公开预览、适用条件和交付说明；免费案例显示完整正文，付费案例显示尚未开放。
 - `/register`：先通过 Resend 获取六位邮箱验证码，再创建账号；`/login`：使用邮箱和密码登录，不再需要验证码。成功后由 Sa-Token 写入 HttpOnly Cookie。
-- `/account`：显示当前账号，支持退出登录，并预留收藏、购买与学习记录入口。
+- `/account`：通过右上角用户菜单进入，上传或移除头像、修改昵称和个性签名，资料保存到后端；账号设置不占用社区导航 tab。用户菜单还提供我的空间、管理员内容后台和退出登录。
 - `/admin`：管理员案例列表；支持进入新建与编辑页，保存草稿、发布和下架。
 - 不存在或未公开案例显示 404 页面；提供加载态与错误重试。
 
@@ -51,7 +55,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-测试默认复用或启动 3000 端口前端，已有前端使用其他端口时设置 `E2E_PORT`。使用已有 Chromium 时可设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` 指向可执行文件；不在仓库中写死本机路径。案例浏览连接真实 Java，身份和后台浏览器测试拦截 API，以免测试向真实邮箱发送验证码；Redis、验证码消费和管理员权限由 Java 集成测试覆盖。测试生成目录已加入 Git 忽略。
+测试默认复用或启动 3200 端口前端，已有前端使用其他端口时设置 `E2E_PORT`。使用已有 Chromium 时可设置 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` 指向可执行文件；不在仓库中写死本机路径。案例浏览连接真实 Java，身份、账号资料和后台浏览器测试拦截 API，以免测试向真实邮箱发送验证码或上传真实云文件；Redis、资料持久化、文件归属和管理员权限由 Java 集成测试覆盖。`e2e/profile.spec.ts` 覆盖桌面与手机端资料编辑、头像上传/移除、失败重试和键盘用户菜单。测试生成目录已加入 Git 忽略。
 
 ## 目录
 

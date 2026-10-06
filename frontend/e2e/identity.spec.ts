@@ -4,7 +4,7 @@ test("guest navigation is present in the first HTML response", async ({
   page,
 }) => {
   let meRequests = 0;
-  await page.route("**/api/v1/auth/me", async (route) => {
+  await page.route("**/api/v1/users/me", async (route) => {
     meRequests += 1;
     await route.fulfill({
       status: 401,
@@ -45,10 +45,10 @@ test("header keeps the signed-in entry stable while a refresh checks the session
     {
       name: "arieshub_token",
       value: "test-session",
-      url: `http://localhost:${process.env.E2E_PORT ?? "3000"}`,
+      url: `http://localhost:${process.env.E2E_PORT ?? "3200"}`,
     },
   ]);
-  await page.route("**/api/v1/auth/me", async (route) => {
+  await page.route("**/api/v1/users/me", async (route) => {
     await sessionGate;
     await route.fulfill({ status: 200, json: member });
   });
@@ -66,7 +66,9 @@ test("header keeps the signed-in entry stable while a refresh checks the session
   ).toHaveAttribute("href", "/home");
 
   releaseSession?.();
-  await expect(page.getByRole("link", { name: member.nickname })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "打开用户菜单" }),
+  ).toBeVisible();
   await page.getByRole("link", { name: "进入社区", exact: true }).click();
   await expect(page).toHaveURL(/\/home$/);
 });
@@ -145,7 +147,7 @@ test("member can request codes, register, log out and log back in", async ({
   let codeRequestCount = 0;
 
   // Resend 的真实投递由 Java 集成测试和手工收件验证负责；浏览器测试只验证交互契约。
-  await page.route("**/api/v1/auth/**", async (route) => {
+  await page.route(/\/api\/v1\/(auth\/.*|users\/me)$/, async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/email-codes")) {
       codeRequestCount += 1;
@@ -163,13 +165,21 @@ test("member can request codes, register, log out and log back in", async ({
       loggedIn = true;
       await route.fulfill({
         status: path.endsWith("/register") ? 201 : 200,
+        headers: {
+          "set-cookie":
+            "arieshub_token=identity-test; Path=/; HttpOnly; SameSite=Lax",
+        },
         json: user,
       });
       return;
     }
     if (path.endsWith("/logout")) {
       loggedIn = false;
-      await route.fulfill({ status: 204, body: "" });
+      await route.fulfill({
+        status: 204,
+        body: "",
+        headers: { "set-cookie": "arieshub_token=; Path=/; Max-Age=0" },
+      });
       return;
     }
     await route.fulfill(

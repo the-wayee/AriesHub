@@ -1661,9 +1661,6 @@
   .hub-nav a {
     font-size: 11px;
   }
-  .hub-nav a:last-child {
-    display: none;
-  }
   .hub-members-grid {
     grid-template-columns: 1fr;
   }

@@ -5,6 +5,9 @@ import { PageMotion } from "@/components/page-motion";
 import { AuthSessionProvider } from "@/components/auth-session";
 import { LandingHeader } from "./landing-header";
 import { CommunityShell } from "@/components/community/community-shell";
+import { SessionGate } from "@/components/session-gate";
+import { isProtectedRoute } from "@/lib/protected-routes";
+import { AdminShell } from "@/components/admin-shell";
 export function RouteShell({
   children,
   header,
@@ -30,7 +33,9 @@ export function RouteShell({
     "/account",
   ].some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
   let content: ReactNode;
-  if (path === "/" || auth) {
+  if (path === "/admin" || path.startsWith("/admin/")) {
+    content = <AdminShell>{children}</AdminShell>;
+  } else if (path === "/" || auth) {
     content = (
       <div className="cosmos-site">
         <a className="skip-link" href="#main">
@@ -55,7 +60,7 @@ export function RouteShell({
   }
   return (
     <AuthSessionProvider initialHasSession={hasSession}>
-      {content}
+      {isProtectedRoute(path) ? <SessionGate>{content}</SessionGate> : content}
     </AuthSessionProvider>
   );
 }

@@ -14,6 +14,8 @@ public final class UserConverter {
                 .email(new Email(row.getEmail()))
                 .passwordHash(row.getPasswordHash())
                 .nickname(row.getNickname())
+                .bio(row.getBio() == null ? "" : row.getBio())
+                .avatarFileId(row.getAvatarFileId() == null ? null : java.util.UUID.fromString(row.getAvatarFileId()))
                 .role(UserAccount.Role.valueOf(row.getRole()))
                 .status(UserAccount.Status.valueOf(row.getStatus()))
                 .emailVerified(Boolean.TRUE.equals(row.getEmailVerified()))
@@ -28,6 +30,8 @@ public final class UserConverter {
         row.setEmail(user.getEmail().value());
         row.setPasswordHash(user.getPasswordHash());
         row.setNickname(user.getNickname());
+        row.setBio(user.getBio());
+        row.setAvatarFileId(user.getAvatarFileId() == null ? null : user.getAvatarFileId().toString());
         row.setRole(user.getRole().name());
         row.setStatus(user.getStatus().name());
         row.setEmailVerified(user.isEmailVerified());

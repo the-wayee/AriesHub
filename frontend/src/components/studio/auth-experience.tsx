@@ -249,7 +249,7 @@ export function AuthExperience({
         "arieshub-demo-interests",
         JSON.stringify(selected),
       );
-      router.push("/my-content?preview=1");
+      router.push("/discover?preview=1");
       return;
     }
     const result = await authRequest<CurrentUser>(

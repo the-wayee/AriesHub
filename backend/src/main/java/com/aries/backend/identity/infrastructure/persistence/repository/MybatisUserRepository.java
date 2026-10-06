@@ -52,6 +52,15 @@ public class MybatisUserRepository implements UserRepository {
     }
 
     @Override
+    public void updateProfile(UserAccount user) {
+        // 显式 set 支持移除头像；只更新资料字段，避免覆盖并发余额与账号状态。
+        mapper.update(null, Wrappers.<UserPO>lambdaUpdate().eq(UserPO::getId, user.getId())
+                .set(UserPO::getNickname, user.getNickname()).set(UserPO::getBio, user.getBio())
+                .set(UserPO::getAvatarFileId, user.getAvatarFileId() == null ? null : user.getAvatarFileId().toString())
+                .setSql("updated_at = now()"));
+    }
+
+    @Override
     public void updateLastLoginAt(long id, OffsetDateTime loginAt) {
         UserPO row = new UserPO();
         row.setId(id);

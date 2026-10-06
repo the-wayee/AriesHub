@@ -12,12 +12,15 @@ public final class IdentityViews {
             String id,
             String email,
             String nickname,
+            String bio,
+            java.util.UUID avatarFileId,
             String role,
             boolean emailVerified,
             OffsetDateTime createdAt
     ) {
         public static CurrentUser from(UserAccount user) {
             return new CurrentUser(Long.toString(user.getId()), user.getEmail().value(), user.getNickname(),
+                    user.getBio(), user.getAvatarFileId(),
                     user.getRole().name(), user.isEmailVerified(), user.getCreatedAt());
         }
     }

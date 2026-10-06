@@ -47,7 +47,7 @@ com.aries.backend
 - `shared` 只放跨模块技术能力，不变成所有业务的杂物目录。`BusinessException` 和 `ErrorCode` 是共享契约，错误码枚举由各业务模块维护。健康检查是技术接口，允许直接调用技术探针，不人为建立健康领域。
 - PO 不离开基础设施层。公开 API 返回经过选择的只读投影。
 
-身份用例：Controller → `AuthApplicationService` → `UserRepository`。邮箱在领域内以 `Email` 值对象表示，由构造器完成规范化和校验。注册通过 `EmailVerificationService` 验证 Resend 邮件中的一次性验证码，登录只验证邮箱和 BCrypt 密码。Redis 保存验证码摘要、限流窗口和 Sa-Token 登录态；`sa-token-redis-template` 使用现有 Spring Data Redis 连接，使会话可跨重启和多实例共享。`AuthTrafficGuard` 通过 Redis 原子计数按来源地址和规范化邮箱分别限制登录、注册、注册发码，超限返回 429；来源地址只取服务端连接地址，不信任客户端可伪造的转发头。Sa-Token 在基础设施层实现 `SessionManager`；密码摘要不进入接口视图。身份路由由 identity 配置保护，管理员路由由 catalog 自身配置保护，未登录统一返回 401，非管理员返回 403。
+认证用例：`AuthController` → `AuthApplicationService` → `UserRepository`，负责注册、登录和退出。用户资料用例：`UserController` → `UserApplicationService` → `UserRepository`，负责当前用户查询、昵称与签名修改、头像上传、绑定和读取。两者共享 `identity` 边界和 `UserAccount` 聚合，头像不构成独立领域。认证接口位于 `/api/v1/auth/**`，当前用户与资料接口位于 `/api/v1/users/me/**`。邮箱在领域内以 `Email` 值对象表示，由构造器完成规范化和校验。注册通过 `EmailVerificationService` 验证 Resend 邮件中的一次性验证码，登录只验证邮箱和 BCrypt 密码。Redis 保存验证码摘要、限流窗口和 Sa-Token 登录态；`sa-token-redis-template` 使用现有 Spring Data Redis 连接，使会话可跨重启和多实例共享。`AuthTrafficGuard` 通过 Redis 原子计数按来源地址和规范化邮箱分别限制登录、注册、注册发码，超限返回 429；来源地址只取服务端连接地址，不信任客户端可伪造的转发头。Sa-Token 在基础设施层实现 `SessionManager`；密码摘要不进入接口视图。身份路由由 identity 配置保护，管理员路由由 catalog 自身配置保护，未登录统一返回 401，非管理员返回 403。
 
 ## 当前用例
 
@@ -103,4 +103,4 @@ com.aries.backend
 
 ## 对象存储
 
-`storage` 通过 `ObjectStorage` 应用端口隔离 S3 SDK，身份通过 composition 桥接。`StoredFileRepository` 使用 MyBatis-Plus 存储文件元数据，文件所有者才可取得短期下载签名。头像与内容附件后续保存文件 ID，并由各业务模块判断展示或解锁权限。配置与接口说明见 [对象存储](OBJECT_STORAGE.md)。
+`storage` 通过 `ObjectStorage` 应用端口隔离 S3 SDK。`FileStorageService` 是文件读写、元数据和签名工具，不读取会话、不校验头像或附件业务规则。`identity/UserApplicationService` 负责头像格式、大小、文件头、限流、绑定及展示授权，经 `UserAvatarStorage` 与 composition 桥接；附件和视频以后由所属业务模块提供独立用例与上传入口。业务字段保存文件 ID；通用私有下载由 `FileDownloadService` 校验所有者。配置与接口说明见 [对象存储](OBJECT_STORAGE.md)。

@@ -57,6 +57,7 @@ public class S3StorageConfiguration {
             public void put(String key, InputStream content, long size, String type) { throw unavailable(); }
             public void delete(String key) { throw unavailable(); }
             public String downloadUrl(String key, String name, Duration ttl) { throw unavailable(); }
+            public String imageUrl(String key, Duration ttl) { throw unavailable(); }
         };
     }
 }

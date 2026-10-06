@@ -9,6 +9,10 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum IdentityErrorCode implements ErrorCode {
     INVALID_EMAIL("邮箱格式不正确", Kind.BAD_REQUEST),
+    INVALID_PROFILE("昵称需为 2–30 字，个性签名最多 160 字", Kind.BAD_REQUEST),
+    AVATAR_NOT_SET("尚未设置头像", Kind.NOT_FOUND),
+    INVALID_AVATAR("头像仅支持 PNG、JPEG、WebP，最大 5 MiB", Kind.BAD_REQUEST),
+    AVATAR_FILE_NOT_FOUND("头像不存在或无权使用", Kind.NOT_FOUND),
     EMAIL_ALREADY_REGISTERED("该邮箱已注册，请直接登录", Kind.CONFLICT),
     INVALID_CREDENTIALS("邮箱或密码不正确", Kind.UNAUTHORIZED),
     AUTH_RATE_LIMITED("操作过于频繁，请稍后再试", Kind.TOO_MANY_REQUESTS),

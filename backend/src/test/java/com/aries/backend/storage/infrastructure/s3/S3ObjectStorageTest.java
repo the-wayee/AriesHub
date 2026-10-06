@@ -23,6 +23,8 @@ class S3ObjectStorageTest {
             assertThat(url.getHost()).isEqualTo("arieshub-test.s3.oss-cn-hangzhou.aliyuncs.com");
             assertThat(url.getPath()).isEqualTo("/uploads/42/attachment/file.pdf");
             assertThat(url.getQuery()).contains("X-Amz-Algorithm=AWS4-HMAC-SHA256", "X-Amz-Expires=300", "response-content-disposition=attachment");
+            URI avatar = URI.create(storage.imageUrl("uploads/42/avatar/image.png", Duration.ofMinutes(5)));
+            assertThat(avatar.getQuery()).contains("response-content-disposition=inline", "X-Amz-Expires=300");
         }
     }
     @Test void enabledConfigurationRequiresCredentialsAndPropertiesRedactSecrets() {

@@ -37,14 +37,10 @@ public class AuthController {
         return service.login(request.email(), request.password());
     }
 
-    @GetMapping("/me")
-    public CurrentUser me() {
-        return service.currentUser();
-    }
-
     @PostMapping("/logout")
     public ResponseEntity<Void> logout() {
         service.logout();
         return ResponseEntity.noContent().build();
     }
+
 }

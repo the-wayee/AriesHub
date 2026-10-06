@@ -8,4 +8,5 @@ public interface ObjectStorage {
     void put(String key, InputStream content, long size, String contentType);
     void delete(String key);
     String downloadUrl(String key, String filename, Duration ttl);
+    String imageUrl(String key, Duration ttl);
 }

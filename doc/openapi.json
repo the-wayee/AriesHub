@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AriesHub API",
-    "version": "0.6.0",
+    "version": "0.7.0",
     "description": "Public content catalog, Redis-backed cookie identity, flat paged discussions with comment likes, administrator content and moderation API. Credit balance lives on users and pricing on publications; the credit ledger and unlock tables exist but the credit application API is not implemented yet. Private S3-compatible file uploads and owner-only temporary downloads."
   },
   "servers": [
@@ -39,8 +39,8 @@
               }
             }
           },
-          "503": {
-            "description": "Database temporarily unavailable",
+          "500": {
+            "description": "Unexpected server error",
             "headers": {
               "X-Request-Id": {
                 "schema": {
@@ -62,8 +62,8 @@
               }
             }
           },
-          "500": {
-            "description": "Unexpected server error",
+          "503": {
+            "description": "Database temporarily unavailable",
             "headers": {
               "X-Request-Id": {
                 "schema": {
@@ -262,7 +262,7 @@
         }
       }
     },
-    "/auth/me": {
+    "/users/me": {
       "get": {
         "operationId": "getCurrentUser",
         "summary": "Returns the signed-in member",
@@ -384,8 +384,8 @@
               }
             }
           },
-          "503": {
-            "description": "Database temporarily unavailable",
+          "500": {
+            "description": "Unexpected server error",
             "headers": {
               "X-Request-Id": {
                 "schema": {
@@ -407,8 +407,8 @@
               }
             }
           },
-          "500": {
-            "description": "Unexpected server error",
+          "503": {
+            "description": "Database temporarily unavailable",
             "headers": {
               "X-Request-Id": {
                 "schema": {
@@ -906,8 +906,8 @@
               }
             }
           },
-          "503": {
-            "description": "Database temporarily unavailable",
+          "500": {
+            "description": "Unexpected server error",
             "headers": {
               "X-Request-Id": {
                 "schema": {
@@ -929,8 +929,8 @@
               }
             }
           },
-          "500": {
-            "description": "Unexpected server error",
+          "503": {
+            "description": "Database temporarily unavailable",
             "headers": {
               "X-Request-Id": {
                 "schema": {
@@ -1099,8 +1099,8 @@
               }
             }
           },
-          "503": {
-            "description": "Database temporarily unavailable",
+          "500": {
+            "description": "Unexpected server error",
             "headers": {
               "X-Request-Id": {
                 "schema": {
@@ -1122,8 +1122,8 @@
               }
             }
           },
-          "500": {
-            "description": "Unexpected server error",
+          "503": {
+            "description": "Database temporarily unavailable",
             "headers": {
               "X-Request-Id": {
                 "schema": {
@@ -1256,8 +1256,8 @@
               }
             }
           },
-          "503": {
-            "description": "Database temporarily unavailable",
+          "500": {
+            "description": "Unexpected server error",
             "headers": {
               "X-Request-Id": {
                 "schema": {
@@ -1279,8 +1279,8 @@
               }
             }
           },
-          "500": {
-            "description": "Unexpected server error",
+          "503": {
+            "description": "Database temporarily unavailable",
             "headers": {
               "X-Request-Id": {
                 "schema": {
@@ -1700,11 +1700,210 @@
         }
       }
     },
-    "/storage/uploads": {
+    "/storage/files/{id}/download-url": {
+      "get": {
+        "operationId": "getFileDownloadUrl",
+        "summary": "Get a five-minute private download URL for an owned file",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Temporary download URL; do not persist it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileDownload"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "503": {
+            "description": "Storage unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/profile": {
+      "put": {
+        "operationId": "updateCurrentProfile",
+        "summary": "Updates the current member profile; avatar must be an owned AVATAR file",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProfile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Profile saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUser"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Avatar file missing, foreign or wrong purpose",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Database temporarily unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/avatar-url": {
+      "get": {
+        "operationId": "getCurrentAvatarImage",
+        "summary": "Returns an owner-only inline avatar URL, valid for five minutes",
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Temporary image URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvatarImage"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Account disabled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No avatar",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Storage unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/users/me/avatar": {
       "post": {
-        "operationId": "uploadFile",
-        "summary": "Upload a private avatar (5MB) or attachment (20MB)",
-        "description": "Requires a session; 20 uploads/user/minute. Images: PNG/JPEG/WebP. Attachments also accept PDF/ZIP. File headers must match Content-Type. Returns a durable file ID; does not change avatar or bind a publication.",
+        "operationId": "uploadAvatar",
+        "summary": "上传当前用户头像",
+        "description": "Requires an active session; 20 avatar uploads/user/minute. PNG/JPEG/WebP only, maximum 5 MiB, verified by the user profile use case including file headers. Returns a durable avatar file ID; PUT /users/me/profile binds it. No generic browser-selected upload purpose.",
         "security": [
           {
             "cookieAuth": []
@@ -1717,13 +1916,9 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "purpose",
                   "file"
                 ],
                 "properties": {
-                  "purpose": {
-                    "$ref": "#/components/schemas/StoredFilePurpose"
-                  },
                   "file": {
                     "type": "string",
                     "format": "binary"
@@ -1777,59 +1972,6 @@
                 }
               }
             }
-          },
-          "503": {
-            "description": "Storage unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/storage/files/{id}/download-url": {
-      "get": {
-        "operationId": "getFileDownloadUrl",
-        "summary": "Get a five-minute private download URL for an owned file",
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Temporary download URL; do not persist it",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/FileDownload"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           },
           "503": {
             "description": "Storage unavailable",
@@ -2035,7 +2177,9 @@
           "nickname",
           "role",
           "emailVerified",
-          "createdAt"
+          "createdAt",
+          "bio",
+          "avatarFileId"
         ],
         "properties": {
           "id": {
@@ -2063,6 +2207,17 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "bio": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "avatarFileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
           }
         }
       },
@@ -2695,6 +2850,49 @@
         }
       },
       "FileDownload": {
+        "type": "object",
+        "required": [
+          "url",
+          "expiresAt"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UpdateProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "nickname",
+          "bio"
+        ],
+        "properties": {
+          "nickname": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 30
+          },
+          "bio": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "avatarFileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          }
+        }
+      },
+      "AvatarImage": {
         "type": "object",
         "required": [
           "url",

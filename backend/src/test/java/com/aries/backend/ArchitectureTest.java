@@ -31,8 +31,14 @@ class ArchitectureTest {
 
     @Test
     void storageIsIndependentAndSdkStaysInInfrastructure() {
+        noClasses().that().haveSimpleName("FileStorageService")
+                .should().dependOnClassesThat().haveSimpleName("StorageIdentityProvider")
+                .because("the storage tool must not decide the acting user").check(code);
         noClasses().that().resideInAPackage("..storage..")
                 .should().dependOnClassesThat().resideInAnyPackage("..catalog..", "..identity..", "..discussion..")
+                .check(code);
+        noClasses().that().resideInAnyPackage("..identity..", "..catalog..", "..discussion..")
+                .should().dependOnClassesThat().resideInAPackage("..storage..")
                 .check(code);
         noClasses().that().resideOutsideOfPackage("..infrastructure..")
                 .should().dependOnClassesThat().resideInAPackage("software.amazon.awssdk..")
