@@ -15,12 +15,21 @@ public record SavePublicationCommand(
         String fullMarkdown,
         String requirements,
         String deliverables,
-        String version
-) {
+        String version,
+        String coverFileId,
+        boolean featured) {
     public Publication.Draft toDraft() {
-        return new Publication.Draft(categoryId, slug, title, summary,
+        return new Publication.Draft(
+                categoryId,
+                slug,
+                title,
+                summary,
                 Publication.PublicationType.valueOf(publicationType),
-                Publication.AccessType.valueOf(accessType), creditPrice,
-                new Publication.Content(previewMarkdown, fullMarkdown, requirements, deliverables, version));
+                Publication.AccessType.valueOf(accessType),
+                creditPrice,
+                new Publication.Content(
+                        previewMarkdown, fullMarkdown, requirements, deliverables, version),
+                coverFileId,
+                featured);
     }
 }

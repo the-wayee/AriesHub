@@ -1,7 +1,9 @@
 package com.aries.backend.identity.infrastructure.security;
 
 import cn.dev33.satoken.stp.StpUtil;
+
 import com.aries.backend.identity.application.port.SessionManager;
+
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -17,6 +19,11 @@ public class SaTokenSessionManager implements SessionManager {
     @Override
     public void logout() {
         StpUtil.logout();
+    }
+
+    @Override
+    public void revoke(long userId) {
+        StpUtil.logout(userId);
     }
 
     @Override

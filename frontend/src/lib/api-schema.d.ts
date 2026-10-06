@@ -443,6 +443,142 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/admin/users": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Search/page members without exposing credentials */
+    get: operations["listAdminMembers"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/users/{id}/status": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Disable/restore member; revoke sessions on disable; protect admins */
+    put: operations["changeMemberStatus"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/operations/overview": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Persisted totals and seven-day activity */
+    get: operations["getOperationsOverview"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/operations/ledger": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read actual credit movements */
+    get: operations["listCreditLedger"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/discussions/comments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Moderation queue; deleted body is redacted */
+    get: operations["listModerationComments"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/media": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Image/cover 10 MiB; MP4/WebM 100 MiB; attachment 20 MiB */
+    post: operations["uploadPublicationMedia"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/admin/media/{id}/url": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Admin short-lived private media URL */
+    get: operations["getAdminMediaUrl"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/publications/{publicationId}/media/{id}/url": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Published cover/preview is public; paid full media CONTENT_LOCKED; draft/unbound unavailable */
+    get: operations["getPublicationMediaUrl"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -555,6 +691,10 @@ export interface components {
       publicationType: components["schemas"]["PublicationType"];
       /** Format: int64 */
       creditPrice: number;
+      /** Format: uuid */
+      coverFileId: string | null;
+      /** @default false */
+      featured: boolean;
     };
     PublicationDetail: {
       preview: components["schemas"]["Preview"];
@@ -592,6 +732,10 @@ export interface components {
       publicationType: components["schemas"]["PublicationType"];
       /** Format: int64 */
       creditPrice: number;
+      /** Format: uuid */
+      coverFileId?: string | null;
+      /** @default false */
+      featured: boolean;
     };
     AdminPublicationSummary: {
       id: string;
@@ -610,8 +754,31 @@ export interface components {
       publicationType: components["schemas"]["PublicationType"];
       /** Format: int64 */
       creditPrice: number;
+      /** Format: uuid */
+      coverFileId: string | null;
+      /** @default false */
+      featured: boolean;
     };
-    AdminPublicationDetail: components["schemas"]["AdminPublicationSummary"] & {
+    AdminPublicationDetail: {
+      id: string;
+      slug: string;
+      title: string;
+      accessType: components["schemas"]["AccessType"];
+      /** @enum {string} */
+      status: "DRAFT" | "PUBLISHED" | "ARCHIVED";
+      /** @enum {string} */
+      deliveryStatus: "AVAILABLE" | "SUSPENDED";
+      /** Format: date-time */
+      publishedAt: string | null;
+      /** Format: date-time */
+      updatedAt: string;
+      publicationType: components["schemas"]["PublicationType"];
+      /** Format: int64 */
+      creditPrice: number;
+      /** Format: uuid */
+      coverFileId: string | null;
+      /** @default false */
+      featured: boolean;
       categoryId: string;
       summary: string;
       previewMarkdown: string;
@@ -710,6 +877,127 @@ export interface components {
       data: unknown;
       /** Format: uuid */
       traceId: string;
+    };
+    AdminMember: {
+      id: string;
+      email: string;
+      nickname: string;
+      /** @enum {string} */
+      role: "ADMIN" | "USER";
+      /** @enum {string} */
+      status: "ACTIVE" | "DISABLED";
+      emailVerified: boolean;
+      /** Format: int64 */
+      creditBalance: number;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      lastLoginAt: string | null;
+    };
+    MemberStatusRequest: {
+      /** @enum {string} */
+      status: "ACTIVE" | "DISABLED";
+    };
+    OperationsSummary: {
+      /** Format: int64 */
+      members: number;
+      /** Format: int64 */
+      activeMembers: number;
+      /** Format: int64 */
+      newMembers: number;
+      /** Format: int64 */
+      published: number;
+      /** Format: int64 */
+      drafts: number;
+      /** Format: int64 */
+      paid: number;
+      /** Format: int64 */
+      comments: number;
+      /** Format: int64 */
+      unlocks: number;
+      /** Format: int64 */
+      creditsSpent: number;
+      /** Format: int64 */
+      creditBalance: number;
+    };
+    OperationsDay: {
+      /** Format: date */
+      date: string;
+      /** Format: int64 */
+      registrations: number;
+      /** Format: int64 */
+      publications: number;
+      /** Format: int64 */
+      comments: number;
+    };
+    OperationsOverview: {
+      summary: components["schemas"]["OperationsSummary"];
+      days: components["schemas"]["OperationsDay"][];
+    };
+    LedgerEntry: {
+      id: string;
+      email: string;
+      nickname: string;
+      /** Format: int64 */
+      delta: number;
+      /** Format: int64 */
+      balanceAfter: number;
+      reason: string;
+      note: string | null;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    ModerationComment: {
+      id: string;
+      authorName: string;
+      targetType: string;
+      targetKey: string;
+      title: string;
+      body: string;
+      status: string;
+      threadStatus: string;
+      /** Format: date-time */
+      createdAt: string;
+    };
+    AdminMemberPage: {
+      items: components["schemas"]["AdminMember"][];
+      /** Format: int64 */
+      page: number;
+      /** Format: int64 */
+      size: number;
+      /** Format: int64 */
+      total: number;
+    };
+    LedgerPage: {
+      items: components["schemas"]["LedgerEntry"][];
+      /** Format: int64 */
+      page: number;
+      /** Format: int64 */
+      size: number;
+      /** Format: int64 */
+      total: number;
+    };
+    ModerationPage: {
+      items: components["schemas"]["ModerationComment"][];
+      /** Format: int64 */
+      page: number;
+      /** Format: int64 */
+      size: number;
+      /** Format: int64 */
+      total: number;
+    };
+    PublicationMedia: {
+      /** Format: uuid */
+      id: string;
+      /** @enum {string} */
+      kind: "COVER" | "IMAGE" | "VIDEO" | "ATTACHMENT";
+      filename: string;
+      contentType: string;
+      /** Format: int64 */
+      size: number;
+      url: string;
+      /** Format: date-time */
+      expiresAt: string;
     };
   };
   responses: {
@@ -2467,6 +2755,324 @@ export interface operations {
           "application/json": components["schemas"]["Error"];
         };
       };
+    };
+  };
+  listAdminMembers: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+        q?: string;
+        status?: "" | "ACTIVE" | "DISABLED";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["AdminMemberPage"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      400: components["responses"]["Forbidden"];
+      401: components["responses"]["Forbidden"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["Forbidden"];
+      503: components["responses"]["Forbidden"];
+    };
+  };
+  changeMemberStatus: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MemberStatusRequest"];
+      };
+    };
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["AdminMember"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      400: components["responses"]["Forbidden"];
+      401: components["responses"]["Forbidden"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["Forbidden"];
+      503: components["responses"]["Forbidden"];
+    };
+  };
+  getOperationsOverview: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["OperationsOverview"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      400: components["responses"]["Forbidden"];
+      401: components["responses"]["Forbidden"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["Forbidden"];
+      503: components["responses"]["Forbidden"];
+    };
+  };
+  listCreditLedger: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["LedgerPage"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      400: components["responses"]["Forbidden"];
+      401: components["responses"]["Forbidden"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["Forbidden"];
+      503: components["responses"]["Forbidden"];
+    };
+  };
+  listModerationComments: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+        status?: "" | "PUBLISHED" | "HIDDEN" | "DELETED";
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["ModerationPage"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      400: components["responses"]["Forbidden"];
+      401: components["responses"]["Forbidden"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["Forbidden"];
+      503: components["responses"]["Forbidden"];
+    };
+  };
+  uploadPublicationMedia: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "multipart/form-data": {
+          /** @enum {string} */
+          kind: "COVER" | "IMAGE" | "VIDEO" | "ATTACHMENT";
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      /** @description Success */
+      201: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationMedia"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      400: components["responses"]["Forbidden"];
+      401: components["responses"]["Forbidden"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["Forbidden"];
+      503: components["responses"]["Forbidden"];
+    };
+  };
+  getAdminMediaUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["FileDownload"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      400: components["responses"]["Forbidden"];
+      401: components["responses"]["Forbidden"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["Forbidden"];
+      503: components["responses"]["Forbidden"];
+    };
+  };
+  getPublicationMediaUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        publicationId: number;
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["FileDownload"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      400: components["responses"]["Forbidden"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["Forbidden"];
     };
   };
 }

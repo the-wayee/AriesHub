@@ -19,8 +19,9 @@ public final class AdminCatalogViews {
             String status,
             String deliveryStatus,
             OffsetDateTime publishedAt,
-            OffsetDateTime updatedAt
-    ) {}
+            OffsetDateTime updatedAt,
+            String coverFileId,
+            boolean featured) {}
 
     public record AdminPublicationDetail(
             String id,
@@ -40,6 +41,7 @@ public final class AdminCatalogViews {
             String deliverables,
             String version,
             OffsetDateTime createdAt,
-            OffsetDateTime updatedAt
-    ) {}
+            OffsetDateTime updatedAt,
+            String coverFileId,
+            boolean featured) {}
 }

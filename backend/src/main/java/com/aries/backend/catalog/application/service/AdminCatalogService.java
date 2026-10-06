@@ -1,23 +1,25 @@
 package com.aries.backend.catalog.application.service;
 
+import static com.aries.backend.catalog.application.exception.CatalogErrorCode.*;
+
 import com.aries.backend.catalog.application.command.SavePublicationCommand;
 import com.aries.backend.catalog.application.port.AdminCatalogReadPort;
-import com.aries.backend.catalog.application.view.AdminCatalogViews.CategoryOption;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetail;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationSummary;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.CategoryOption;
 import com.aries.backend.catalog.domain.model.Publication;
 import com.aries.backend.catalog.domain.repository.PublicationRepository;
 import com.aries.backend.shared.application.exception.BusinessException;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-
-import static com.aries.backend.catalog.application.exception.CatalogErrorCode.*;
+import java.util.List;
 
 /** 管理员内容用例：编辑始终保存完整快照，发布和下架使用显式动作。 */
 @Service
@@ -25,6 +27,7 @@ import static com.aries.backend.catalog.application.exception.CatalogErrorCode.*
 public class AdminCatalogService {
     private final AdminCatalogReadPort catalog;
     private final PublicationRepository publications;
+    private final PublicationMediaService media;
 
     @Transactional(readOnly = true)
     public List<CategoryOption> categories() {
@@ -38,14 +41,17 @@ public class AdminCatalogService {
 
     @Transactional(readOnly = true)
     public AdminPublicationDetail detail(long id) {
-        return catalog.find(id).orElseThrow(() -> new BusinessException(ADMIN_PUBLICATION_NOT_FOUND));
+        return catalog.find(id)
+                .orElseThrow(() -> new BusinessException(ADMIN_PUBLICATION_NOT_FOUND));
     }
 
     @Transactional
     public AdminPublicationDetail create(SavePublicationCommand command) {
         validateCategory(command.categoryId());
         try {
+            media.validateReferences(0, command);
             Publication created = publications.save(Publication.create(command.toDraft()));
+            media.bind(created.getId(), command);
             return detail(created.getId());
         } catch (DuplicateKeyException error) {
             throw new BusinessException(PUBLICATION_SLUG_CONFLICT);
@@ -57,7 +63,9 @@ public class AdminCatalogService {
         validateCategory(command.categoryId());
         try {
             Publication study = editable(id);
+            media.validateReferences(id, command);
             publications.save(study.edit(command.toDraft()));
+            media.bind(id, command);
             return detail(id);
         } catch (DuplicateKeyException error) {
             throw new BusinessException(PUBLICATION_SLUG_CONFLICT);
@@ -83,13 +91,15 @@ public class AdminCatalogService {
     }
 
     private Publication editable(long id) {
-        return publications.findForEditing(id)
+        return publications
+                .findForEditing(id)
                 .orElseThrow(() -> new BusinessException(ADMIN_PUBLICATION_NOT_FOUND));
     }
 
     private void validateCategory(long categoryId) {
-        boolean exists = catalog.categories().stream()
-                .anyMatch(category -> Long.parseLong(category.id()) == categoryId);
+        boolean exists =
+                catalog.categories().stream()
+                        .anyMatch(category -> Long.parseLong(category.id()) == categoryId);
         if (!exists) throw new BusinessException(CATEGORY_NOT_FOUND);
     }
 }

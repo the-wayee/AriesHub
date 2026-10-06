@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aries.backend.discussion.infrastructure.persistence.mapper.ModerationMapper">
+<sql id="filters">c.is_deleted=false <if test="status != ''">AND c.status=#{status}</if></sql>
+<select id="list" resultType="com.aries.backend.discussion.application.port.ModerationReadPort$Comment">SELECT c.id::text AS id,u.nickname AS author_name,t.target_type,t.target_key,COALESCE(p.title,t.target_key) title,CASE WHEN c.status='DELETED' THEN '' ELSE c.body END AS body,c.status,t.status AS thread_status,c.created_at FROM comments c JOIN users u ON u.id=c.author_id JOIN discussion_threads t ON t.id=c.thread_id LEFT JOIN publications p ON t.target_type='PUBLICATION' AND p.slug=t.target_key WHERE <include refid="filters"/> ORDER BY c.created_at DESC,c.id DESC LIMIT #{limit} OFFSET #{offset}</select>
+<select id="count" resultType="long">SELECT count(*) FROM comments c WHERE <include refid="filters"/></select>
+</mapper>

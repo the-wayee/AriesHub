@@ -11,7 +11,7 @@
     <select id="publications" resultType="com.aries.backend.catalog.application.view.AdminCatalogViews$AdminPublicationSummary">
         SELECT p.id::text AS id, p.slug, p.title, cat.name AS category_name,
                p.publication_type, p.access_type, p.credit_price,
-               p.status, p.delivery_status, p.published_at, p.updated_at
+               p.status, p.delivery_status, p.published_at, p.updated_at, p.cover_file_id, p.featured
         FROM publications p
         JOIN categories cat ON cat.id = p.category_id AND cat.is_deleted = false
         WHERE p.is_deleted = false
@@ -23,7 +23,7 @@
                p.publication_type, p.access_type, p.credit_price,
                p.status, p.delivery_status, p.published_at,
                body.preview_markdown, body.full_markdown, body.requirements, body.deliverables,
-               body.version, p.created_at, p.updated_at
+               body.version, p.created_at, p.updated_at, p.cover_file_id, p.featured
         FROM publications p
         JOIN categories cat ON cat.id = p.category_id AND cat.is_deleted = false
         JOIN publication_contents body ON body.publication_id = p.id AND body.is_deleted = false

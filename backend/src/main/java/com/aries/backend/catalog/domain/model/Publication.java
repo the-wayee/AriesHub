@@ -2,12 +2,12 @@ package com.aries.backend.catalog.domain.model;
 
 import lombok.Builder;
 import lombok.Value;
+
 import java.time.OffsetDateTime;
 
 /**
- * 发布内容聚合根：集中表达编辑、发布、下架和公开阅读规则。
- * 不依赖 Spring、MyBatis-Plus 或 HTTP；正文由单独的受控读取入口提供。
- * 不开放通用 setter，避免后续业务绕过发布、定价等行为直接修改聚合状态。
+ * 发布内容聚合根：集中表达编辑、发布、下架和公开阅读规则。 不依赖 Spring、MyBatis-Plus 或 HTTP；正文由单独的受控读取入口提供。 不开放通用
+ * setter，避免后续业务绕过发布、定价等行为直接修改聚合状态。
  */
 @Value
 @Builder(toBuilder = true)
@@ -24,29 +24,90 @@ public class Publication {
     DeliveryStatus deliveryStatus;
     OffsetDateTime publishedAt;
     Content content;
+    String coverFileId;
+    boolean featured;
 
-    public enum PublicationType { CASE_STUDY, ARTICLE, COURSE }
-    public enum AccessType { FREE, CREDIT }
-    public enum PublicationStatus { DRAFT, PUBLISHED, ARCHIVED }
-    public enum DeliveryStatus { AVAILABLE, SUSPENDED }
+    public enum PublicationType {
+        CASE_STUDY,
+        ARTICLE,
+        COURSE
+    }
 
-    public record Content(String previewMarkdown, String fullMarkdown, String requirements,
-                          String deliverables, String version) {}
+    public enum AccessType {
+        FREE,
+        CREDIT
+    }
 
-    public record Draft(long categoryId, String slug, String title, String summary,
-                        PublicationType publicationType, AccessType accessType,
-                        long creditPrice, Content content) {}
+    public enum PublicationStatus {
+        DRAFT,
+        PUBLISHED,
+        ARCHIVED
+    }
+
+    public enum DeliveryStatus {
+        AVAILABLE,
+        SUSPENDED
+    }
+
+    public record Content(
+            String previewMarkdown,
+            String fullMarkdown,
+            String requirements,
+            String deliverables,
+            String version) {}
+
+    public record Draft(
+            long categoryId,
+            String slug,
+            String title,
+            String summary,
+            PublicationType publicationType,
+            AccessType accessType,
+            long creditPrice,
+            Content content,
+            String coverFileId,
+            boolean featured) {
+        public Draft(
+                long categoryId,
+                String slug,
+                String title,
+                String summary,
+                PublicationType publicationType,
+                AccessType accessType,
+                long creditPrice,
+                Content content) {
+            this(
+                    categoryId,
+                    slug,
+                    title,
+                    summary,
+                    publicationType,
+                    accessType,
+                    creditPrice,
+                    content,
+                    null,
+                    false);
+        }
+    }
 
     public static class MissingContent extends RuntimeException {}
 
     public static Publication create(Draft draft) {
         validate(draft);
         return Publication.builder()
-                .categoryId(draft.categoryId()).slug(draft.slug()).title(draft.title())
-                .summary(draft.summary()).publicationType(draft.publicationType())
-                .accessType(draft.accessType()).creditPrice(draft.creditPrice()).content(draft.content())
+                .categoryId(draft.categoryId())
+                .slug(draft.slug())
+                .title(draft.title())
+                .summary(draft.summary())
+                .publicationType(draft.publicationType())
+                .accessType(draft.accessType())
+                .creditPrice(draft.creditPrice())
+                .coverFileId(draft.coverFileId())
+                .featured(draft.featured())
+                .content(draft.content())
                 .status(PublicationStatus.DRAFT)
-                .deliveryStatus(DeliveryStatus.AVAILABLE).build();
+                .deliveryStatus(DeliveryStatus.AVAILABLE)
+                .build();
     }
 
     public Publication edit(Draft draft) {
@@ -55,10 +116,17 @@ public class Publication {
             throw new MissingContent();
         }
         return toBuilder()
-                .categoryId(draft.categoryId()).slug(draft.slug()).title(draft.title())
-                .summary(draft.summary()).publicationType(draft.publicationType())
-                .accessType(draft.accessType()).creditPrice(draft.creditPrice())
-                .content(draft.content()).build();
+                .categoryId(draft.categoryId())
+                .slug(draft.slug())
+                .title(draft.title())
+                .summary(draft.summary())
+                .publicationType(draft.publicationType())
+                .accessType(draft.accessType())
+                .creditPrice(draft.creditPrice())
+                .coverFileId(draft.coverFileId())
+                .featured(draft.featured())
+                .content(draft.content())
+                .build();
     }
 
     /** 只有具备完整正文的内容可以发布；时间由应用用例注入。 */
@@ -66,8 +134,11 @@ public class Publication {
         if (!hasFullContent(content)) {
             throw new MissingContent();
         }
-        return toBuilder().status(PublicationStatus.PUBLISHED)
-                .deliveryStatus(DeliveryStatus.AVAILABLE).publishedAt(now).build();
+        return toBuilder()
+                .status(PublicationStatus.PUBLISHED)
+                .deliveryStatus(DeliveryStatus.AVAILABLE)
+                .publishedAt(now)
+                .build();
     }
 
     public Publication archive() {
@@ -75,18 +146,25 @@ public class Publication {
     }
 
     private static boolean hasFullContent(Content content) {
-        return content != null && content.fullMarkdown() != null && !content.fullMarkdown().isBlank();
+        return content != null
+                && content.fullMarkdown() != null
+                && !content.fullMarkdown().isBlank();
     }
 
     private static void validate(Draft draft) {
-        if (draft.categoryId() <= 0 || draft.publicationType() == null ||
-                draft.accessType() == null || draft.content() == null ||
-                draft.slug() == null || draft.slug().isBlank() ||
-                draft.title() == null || draft.title().isBlank() ||
-                draft.summary() == null || draft.summary().isBlank() ||
-                draft.creditPrice() < 0 ||
-                (draft.accessType() == AccessType.FREE && draft.creditPrice() != 0) ||
-                (draft.accessType() == AccessType.CREDIT && draft.creditPrice() == 0)) {
+        if (draft.categoryId() <= 0
+                || draft.publicationType() == null
+                || draft.accessType() == null
+                || draft.content() == null
+                || draft.slug() == null
+                || draft.slug().isBlank()
+                || draft.title() == null
+                || draft.title().isBlank()
+                || draft.summary() == null
+                || draft.summary().isBlank()
+                || draft.creditPrice() < 0
+                || (draft.accessType() == AccessType.FREE && draft.creditPrice() != 0)
+                || (draft.accessType() == AccessType.CREDIT && draft.creditPrice() == 0)) {
             throw new IllegalArgumentException("发布内容草稿无效");
         }
     }

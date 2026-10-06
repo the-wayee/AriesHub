@@ -4,7 +4,7 @@
     <sql id="publicColumns">
         p.id::text AS id, p.slug, p.title, p.summary, cat.slug AS category_slug,
         cat.name AS category_name, p.access_type, p.publication_type,
-        p.credit_price, p.published_at
+        p.credit_price, p.published_at, p.cover_file_id, p.featured
     </sql>
     <sql id="visible">
         p.status = 'PUBLISHED' AND p.delivery_status = 'AVAILABLE' AND p.is_deleted = false
@@ -28,7 +28,7 @@
         SELECT <include refid="publicColumns"/>
         FROM publications p JOIN categories cat ON cat.id = p.category_id
         WHERE cat.is_deleted = false AND <include refid="filters"/>
-        ORDER BY p.published_at DESC, p.id DESC LIMIT #{query.size} OFFSET #{query.offset}
+        ORDER BY p.featured DESC, p.published_at DESC, p.id DESC LIMIT #{query.size} OFFSET #{query.offset}
     </select>
     <select id="count" resultType="long">
         SELECT count(*) FROM publications p JOIN categories cat ON cat.id = p.category_id

@@ -1,6 +1,7 @@
 package com.aries.backend.catalog.application.exception;
 
 import com.aries.backend.shared.application.exception.ErrorCode;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -8,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum CatalogErrorCode implements ErrorCode {
+    INVALID_MEDIA("素材格式或大小不符合要求", Kind.BAD_REQUEST),
+    MEDIA_NOT_FOUND("素材不存在或不能用于这篇内容", Kind.NOT_FOUND),
     PUBLICATION_NOT_FOUND("内容不存在或尚未公开", Kind.NOT_FOUND),
     CONTENT_LOCKED("该内容的完整正文尚未解锁", Kind.FORBIDDEN),
     ADMIN_PUBLICATION_NOT_FOUND("内容不存在", Kind.NOT_FOUND),

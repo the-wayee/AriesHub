@@ -58,8 +58,8 @@ test("administrator can browse publications and open the editor", async ({
     });
   });
 
-  await page.goto("/admin");
-  await expect(page.getByRole("heading", { name: "内容后台" })).toBeVisible();
+  await page.goto("/admin/publications");
+  await expect(page.getByRole("heading", { name: "内容管理" })).toBeVisible();
   await expect(page.getByText("Codex 实战工作流")).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("admin-list.png"),
@@ -67,14 +67,17 @@ test("administrator can browse publications and open the editor", async ({
   });
   await page.getByRole("link", { name: "编辑" }).click();
   await expect(page.getByRole("heading", { name: "编辑内容" })).toBeVisible();
-  await expect(page.getByLabel("标题")).toHaveValue("Codex 实战工作流");
-  await expect(page.getByRole("button", { name: "发布" })).toBeVisible();
+  await expect(page.getByLabel("标题", { exact: true })).toHaveValue(
+    "Codex 实战工作流",
+  );
+  await expect(
+    page.getByRole("button", { name: "发布", exact: true }),
+  ).toBeVisible();
   await page.screenshot({
     path: testInfo.outputPath("admin-editor.png"),
     fullPage: true,
   });
-  await page.getByRole("combobox", { name: "阅读方式" }).click();
-  await page.getByRole("option", { name: "积分内容" }).click();
+  await page.getByRole("button", { name: "积分解锁", exact: true }).click();
   expect(
     await page.locator(".admin-editor").evaluate((form) => {
       const values = new FormData(form as HTMLFormElement);

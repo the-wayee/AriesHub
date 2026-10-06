@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.aries.backend.operations.infrastructure.persistence.OperationsMapper">
+<select id="summary" resultType="com.aries.backend.operations.application.port.OperationsReadPort$Summary">
+SELECT (SELECT count(*) FROM users WHERE is_deleted=false) members,
+(SELECT count(*) FROM users WHERE is_deleted=false AND last_login_at>=now()-interval '7 days') active_members,
+(SELECT count(*) FROM users WHERE is_deleted=false AND created_at>=now()-interval '7 days') new_members,
+(SELECT count(*) FROM publications WHERE is_deleted=false AND status='PUBLISHED') published,
+(SELECT count(*) FROM publications WHERE is_deleted=false AND status='DRAFT') drafts,
+(SELECT count(*) FROM publications WHERE is_deleted=false AND status='PUBLISHED' AND access_type='CREDIT') paid,
+(SELECT count(*) FROM comments WHERE is_deleted=false AND status='PUBLISHED') comments,
+(SELECT count(*) FROM content_unlocks WHERE is_deleted=false) unlocks,
+(SELECT COALESCE(-sum(delta),0) FROM credit_ledger_entries WHERE reason='SPEND') credits_spent,
+(SELECT COALESCE(sum(credit_balance),0) FROM users WHERE is_deleted=false) credit_balance
+</select>
+<select id="days" resultType="com.aries.backend.operations.application.port.OperationsReadPort$Day">
+SELECT d.day::date AS date,
+(SELECT count(*) FROM users u WHERE u.is_deleted=false AND u.created_at>=d.day AND u.created_at&lt;d.day+interval '1 day') registrations,
+(SELECT count(*) FROM publications p WHERE p.is_deleted=false AND p.published_at>=d.day AND p.published_at&lt;d.day+interval '1 day') publications,
+(SELECT count(*) FROM comments c WHERE c.is_deleted=false AND c.status='PUBLISHED' AND c.created_at>=d.day AND c.created_at&lt;d.day+interval '1 day') comments
+FROM generate_series(current_date-6,current_date,interval '1 day') AS d(day) ORDER BY d.day
+</select></mapper>

@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AriesHub API",
-    "version": "0.7.0",
-    "description": "Public content catalog, Redis-backed cookie identity, flat paged discussions with comment likes, administrator content and moderation API. Credit balance lives on users and pricing on publications; the credit ledger and unlock tables exist but the credit application API is not implemented yet. Private S3-compatible file uploads and owner-only temporary downloads. All JSON responses use Result {code,msg,data,traceId}; success code is SUCCESS, failures retain semantic HTTP status and business codes. Empty successes use HTTP 200 with data:null; throttling includes Retry-After and data.retryAfterSeconds."
+    "version": "0.8.0",
+    "description": "Public content catalog, Redis-backed cookie identity, flat paged discussions with comment likes, administrator content and moderation API. Credit balance lives on users and pricing on publications; the credit ledger and unlock tables exist but the credit application API is not implemented yet. Private S3-compatible file uploads and owner-only temporary downloads. All JSON responses use Result {code,msg,data,traceId}; success code is SUCCESS, failures retain semantic HTTP status and business codes. Empty successes use HTTP 200 with data:null; throttling includes Retry-After and data.retryAfterSeconds. Admin operations dashboard, members, moderation and ledger. Private publication media, covers, featured flags and paid-body protection."
   },
   "servers": [
     {
@@ -3468,6 +3468,826 @@
           }
         }
       }
+    },
+    "/admin/users": {
+      "get": {
+        "operationId": "listAdminMembers",
+        "summary": "Search/page members without exposing credentials",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AdminMemberPage"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "401": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 120
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "",
+                "ACTIVE",
+                "DISABLED"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/admin/users/{id}/status": {
+      "put": {
+        "operationId": "changeMemberStatus",
+        "summary": "Disable/restore member; revoke sessions on disable; protect admins",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AdminMember"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "401": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberStatusRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/operations/overview": {
+      "get": {
+        "operationId": "getOperationsOverview",
+        "summary": "Persisted totals and seven-day activity",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/OperationsOverview"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "401": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/admin/operations/ledger": {
+      "get": {
+        "operationId": "listCreditLedger",
+        "summary": "Read actual credit movements",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/LedgerPage"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "401": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ]
+      }
+    },
+    "/admin/discussions/comments": {
+      "get": {
+        "operationId": "listModerationComments",
+        "summary": "Moderation queue; deleted body is redacted",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ModerationPage"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "401": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "",
+                "PUBLISHED",
+                "HIDDEN",
+                "DELETED"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "/admin/media": {
+      "post": {
+        "operationId": "uploadPublicationMedia",
+        "summary": "Image/cover 10 MiB; MP4/WebM 100 MiB; attachment 20 MiB",
+        "responses": {
+          "201": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PublicationMedia"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "401": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "kind",
+                  "file"
+                ],
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "COVER",
+                      "IMAGE",
+                      "VIDEO",
+                      "ATTACHMENT"
+                    ]
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/media/{id}/url": {
+      "get": {
+        "operationId": "getAdminMediaUrl",
+        "summary": "Admin short-lived private media URL",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/FileDownload"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "401": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "503": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
+    },
+    "/publications/{publicationId}/media/{id}/url": {
+      "get": {
+        "operationId": "getPublicationMediaUrl",
+        "summary": "Published cover/preview is public; paid full media CONTENT_LOCKED; draft/unbound unavailable",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/FileDownload"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        },
+        "parameters": [
+          {
+            "name": "publicationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -3817,7 +4637,9 @@
           "publicationType",
           "accessType",
           "creditPrice",
-          "publishedAt"
+          "publishedAt",
+          "coverFileId",
+          "featured"
         ],
         "properties": {
           "id": {
@@ -3854,6 +4676,17 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          },
+          "coverFileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "featured": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -3980,22 +4813,18 @@
           },
           "previewMarkdown": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 100000
           },
           "fullMarkdown": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 500000
           },
           "requirements": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 2000
           },
           "deliverables": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 2000
           },
           "version": {
@@ -4010,6 +4839,17 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          },
+          "coverFileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "featured": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
@@ -4026,7 +4866,9 @@
           "status",
           "deliveryStatus",
           "publishedAt",
-          "updatedAt"
+          "updatedAt",
+          "coverFileId",
+          "featured"
         ],
         "properties": {
           "id": {
@@ -4078,56 +4920,130 @@
             "type": "integer",
             "format": "int64",
             "minimum": 0
+          },
+          "coverFileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "featured": {
+            "type": "boolean",
+            "default": false
           }
         }
       },
       "AdminPublicationDetail": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/AdminPublicationSummary"
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "title",
+          "publicationType",
+          "accessType",
+          "creditPrice",
+          "status",
+          "deliveryStatus",
+          "publishedAt",
+          "updatedAt",
+          "coverFileId",
+          "featured",
+          "categoryId",
+          "summary",
+          "previewMarkdown",
+          "fullMarkdown",
+          "requirements",
+          "deliverables",
+          "version",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
           },
-          {
-            "type": "object",
-            "required": [
-              "categoryId",
-              "summary",
-              "previewMarkdown",
-              "fullMarkdown",
-              "requirements",
-              "deliverables",
-              "version",
-              "createdAt"
+          "slug": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "accessType": {
+            "$ref": "#/components/schemas/AccessType"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "PUBLISHED",
+              "ARCHIVED"
+            ]
+          },
+          "deliveryStatus": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "SUSPENDED"
+            ]
+          },
+          "publishedAt": {
+            "type": [
+              "string",
+              "null"
             ],
-            "properties": {
-              "categoryId": {
-                "type": "string",
-                "pattern": "^[0-9]+$"
-              },
-              "summary": {
-                "type": "string"
-              },
-              "previewMarkdown": {
-                "type": "string"
-              },
-              "fullMarkdown": {
-                "type": "string"
-              },
-              "requirements": {
-                "type": "string"
-              },
-              "deliverables": {
-                "type": "string"
-              },
-              "version": {
-                "type": "string"
-              },
-              "createdAt": {
-                "type": "string",
-                "format": "date-time"
-              }
-            }
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "publicationType": {
+            "$ref": "#/components/schemas/PublicationType"
+          },
+          "creditPrice": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
+          },
+          "coverFileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "uuid"
+          },
+          "featured": {
+            "type": "boolean",
+            "default": false
+          },
+          "categoryId": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "previewMarkdown": {
+            "type": "string"
+          },
+          "fullMarkdown": {
+            "type": "string"
+          },
+          "requirements": {
+            "type": "string"
+          },
+          "deliverables": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
-        ]
+        }
       },
       "PublicationType": {
         "type": "string",
@@ -4435,6 +5351,411 @@
           "traceId": {
             "type": "string",
             "format": "uuid"
+          }
+        }
+      },
+      "AdminMember": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "email",
+          "nickname",
+          "role",
+          "status",
+          "emailVerified",
+          "creditBalance",
+          "createdAt",
+          "lastLoginAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "ADMIN",
+              "USER"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "DISABLED"
+            ]
+          },
+          "emailVerified": {
+            "type": "boolean"
+          },
+          "creditBalance": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "lastLoginAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        }
+      },
+      "MemberStatusRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "DISABLED"
+            ]
+          }
+        }
+      },
+      "OperationsSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "members",
+          "activeMembers",
+          "newMembers",
+          "published",
+          "drafts",
+          "paid",
+          "comments",
+          "unlocks",
+          "creditsSpent",
+          "creditBalance"
+        ],
+        "properties": {
+          "members": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "activeMembers": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "newMembers": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "published": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "drafts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "paid": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "comments": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "unlocks": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creditsSpent": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "creditBalance": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "OperationsDay": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "date",
+          "registrations",
+          "publications",
+          "comments"
+        ],
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "registrations": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "publications": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "comments": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "OperationsOverview": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "summary",
+          "days"
+        ],
+        "properties": {
+          "summary": {
+            "$ref": "#/components/schemas/OperationsSummary"
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperationsDay"
+            }
+          }
+        }
+      },
+      "LedgerEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "email",
+          "nickname",
+          "delta",
+          "balanceAfter",
+          "reason",
+          "note",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "delta": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "balanceAfter": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ModerationComment": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "authorName",
+          "targetType",
+          "targetKey",
+          "title",
+          "body",
+          "status",
+          "threadStatus",
+          "createdAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "authorName": {
+            "type": "string"
+          },
+          "targetType": {
+            "type": "string"
+          },
+          "targetKey": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "threadStatus": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AdminMemberPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "size",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminMember"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "LedgerPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "size",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LedgerEntry"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "ModerationPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items",
+          "page",
+          "size",
+          "total"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ModerationComment"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "PublicationMedia": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "filename",
+          "contentType",
+          "size",
+          "url",
+          "expiresAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "COVER",
+              "IMAGE",
+              "VIDEO",
+              "ATTACHMENT"
+            ]
+          },
+          "filename": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "url": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }

@@ -46,9 +46,9 @@ S3_PATH_STYLE=false
 - `file`：文件本体，文件 part 需设置正确的 Content-Type。
 - 需要登录 Cookie。
 
-头像支持 PNG、JPEG、WebP，最大 5 MiB；身份用例检查文件声明类型和文件头，拒绝 SVG、HTML 和任意可执行类型。附件、视频上传 HTTP 接口尚未开放，不允许用头像接口上传它们。文件头检查不等同于完整图像解码或恶意文件扫描；公开头像接入时应增加重编码处理。对象名由服务端 UUID 生成，原始文件名不会参与对象路径。
+头像支持 PNG、JPEG、WebP，最大 5 MiB；身份用例检查文件声明类型和文件头，拒绝 SVG、HTML 和任意可执行类型。文章附件、图片和视频由 catalog 领域的管理员素材接口上传，不允许使用头像接口代替。文件头检查不等同于完整图像解码或恶意文件扫描；公开头像接入时应增加重编码处理。对象名由服务端 UUID 生成，原始文件名不会参与对象路径。
 
-每用户每分钟最多 20 次上传，Redis 原子计数在多实例共享。超限返回 `429 UPLOAD_RATE_LIMITED`，含 `Retry-After` 和 `retryAfterSeconds`。头像大小或类型校验失败为 `400 INVALID_AVATAR`；Servlet 层文件超过 20 MiB / 请求超过 21 MiB 为 `413 FILE_TOO_LARGE`。
+每用户每分钟最多 20 次上传，Redis 原子计数在多实例共享。超限返回 `429 UPLOAD_RATE_LIMITED`，含 `Retry-After` 和 `retryAfterSeconds`。头像大小或类型校验失败为 `400 INVALID_AVATAR`；Servlet 层文件超过 100 MiB / 请求超过 101 MiB 为 `413 FILE_TOO_LARGE`。
 
 ```bash
 curl -b cookie.txt -F 'file=@avatar.png;type=image/png' \
@@ -83,6 +83,16 @@ curl -b cookie.txt -F 'file=@avatar.png;type=image/png' \
 
 自动化测试用实际 PostgreSQL / Redis 容器验证元数据、会话、文件归属、限流和异常响应；对象上传替身避免使用真实云凭据。SDK 测试本地验证 OSS virtual-host 和 V4 签名生成。真实 RAM 权限、Bucket 域名策略、网络连通性和签名接受情况仍需配置后联调。
 
-头像上传与账号绑定已完成。后续业务顺序：公开头像展示策略 → 主理人附件绑定 Publication → 内容权益授权下载 → 大文件直传、文件绑定与孤立对象清理。头像更换与附件解绑时不能直接删除可能仍被其他内容引用的对象。
+头像与 Publication 素材绑定已完成；下一步是已解锁成员的权益授权、公开头像策略、大文件直传和孤立对象清理。头像更换与附件解绑时不能直接删除可能仍被其他内容引用的对象。
 
 依据：[阿里云 AWS SDK 接入 OSS](https://www.alibabacloud.com/help/zh/oss/developer-reference/use-aws-sdks-to-access-oss)、[AWS Java 2.x 预签名 URL](https://docs.aws.amazon.com/sdk-for-java/latest/developer-guide/examples-s3-presign.html)。
+
+## Publication 素材
+
+`POST /api/v1/admin/media` 需要 ADMIN，multipart 字段 `kind` 为 COVER/IMAGE/VIDEO/ATTACHMENT，`file` 为文件。封面和图片 PNG/JPEG/WebP 最大 10 MiB；视频 MP4/WebM 最大 100 MiB；附件 PDF/ZIP/TXT/CSV/JSON/MD/PPTX/DOCX/XLSX 最大 20 MiB。图片和视频检查声明类型及文件头；附件使用 attachment 下载处置。`catalog/PublicationMediaService` 负责规则、限流、绑定与公开/付费授权；`FileStorageService` 只提供通用存取和签名。
+
+素材响应在 Result.data 中返回 `{id,kind,filename,contentType,size,url,expiresAt}`；封面存 `coverFileId`，Markdown 存 `![图片](media:UUID)`、`![视频：文件名](media:UUID)`、`[附件：文件名](media:UUID)`。临时签名不得存入正文。V11 增加素材元数据及文章绑定，并提高通用文件表尺寸约束到 100 MiB；各业务保留自己的尺寸限制。
+
+管理员编辑通过 `GET /api/v1/admin/media/{id}/url` 获取五分钟链接；发布后的公开展示通过 `GET /api/v1/publications/{publicationId}/media/{id}/url`。封面与 previewMarkdown 引用公开；免费正文引用允许公开阅读；积分正文私有引用当前返回 403 CONTENT_LOCKED，待积分应用用例建立后接入真实权益。草稿、下架、暂停交付和未绑定素材不可由公开接口读取。解绑立即阻止新的签名签发，已签发链接在五分钟有效期内仍可使用。
+
+编辑其他主理人的文章可以保留既有绑定素材；不能引用尚未绑定在该文章的其他账号素材。移除绑定不直接删除对象，避免破坏其他文章引用。上传后未保存文章的素材暂时保留，孤立对象回收需后续独立作业。
