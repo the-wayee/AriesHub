@@ -88,14 +88,21 @@ com.aries.backend
 - 使用 **3.5.17 的 Spring Boot 4 starter**，不再同时引入 MyBatis 原始 starter。
 - 简单单表查询用 `BaseMapper` 和 `LambdaQueryWrapper`。例如仓储按 ID 查询用 `selectById`，按 slug 查询使用 `PublicationPO::getSlug`。
 - 联表、统计和权限敏感投影使用 XML，明确列清单，便于审查；不为了避免 SQL 堆砌多次查询。
-- 生产代码和测试夹具统一通过 MyBatis-Plus Mapper 访问数据库，不直接注入 `JdbcTemplate`。简单 SQL 使用 `BaseMapper`、Lambda Wrapper 或 Mapper 注解；XML 只用于联表、动态条件和复杂投影。
-- 本次联表分页使用绑定参数的 `LIMIT/OFFSET` 与相同条件的计数查询，不引入未使用的分页插件。
+- 生产单表增删改查统一使用 `BaseMapper`、Lambda Wrapper 和 `Page`，不直接注入 `JdbcTemplate`，也不为普通筛选编写 XML/注解 SQL。联表和跨表统计投影集中在 XML；特殊原子语句见下述例外。测试夹具的原始 SQL 只用于构造数据库事实。
+- 成员单表分页使用 MyBatis-Plus `Page` 与 PostgreSQL 分页拦截器，配套 `mybatis-plus-jsqlparser` 依赖；每页最多 100 条，越界页返回空列表。既有联表投影保留绑定参数的 `LIMIT/OFFSET`，不在仓储拼接 SQL。
 - 用户输入必须参数绑定，不使用 `${}` 拼接 SQL；ILIKE 的 `%`、`_` 和转义符按普通字符处理。
 - 限制页大小和查询超时；数据库变更通过 Flyway，生产禁止自动更新表结构。
 - 单表增删改查在 Repository 里用 `BaseMapper` + Lambda Wrapper 完成，不在 Mapper 里手写 SQL。只有 Wrapper 表达不了的语句才用注解或 XML：列对列的自引用表达式（如 `like_count = like_count + ?` 的原子计数）、`ON CONFLICT` 幂等插入、联表与聚合投影。
 - `update(null, wrapper)` **不会**触发 `updateFill`（它需要实体作为填充载体），`updated_at` 会停在旧值。只用 Wrapper 更新时，必须在同一个 Wrapper 里 `.setSql("updated_at = now()")`；传入实体的 `updateById` 则会自动填充。
 - 不需要逻辑删除语义的表（如点赞，取消即删行）不要继承 `BasePO`，否则 `@TableLogic` 会把删除变成软删，唯一约束也只能退化成偏索引。
 - PO 继承 `BasePO` 后，`MetaObjectHandler` 自动填充 `created_at`、`updated_at` 和 `is_deleted`；`@TableLogic` 让普通查询自动排除已删除记录，并将删除转换为逻辑删除。Flyway 仍负责建立实际列、默认值、索引和约束。
+
+## 常量与共用工具
+
+- 优先使用现有库常量：PNG/JPEG MIME 使用 Spring `MimeTypeUtils`，multipart 声明使用 `MediaType`，字节单位使用 `DataSize`。
+- 当前 Spring 未提供的 WebP/MP4/WebM MIME 值集中在 `shared/application/util/MediaTypes`；浏览器没有 MIME 常量枚举，前端集中在 `lib/file-types.ts`，文件选择与尺寸校验共享配置。
+- 素材用途使用 `PublicationMediaKind` 枚举，账号角色/状态复用 `UserAccount` 现有枚举，不在业务方法中重复比较任意字面量。
+- `FileSignatures` 只识别文件头；头像和文章素材复用此技术工具。尺寸、允许格式、限流、绑定和授权仍属于各自业务领域，不能回流到 `FileStorageService`。
 
 ## 中文注释
 

@@ -7,7 +7,6 @@ import jakarta.validation.constraints.*;
 /** 后台发布内容编辑参数；积分价格使用非负整数。 */
 public record AdminPublicationRequest(
         @Positive long categoryId,
-        @NotBlank @Pattern(regexp = "[a-z0-9-]{1,120}") String slug,
         @NotBlank @Size(max = 160) String title,
         @NotBlank @Size(max = 500) String summary,
         @NotBlank @Pattern(regexp = "CASE_STUDY|ARTICLE|COURSE") String publicationType,
@@ -29,7 +28,6 @@ public record AdminPublicationRequest(
     public SavePublicationCommand toCommand() {
         return new SavePublicationCommand(
                 categoryId,
-                slug.trim(),
                 title.trim(),
                 summary.trim(),
                 publicationType,

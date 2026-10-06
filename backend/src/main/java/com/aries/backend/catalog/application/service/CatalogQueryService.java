@@ -1,22 +1,23 @@
 package com.aries.backend.catalog.application.service;
 
+import static com.aries.backend.catalog.application.exception.CatalogErrorCode.*;
+import static com.aries.backend.catalog.application.view.CatalogViews.*;
+
 import com.aries.backend.catalog.application.port.CatalogReadPort;
 import com.aries.backend.catalog.application.query.PublicationSearchQuery;
 import com.aries.backend.catalog.domain.model.Publication;
 import com.aries.backend.catalog.domain.repository.PublicationRepository;
 import com.aries.backend.shared.application.exception.BusinessException;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
-import static com.aries.backend.catalog.application.view.CatalogViews.*;
-import static com.aries.backend.catalog.application.exception.CatalogErrorCode.*;
 
-/**
- * 发布内容浏览用例：编排仓储与领域规则，不处理 HTTP，也不拼接 SQL。
- * 可重复读确保列表数量、详情及访问规则在同一次查询用例中使用一致快照。
- */
+import java.util.List;
+
+/** 发布内容浏览用例：编排仓储与领域规则，不处理 HTTP，也不拼接 SQL。 可重复读确保列表数量、详情及访问规则在同一次查询用例中使用一致快照。 */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
@@ -24,16 +25,38 @@ public class CatalogQueryService {
     private final PublicationRepository publications;
     private final CatalogReadPort reads;
 
-    public List<Category> categories() { return reads.categories(); }
+    public List<Category> categories() {
+        return reads.categories();
+    }
 
     public Page<PublicationSummary> list(PublicationSearchQuery query) {
         long total = reads.count(query);
-        return new Page<>(reads.list(query), query.getPage(), query.getSize(), total,
+        return new Page<>(
+                reads.list(query),
+                query.getPage(),
+                query.getSize(),
+                total,
                 (total + query.getSize() - 1) / query.getSize());
     }
 
-    public PublicationDetail detail(String slug) {
-        Publication publication = visible(publications.findBySlug(slug).orElseThrow(this::missing));
+    /** ID 为规范地址；旧 slug 只保留读取兼容，便于已有链接重定向。 */
+    public PublicationDetail detail(String reference) {
+        if (reference.matches("[0-9]+")) {
+            try {
+                return detail(Long.parseLong(reference));
+            } catch (NumberFormatException invalidId) {
+                throw missing();
+            }
+        }
+        return detailOf(publications.findBySlug(reference).orElseThrow(this::missing));
+    }
+
+    public PublicationDetail detail(long id) {
+        return detailOf(publications.findById(id).orElseThrow(this::missing));
+    }
+
+    private PublicationDetail detailOf(Publication source) {
+        Publication publication = visible(source);
         PublicationSummary summary = reads.findPublicSummary(publication.getId());
         Preview preview = reads.preview(publication.getId());
         if (summary == null || preview == null) throw missing();
@@ -54,5 +77,8 @@ public class CatalogQueryService {
         if (!publication.isPubliclyVisible()) throw missing();
         return publication;
     }
-    private BusinessException missing() { return new BusinessException(PUBLICATION_NOT_FOUND); }
+
+    private BusinessException missing() {
+        return new BusinessException(PUBLICATION_NOT_FOUND);
+    }
 }

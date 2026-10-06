@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { AuthNav } from "./auth-nav";
+import { PageMotion } from "./page-motion";
 const links = [
   { href: "/admin", label: "工作台", icon: LayoutDashboard },
   { href: "/admin/publications", label: "内容管理", icon: FileText },
@@ -123,7 +124,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main id="main" className="studio-main admin-main">
-          {children}
+          <PageMotion>{children}</PageMotion>
         </main>
         <footer className="admin-bottom-note">
           AriesHub · 付费 AI 实践社区 <span>内容的价值，来自真实的实践。</span>

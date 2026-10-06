@@ -253,14 +253,14 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  "/publications/{slug}": {
+  "/publications/{id}": {
     parameters: {
       query?: never;
       header?: never;
       path?: never;
       cookie?: never;
     };
-    /** Public detail and preview; never includes full body */
+    /** Public detail by stable database ID; legacy slug is read-only compatibility */
     get: operations["getPublication"];
     put?: never;
     post?: never;
@@ -579,6 +579,24 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/admin/media/uploads/{id}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Current admin upload progress: OSS acknowledged parts, never local stream reads */
+    get: operations["getPublicationUploadProgress"];
+    put?: never;
+    post?: never;
+    /** Cancel own task; stop and abort multipart at next confirmed part boundary */
+    delete: operations["cancelPublicationUpload"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -717,10 +735,10 @@ export interface components {
       /** Format: int64 */
       totalPages: number;
     };
+    /** @description Article content snapshot. URL is assigned from the database ID after creation; clients cannot set or modify it. */
     AdminPublicationRequest: {
       /** Format: int64 */
       categoryId: number;
-      slug: string;
       title: string;
       summary: string;
       accessType: components["schemas"]["AccessType"];
@@ -998,6 +1016,23 @@ export interface components {
       url: string;
       /** Format: date-time */
       expiresAt: string;
+    };
+    PublicationUploadProgress: {
+      /** @enum {string} */
+      phase:
+        | "RECEIVING"
+        | "OSS"
+        | "FINALIZING"
+        | "COMPLETED"
+        | "FAILED"
+        | "CANCELLED";
+      /**
+       * Format: int64
+       * @description Bytes acknowledged by OSS; retries do not increment this value.
+       */
+      loaded: number;
+      /** Format: int64 */
+      total: number;
     };
   };
   responses: {
@@ -1928,7 +1963,8 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        slug: string;
+        /** @description Canonical article ID, serialized as a decimal string. Existing legacy slug links remain readable for redirects. */
+        id: string;
       };
       cookie?: never;
     };
@@ -2957,7 +2993,10 @@ export interface operations {
   };
   uploadPublicationMedia: {
     parameters: {
-      query?: never;
+      query?: {
+        /** @description New client UUID per attempt; progress and cancellation are owner-scoped. */
+        uploadId?: string;
+      };
       header?: never;
       path?: never;
       cookie?: never;
@@ -2997,6 +3036,7 @@ export interface operations {
       401: components["responses"]["Forbidden"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["Forbidden"];
+      409: components["responses"]["Forbidden"];
       503: components["responses"]["Forbidden"];
     };
   };
@@ -3073,6 +3113,76 @@ export interface operations {
       400: components["responses"]["Forbidden"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["Forbidden"];
+    };
+  };
+  getPublicationUploadProgress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationUploadProgress"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      401: components["responses"]["Forbidden"];
+      403: components["responses"]["Forbidden"];
+    };
+  };
+  cancelPublicationUpload: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: null;
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      401: components["responses"]["Forbidden"];
+      403: components["responses"]["Forbidden"];
     };
   };
 }

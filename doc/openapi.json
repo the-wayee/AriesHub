@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "AriesHub API",
-    "version": "0.8.0",
+    "version": "0.9.0",
     "description": "Public content catalog, Redis-backed cookie identity, flat paged discussions with comment likes, administrator content and moderation API. Credit balance lives on users and pricing on publications; the credit ledger and unlock tables exist but the credit application API is not implemented yet. Private S3-compatible file uploads and owner-only temporary downloads. All JSON responses use Result {code,msg,data,traceId}; success code is SUCCESS, failures retain semantic HTTP status and business codes. Empty successes use HTTP 200 with data:null; throttling includes Retry-After and data.retryAfterSeconds. Admin operations dashboard, members, moderation and ledger. Private publication media, covers, featured flags and paid-body protection."
   },
   "servers": [
@@ -1790,10 +1790,10 @@
         ]
       }
     },
-    "/publications/{slug}": {
+    "/publications/{id}": {
       "get": {
         "operationId": "getPublication",
-        "summary": "Public detail and preview; never includes full body",
+        "summary": "Public detail by stable database ID; legacy slug is read-only compatibility",
         "responses": {
           "200": {
             "description": "Success",
@@ -1971,13 +1971,14 @@
         },
         "parameters": [
           {
-            "name": "slug",
+            "name": "id",
             "in": "path",
             "required": true,
             "schema": {
               "type": "string",
               "pattern": "^[a-z0-9-]{1,120}$"
-            }
+            },
+            "description": "Canonical article ID, serialized as a decimal string. Existing legacy slug links remain readable for redirects."
           }
         ]
       }
@@ -4067,6 +4068,9 @@
           },
           "503": {
             "$ref": "#/components/responses/Forbidden"
+          },
+          "409": {
+            "$ref": "#/components/responses/Forbidden"
           }
         },
         "security": [
@@ -4103,7 +4107,19 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "uploadId",
+            "in": "query",
+            "required": false,
+            "description": "New client UUID per attempt; progress and cancellation are owner-scoped.",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
       }
     },
     "/admin/media/{id}/url": {
@@ -4287,6 +4303,170 @@
             }
           }
         ]
+      }
+    },
+    "/admin/media/uploads/{id}": {
+      "get": {
+        "operationId": "getPublicationUploadProgress",
+        "summary": "Current admin upload progress: OSS acknowledged parts, never local stream reads",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PublicationUploadProgress"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "cancelPublicationUpload",
+        "summary": "Cancel own task; stop and abort multipart at next confirmed part boundary",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "null"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
       }
     }
   },
@@ -4776,7 +4956,6 @@
         "additionalProperties": false,
         "required": [
           "categoryId",
-          "slug",
           "title",
           "summary",
           "publicationType",
@@ -4793,10 +4972,6 @@
             "type": "integer",
             "format": "int64",
             "minimum": 1
-          },
-          "slug": {
-            "type": "string",
-            "pattern": "^[a-z0-9-]{1,120}$"
           },
           "title": {
             "type": "string",
@@ -4851,7 +5026,8 @@
             "type": "boolean",
             "default": false
           }
-        }
+        },
+        "description": "Article content snapshot. URL is assigned from the database ID after creation; clients cannot set or modify it."
       },
       "AdminPublicationSummary": {
         "type": "object",
@@ -5756,6 +5932,39 @@
           "expiresAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "PublicationUploadProgress": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "phase",
+          "loaded",
+          "total"
+        ],
+        "properties": {
+          "phase": {
+            "type": "string",
+            "enum": [
+              "RECEIVING",
+              "OSS",
+              "FINALIZING",
+              "COMPLETED",
+              "FAILED",
+              "CANCELLED"
+            ]
+          },
+          "loaded": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "description": "Bytes acknowledged by OSS; retries do not increment this value."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0
           }
         }
       }

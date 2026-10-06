@@ -52,8 +52,8 @@ async function get<T>(path: string): Promise<ApiResult<T>> {
 export const getCategories = () => get<Category[]>("/categories");
 export const getPublications = (query = "") =>
   get<PublicationPage>(`/publications${query ? `?${query}` : ""}`);
-export const getPublication = cache((slug: string) =>
-  get<PublicationDetail>(`/publications/${encodeURIComponent(slug)}`),
+export const getPublication = cache((id: string) =>
+  get<PublicationDetail>(`/publications/${encodeURIComponent(id)}`),
 );
 export const getContent = (id: string) =>
   get<PublicationContent>(`/publications/${encodeURIComponent(id)}/content`);

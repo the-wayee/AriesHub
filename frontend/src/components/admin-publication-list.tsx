@@ -1,4 +1,5 @@
 "use client";
+import { PageSkeleton } from "./page-skeleton";
 import { PublicationMedia } from "./publication-media";
 import Link from "next/link";
 import { useEffect, useState, Suspense } from "react";
@@ -17,7 +18,7 @@ const types: Record<string, string> = {
 };
 export function AdminPublicationList() {
   return (
-    <Suspense fallback={<p className="ops-loading">正在读取内容…</p>}>
+    <Suspense fallback={<PageSkeleton variant="table" label="正在读取内容" />}>
       <ContentList />
     </Suspense>
   );
@@ -63,7 +64,7 @@ function ContentList() {
       (!access || x.accessType === access) &&
       (!q ||
         x.title.toLowerCase().includes(q.toLowerCase()) ||
-        x.slug.includes(q.toLowerCase())),
+        x.id.includes(q)),
   );
   return (
     <div className="ops-page">
@@ -182,7 +183,7 @@ function ContentList() {
                           <strong>{x.title}</strong>
                           {x.featured && <Star size={12} fill="currentColor" />}
                         </Link>
-                        <small>/{x.slug}</small>
+                        <small>/publications/{x.id}</small>
                       </div>
                     </div>
                   </td>
@@ -232,7 +233,9 @@ function ContentList() {
             </tbody>
           </table>
         </div>
-        {!items && !error && <p className="ops-loading">正在读取内容…</p>}
+        {!items && !error && (
+          <PageSkeleton variant="table" heading={false} label="正在读取内容" />
+        )}
         {filtered?.length === 0 && (
           <div className="ops-empty">
             <FileText size={30} />

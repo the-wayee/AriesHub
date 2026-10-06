@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { adminRequest } from "@/lib/admin";
 import type { Overview } from "@/lib/operations";
+import { PageSkeleton } from "./page-skeleton";
 export function AdminData({ analytics = false }: { analytics?: boolean }) {
   const [data, setData] = useState<Overview>();
   const [error, setError] = useState("");
@@ -57,7 +58,11 @@ export function AdminData({ analytics = false }: { analytics?: boolean }) {
           </button>
         </div>
       ) : !data ? (
-        <p className="ops-loading">正在汇总社区数据…</p>
+        <PageSkeleton
+          variant="dashboard"
+          heading={false}
+          label="正在汇总社区数据"
+        />
       ) : (
         <>
           <div className="ops-stats">

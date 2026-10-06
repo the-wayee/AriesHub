@@ -1,10 +1,8 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { authRequest } from "@/lib/auth";
 
 export function useLogout() {
-  const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   async function logout() {
@@ -18,8 +16,8 @@ export function useLogout() {
       return;
     }
     window.dispatchEvent(new CustomEvent("arieshub:auth", { detail: null }));
-    router.push("/");
-    router.refresh();
+    // 退出会话后重新建立访客文档，清空旧路由缓存，避免登录守卫与首页导航竞争。
+    window.location.replace("/");
     setBusy(false);
   }
   return { logout, busy, error };

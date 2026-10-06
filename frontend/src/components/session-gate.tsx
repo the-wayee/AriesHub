@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect, usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { useAuthSession } from "./auth-session";
+import { PageSkeleton } from "./page-skeleton";
 
 export function SessionGate({ children }: { children: ReactNode }) {
   const { user, sessionError } = useAuthSession();
@@ -21,8 +22,17 @@ export function SessionGate({ children }: { children: ReactNode }) {
     );
   if (user === undefined)
     return (
-      <div className="session-state" role="status">
-        正在验证登录状态…
+      <div className="session-loading">
+        <PageSkeleton
+          variant={
+            path.startsWith("/admin/publications/")
+              ? "editor"
+              : path.startsWith("/admin")
+                ? "dashboard"
+                : "gallery"
+          }
+          label="正在验证登录状态"
+        />
       </div>
     );
   if (!user) redirect(`/login?next=${encodeURIComponent(path)}`);

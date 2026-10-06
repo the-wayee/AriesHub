@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.bind.annotation.*;
 
+/** 跨线程审核列表入口；管理员权限由统一路由守卫检查。 */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/admin/discussions")

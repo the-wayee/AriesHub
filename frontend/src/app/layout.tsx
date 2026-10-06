@@ -9,6 +9,7 @@ import "./cosmos.css";
 import "./community.css";
 import "./account.css";
 import "./admin.css";
+import "./loading.css";
 
 export const metadata: Metadata = {
   title: {

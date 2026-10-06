@@ -59,6 +59,7 @@ public class MybatisPublicationAssetRepository implements PublicationAssetReposi
                 > 0;
     }
 
+    /** 在外层内容事务中先删后插；数据库联合主键保证同一素材不会重复绑定。 */
     public void replaceBindings(long publicationId, List<String> all, List<String> publicIds) {
         bindings.delete(
                 Wrappers.<PublicationMediaBindingPO>lambdaQuery()

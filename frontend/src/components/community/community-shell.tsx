@@ -1,7 +1,5 @@
 "use client";
 
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 import {
   Asterisk,
   Bell,
@@ -12,12 +10,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useRef, type ReactNode } from "react";
+import { type ReactNode } from "react";
+import { PageMotion } from "@/components/page-motion";
 import { AuthNav } from "@/components/auth-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
-gsap.registerPlugin(useGSAP);
 
 const navigation = [
   { href: "/home", label: "首页", icon: Compass },
@@ -28,29 +25,6 @@ const navigation = [
 
 export function CommunityShell({ children }: { children: ReactNode }) {
   const path = usePathname();
-  const root = useRef<HTMLDivElement>(null);
-
-  useGSAP(
-    () => {
-      const media = gsap.matchMedia();
-      media.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.fromTo(
-          ".hub-enter",
-          { autoAlpha: 0, y: 18 },
-          {
-            autoAlpha: 1,
-            y: 0,
-            duration: 0.55,
-            stagger: 0.055,
-            ease: "power2.out",
-            clearProps: "all",
-          },
-        );
-      });
-      return () => media.revert();
-    },
-    { scope: root, dependencies: [path], revertOnUpdate: true },
-  );
 
   const selected = (href: string) => {
     if (href === "/home") return path === "/home";
@@ -64,7 +38,6 @@ export function CommunityShell({ children }: { children: ReactNode }) {
   return (
     <div
       className={`cosmos-site community-hub${path === "/account" ? " profile-shell" : ""}`}
-      ref={root}
     >
       <a className="skip-link" href="#main">
         跳到主要内容
@@ -108,13 +81,17 @@ export function CommunityShell({ children }: { children: ReactNode }) {
         </nav>
       )}
       <main id="main" className="hub-main">
-        {children}
+        <PageMotion>{children}</PageMotion>
       </main>
       <footer className="hub-footer">
         <Link href="/">AriesHub</Link>
         <span>一起探索，保持好奇。</span>
         {path !== "/account" && (
-          <small>社区预览 · 互动仅保存在当前浏览器</small>
+          <small>
+            {/^\/publications\/[1-9]\d*$/.test(path)
+              ? "互动仅保存在当前浏览器"
+              : "社区预览 · 互动仅保存在当前浏览器"}
+          </small>
         )}
       </footer>
     </div>

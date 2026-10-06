@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+/** 运营数据只读边界；统计和流水来自持久化事实，不提供积分变更。 */
 public interface OperationsReadPort {
     record Summary(
             long members,

@@ -42,7 +42,9 @@ export function RouteShell({
           跳到主要内容
         </a>
         {!auth && <LandingHeader />}
-        <main id="main">{children}</main>
+        <main id="main">
+          <PageMotion>{children}</PageMotion>
+        </main>
       </div>
     );
   } else if (community) {

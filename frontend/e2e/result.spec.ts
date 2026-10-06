@@ -55,3 +55,15 @@ test("Result parser preserves trace and retry countdown", async () => {
     ),
   ).toMatchObject({ ok: false, error: { traceId, retryAfterSeconds: 30 } });
 });
+
+test("plain gateway failures keep their HTTP failure instead of claiming malformed success", async () => {
+  expect(
+    await readApiResponse(
+      new Response("Internal Server Error", { status: 500 }),
+    ),
+  ).toMatchObject({
+    ok: false,
+    status: 500,
+    error: { code: "UPSTREAM_ERROR" },
+  });
+});

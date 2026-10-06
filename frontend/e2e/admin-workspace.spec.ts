@@ -228,7 +228,7 @@ test("writer uploads cover and embeds image video and attachment without storing
   let uploads = 0;
   const kinds: string[] = [];
   const ids: string[] = [];
-  await page.route("**/api/v1/admin/media", async (r) => {
+  await page.route("**/api/v1/admin/media?*", async (r) => {
     const body = r.request().postDataBuffer()!.toString();
     const kind = body.match(/name="kind"\r\n\r\n([A-Z]+)/)![1];
     kinds.push(kind);

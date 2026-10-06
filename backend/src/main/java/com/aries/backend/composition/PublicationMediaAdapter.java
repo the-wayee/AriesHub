@@ -1,6 +1,7 @@
 package com.aries.backend.composition;
 
 import com.aries.backend.catalog.application.port.PublicationMediaPort;
+import com.aries.backend.catalog.domain.model.PublicationMediaKind;
 import com.aries.backend.identity.application.service.UserApplicationService;
 import com.aries.backend.storage.application.port.UploadRateLimiter;
 import com.aries.backend.storage.application.service.FileStorageService;
@@ -36,15 +37,35 @@ public class PublicationMediaAdapter implements PublicationMediaPort {
             String type,
             long size,
             InputStream content) {
+        return upload(userId, kind, filename, type, size, content, ignored -> {});
+    }
+
+    public Asset upload(
+            long userId,
+            String kind,
+            String filename,
+            String type,
+            long size,
+            InputStream content,
+            java.util.function.LongConsumer confirmedBytes) {
         var file =
-                files.upload(userId, StoredFile.Purpose.ATTACHMENT, filename, type, size, content);
+                files.upload(
+                        userId,
+                        StoredFile.Purpose.ATTACHMENT,
+                        filename,
+                        type,
+                        size,
+                        content,
+                        confirmedBytes);
         return new Asset(file.id().toString(), userId, kind, file.filename(), type, size);
     }
 
     public SignedUrl url(Asset asset) {
         var file = files.metadata(UUID.fromString(asset.id()));
         var signed =
-                "ATTACHMENT".equals(asset.kind()) ? files.downloadUrl(file) : files.inlineUrl(file);
+                PublicationMediaKind.ATTACHMENT.name().equals(asset.kind())
+                        ? files.downloadUrl(file)
+                        : files.inlineUrl(file);
         return new SignedUrl(signed.url(), signed.expiresAt());
     }
 }

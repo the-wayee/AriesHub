@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.bind.annotation.*;
 
+/** 管理员运营只读入口；分页参数在接口层限制，积分变更由独立业务负责。 */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/admin/operations")

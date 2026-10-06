@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { adminRequest } from "@/lib/admin";
 import type { CommentRow, LedgerRow, Page } from "@/lib/operations";
+import { PageSkeleton } from "./page-skeleton";
 export function AdminCommunity({ ledger = false }: { ledger?: boolean }) {
   const [data, setData] = useState<Page<CommentRow> | Page<LedgerRow>>();
   const [page, setPage] = useState(1);
@@ -199,7 +200,9 @@ export function AdminCommunity({ ledger = false }: { ledger?: boolean }) {
               : "当前筛选下没有评论。"}
           </div>
         )}
-        {!data && !error && <p className="ops-loading">正在读取记录…</p>}
+        {!data && !error && (
+          <PageSkeleton variant="table" heading={false} label="正在读取记录" />
+        )}
         <div className="ops-pagination">
           <span>
             共 {data?.total ?? 0} 条 · 第 {page} 页

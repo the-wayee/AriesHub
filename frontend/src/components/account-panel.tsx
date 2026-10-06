@@ -1,4 +1,9 @@
 "use client";
+import {
+  AVATAR_MAX_BYTES,
+  IMAGE_FILE_ACCEPT,
+  IMAGE_MIME_TYPES,
+} from "@/lib/file-types";
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -25,52 +30,9 @@ import { useLogout } from "./use-logout";
 gsap.registerPlugin(useGSAP);
 
 export function AccountPanel() {
-  const [user, setUser] = useState<CurrentUser | null | undefined>(undefined);
-  const [loadError, setLoadError] = useState("");
-  const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    let active = true;
-    void userRequest<CurrentUser>("/me").then((result) => {
-      if (!active) return;
-      if (result.ok) {
-        setUser(result.data);
-        setLoadError("");
-        window.dispatchEvent(
-          new CustomEvent("arieshub:auth", { detail: result.data }),
-        );
-      } else if (
-        [
-          "UNAUTHENTICATED",
-          "UNAUTHORIZED",
-          "USER_NOT_FOUND",
-          "ACCOUNT_DISABLED",
-        ].includes(result.error.code)
-      ) {
-        setUser(null);
-        window.dispatchEvent(
-          new CustomEvent("arieshub:auth", { detail: null }),
-        );
-      } else setLoadError(result.error.msg);
-    });
-    return () => {
-      active = false;
-    };
-  }, [attempt]);
-  if (loadError)
-    return (
-      <section className="profile-empty" role="alert">
-        <h2>暂时无法读取账号</h2>
-        <p>{loadError}</p>
-        <Button
-          onClick={() => {
-            setLoadError("");
-            setAttempt(attempt + 1);
-          }}
-        >
-          重新加载
-        </Button>
-      </section>
-    );
+  // SessionGate 已验证当前用户；资料页和导航共用会话，避免挂载后再次读取 /me。
+  // 登录校验失败的提示与重试由守卫统一处理。
+  const { user } = useAuthSession();
   if (user === undefined)
     return (
       <div className="profile-skeleton" role="status" aria-label="正在读取账号">
@@ -93,16 +55,10 @@ export function AccountPanel() {
         <Link href="/discover">先去探索内容</Link>
       </section>
     );
-  return <ProfileEditor key={user.id} user={user} onSaved={setUser} />;
+  return <ProfileEditor key={user.id} user={user} />;
 }
 
-function ProfileEditor({
-  user,
-  onSaved,
-}: {
-  user: CurrentUser;
-  onSaved: (user: CurrentUser) => void;
-}) {
+function ProfileEditor({ user }: { user: CurrentUser }) {
   const { avatarUrl } = useAuthSession();
   const { logout, busy: loggingOut, error: logoutError } = useLogout();
   const [nickname, setNickname] = useState(user.nickname);
@@ -151,11 +107,11 @@ function ProfileEditor({
     if (!selected) return;
     setError("");
     setMessage("");
-    if (!["image/png", "image/jpeg", "image/webp"].includes(selected.type)) {
+    if (!IMAGE_MIME_TYPES.includes(selected.type)) {
       setError("请选择 PNG、JPG 或 WebP 图片");
       return;
     }
-    if (selected.size === 0 || selected.size > 5 * 1024 * 1024) {
+    if (selected.size === 0 || selected.size > AVATAR_MAX_BYTES) {
       setError("头像需为不超过 5 MB 的图片");
       return;
     }
@@ -206,7 +162,6 @@ function ProfileEditor({
       setError(result.error.msg);
       return;
     }
-    onSaved(result.data);
     setNickname(result.data.nickname);
     setBio(result.data.bio ?? "");
     setAvatarId(result.data.avatarFileId ?? null);
@@ -299,7 +254,7 @@ function ProfileEditor({
                   ref={input}
                   className="sr-only"
                   type="file"
-                  accept="image/png,image/jpeg,image/webp"
+                  accept={IMAGE_FILE_ACCEPT}
                   aria-label="选择头像图片"
                   tabIndex={-1}
                   onChange={(event) => {

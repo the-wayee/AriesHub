@@ -28,7 +28,13 @@ import {
   Link as LinkIcon,
   Braces,
 } from "lucide-react";
-import { adminRequest } from "@/lib/admin";
+import { uploadRequest, type UploadProgress as Progress } from "@/lib/upload";
+import { UploadProgress } from "./upload-progress";
+import {
+  PUBLICATION_MEDIA,
+  MEBIBYTE,
+  type InlineMediaKind,
+} from "@/lib/file-types";
 import { PublicationMedia } from "./publication-media";
 function MediaNode({ node }: NodeViewProps) {
   const src = String(node.attrs.src ?? "");
@@ -69,10 +75,12 @@ export function RichEditor({
   disabled?: boolean;
   onUploadStateChange?: (uploading: boolean) => void;
 }) {
-  const [inputKind, setInputKind] = useState<"IMAGE" | "VIDEO" | "ATTACHMENT">(
-    "IMAGE",
-  );
+  const [inputKind, setInputKind] = useState<InlineMediaKind>("IMAGE");
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<Progress>();
+  const [uploadName, setUploadName] = useState("");
+  const uploadController = useRef<AbortController | null>(null);
+  useEffect(() => () => uploadController.current?.abort(), []);
   const [error, setError] = useState("");
   const [source, setSource] = useState(false);
   const [linkDialog, setLinkDialog] = useState(false);
@@ -119,30 +127,40 @@ export function RichEditor({
   }, [editor, disabled, uploading]);
   async function upload(selected: File) {
     setError("");
-    const limit =
-      (inputKind === "VIDEO" ? 100 : inputKind === "IMAGE" ? 10 : 20) *
-      1024 *
-      1024;
+    const limit = PUBLICATION_MEDIA[inputKind].maxBytes;
     if (selected.size > limit) {
-      setError(`文件过大，最大 ${limit / 1024 / 1024} MiB`);
+      setError(`文件过大，最大 ${limit / MEBIBYTE} MiB`);
       return;
     }
     setUploading(true);
+    setUploadName(selected.name);
+    setUploadProgress({
+      loaded: 0,
+      total: null,
+      percentage: null,
+      phase: "uploading",
+    });
+    const controller = new AbortController();
+    uploadController.current = controller;
     onUploadStateChange?.(true);
     const body = new FormData();
     body.set("file", selected);
     body.set("kind", inputKind);
-    const result = await adminRequest<{ id: string; filename: string }>(
-      "/media",
-      { method: "POST", body },
+    const result = await uploadRequest<{ id: string; filename: string }>(
+      "/api/v1/admin/media",
+      body,
+      setUploadProgress,
+      controller.signal,
     );
     setUploading(false);
+    setUploadProgress(undefined);
     onUploadStateChange?.(false);
     if (!result.ok) {
       setError(result.error.msg);
       return;
     }
     const name = result.data.filename.replace(/[\[\]\r\n]/g, "");
+    // 正文只保存稳定文件 ID；临时签名在展示时读取，避免文章链接过期。
     const url = `media:${result.data.id}`;
     if (source) {
       onChange(
@@ -273,12 +291,7 @@ export function RichEditor({
             onClick={() => {
               setInputKind(t.kind);
               if (file.current) {
-                file.current.accept =
-                  t.kind === "IMAGE"
-                    ? "image/png,image/jpeg,image/webp"
-                    : t.kind === "VIDEO"
-                      ? "video/mp4,video/webm"
-                      : ".pdf,.zip,.txt,.csv,.json,.md,.docx,.xlsx,.pptx";
+                file.current.accept = PUBLICATION_MEDIA[t.kind].accept;
                 file.current.click();
               }
             }}
@@ -308,6 +321,7 @@ export function RichEditor({
           aria-label="切换 Markdown 源码"
           title="Markdown 源码"
           aria-pressed={source}
+          disabled={uploading}
           onClick={() => setSource(!source)}
         >
           <Braces size={17} />
@@ -357,8 +371,12 @@ export function RichEditor({
           e.target.value = "";
         }}
       />
-      {uploading && (
-        <p className="writer-upload-state">正在上传素材，请稍候…</p>
+      {uploading && uploadProgress && (
+        <UploadProgress
+          filename={uploadName}
+          progress={uploadProgress}
+          onCancel={() => uploadController.current?.abort()}
+        />
       )}
       {error && (
         <p className="ops-error" role="alert">
@@ -371,7 +389,7 @@ export function RichEditor({
           aria-label={`${label} Markdown 源码`}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          disabled={disabled}
+          disabled={disabled || uploading}
         />
       ) : (
         <EditorContent editor={editor} />

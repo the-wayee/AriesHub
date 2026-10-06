@@ -4,6 +4,7 @@ import com.aries.backend.shared.infrastructure.persistence.po.BasePO;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -16,6 +17,7 @@ import java.time.OffsetDateTime;
 public class UserPO extends BasePO {
     @TableId(type = IdType.AUTO)
     private Long id;
+
     private String email;
     private String passwordHash;
     private String nickname;
@@ -24,5 +26,6 @@ public class UserPO extends BasePO {
     private String role;
     private String status;
     private Boolean emailVerified;
+    private Long creditBalance;
     private OffsetDateTime lastLoginAt;
 }

@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.bind.annotation.*;
 
+/** 管理员成员入口；状态修改不允许修改管理员、密码或余额。 */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/admin/users")

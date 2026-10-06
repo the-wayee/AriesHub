@@ -7,10 +7,11 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname } from "next/navigation";
+import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(ScrollTrigger);
+gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 function useReveal(
   ref: React.RefObject<HTMLElement | null>,
@@ -59,32 +60,43 @@ export function PageMotion({ children }: { children: ReactNode }) {
   const root = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
 
-  useEffect(() => {
-    const element = root.current;
-    if (!element) return;
+  useGSAP(
+    () => {
+      const element = root.current;
+      if (!element) return;
+      const media = gsap.matchMedia();
+      media.add(
+        "(prefers-reduced-motion: no-preference)",
+        (mediaContext) => {
+          // 只动内容区，保留导航位置；异步数据替换加载占位时也重放入场。
+          // 延迟回调归属当前 matchMedia 上下文，避免嵌套父上下文形成循环清理。
+          const reveal = mediaContext.add("reveal", () =>
+            gsap.fromTo(
+              element,
+              { autoAlpha: 0, y: 10 },
+              {
+                autoAlpha: 1,
+                y: 0,
+                duration: 0.35,
+                ease: "power2.out",
+                overwrite: true,
+                clearProps: "transform,opacity,visibility,willChange",
+                willChange: "transform,opacity",
+              },
+            ),
+          );
+          reveal();
+          const observer = new MutationObserver(() => reveal());
+          observer.observe(element, { childList: true });
+          return () => observer.disconnect();
+        },
+        element,
+      );
 
-    const media = gsap.matchMedia();
-    media.add(
-      "(prefers-reduced-motion: no-preference)",
-      () => {
-        gsap.fromTo(
-          element,
-          { opacity: 0.86, x: pathname === "/" ? -18 : 24 },
-          {
-            opacity: 1,
-            x: 0,
-            duration: 0.66,
-            ease: "power2.out",
-            clearProps: "transform,opacity,willChange",
-            willChange: "transform,opacity",
-          },
-        );
-      },
-      element,
-    );
-
-    return () => media.revert();
-  }, [pathname]);
+      return () => media.revert();
+    },
+    { scope: root, dependencies: [pathname], revertOnUpdate: true },
+  );
 
   return (
     <div ref={root} className="page-motion-root">

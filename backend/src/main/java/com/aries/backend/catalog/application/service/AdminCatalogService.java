@@ -13,13 +13,13 @@ import com.aries.backend.shared.application.exception.BusinessException;
 
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.UUID;
 
 /** 管理员内容用例：编辑始终保存完整快照，发布和下架使用显式动作。 */
 @Service
@@ -48,14 +48,13 @@ public class AdminCatalogService {
     @Transactional
     public AdminPublicationDetail create(SavePublicationCommand command) {
         validateCategory(command.categoryId());
-        try {
-            media.validateReferences(0, command);
-            Publication created = publications.save(Publication.create(command.toDraft()));
-            media.bind(created.getId(), command);
-            return detail(created.getId());
-        } catch (DuplicateKeyException error) {
-            throw new BusinessException(PUBLICATION_SLUG_CONFLICT);
-        }
+        media.validateReferences(0, command);
+        // 公开链接使用数据库唯一 ID；内部旧 slug 列仅为历史兼容，不由标题或客户端生成。
+        Publication created =
+                publications.save(
+                        Publication.create(command.toDraft(UUID.randomUUID().toString())));
+        media.bind(created.getId(), command);
+        return detail(created.getId());
     }
 
     @Transactional
@@ -64,11 +63,9 @@ public class AdminCatalogService {
         try {
             Publication study = editable(id);
             media.validateReferences(id, command);
-            publications.save(study.edit(command.toDraft()));
+            publications.save(study.edit(command.toDraft(study.getSlug())));
             media.bind(id, command);
             return detail(id);
-        } catch (DuplicateKeyException error) {
-            throw new BusinessException(PUBLICATION_SLUG_CONFLICT);
         } catch (Publication.MissingContent error) {
             throw new BusinessException(PUBLICATION_CONTENT_REQUIRED);
         }

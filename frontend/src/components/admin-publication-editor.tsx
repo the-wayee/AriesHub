@@ -26,13 +26,16 @@ import {
   type AdminPublicationDetail,
   type AdminCategory,
 } from "@/lib/admin";
+import { IMAGE_MIME_TYPES, PUBLICATION_MEDIA } from "@/lib/file-types";
 import { RichEditor } from "./rich-editor";
 import { Markdown } from "./markdown";
 import { PublicationMedia } from "./publication-media";
 import { useBeforeUnload } from "@/lib/use-before-unload";
+import { uploadRequest, type UploadProgress as Progress } from "@/lib/upload";
+import { UploadProgress } from "./upload-progress";
+import { PageSkeleton } from "./page-skeleton";
 interface Draft {
   title: string;
-  slug: string;
   summary: string;
   categoryId: string;
   publicationType: string;
@@ -48,7 +51,6 @@ interface Draft {
 }
 const empty: Draft = {
   title: "",
-  slug: "",
   summary: "",
   categoryId: "",
   publicationType: "ARTICLE",
@@ -81,6 +83,10 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
   const [pending, setPending] = useState(false);
   const [autoSaving, setAutoSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [coverProgress, setCoverProgress] = useState<Progress>();
+  const [coverName, setCoverName] = useState("");
+  const uploadController = useRef<AbortController | null>(null);
+  useEffect(() => () => uploadController.current?.abort(), []);
   const [activeTab, setActiveTab] = useState<
     "fullMarkdown" | "previewMarkdown"
   >("fullMarkdown");
@@ -98,7 +104,7 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
     current.current = draft;
   }, [draft]);
   const dirty = !!categories && JSON.stringify(draft) !== saved;
-  useBeforeUnload(dirty);
+  useBeforeUnload(dirty || uploading);
   useEffect(() => {
     let active = true;
     void Promise.all([
@@ -122,7 +128,6 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
         : {
             ...empty,
             categoryId: c.data[0]?.id ?? "",
-            slug: `ai-practice-${Date.now().toString(36)}`,
           };
       if (d?.ok) setDetail(d.data);
       setDraft(initial);
@@ -140,14 +145,14 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
   const persist = useCallback(
     async (auto = false) => {
       if (busy.current || uploading) return null;
+      // 保存请求绑定当前快照；请求期间的新输入仍保留为待保存状态。
       const snapshot = current.current;
       if (
         !snapshot.title.trim() ||
         !snapshot.summary.trim() ||
-        !snapshot.categoryId ||
-        !/^([a-z0-9-]{1,120})$/.test(snapshot.slug)
+        !snapshot.categoryId
       ) {
-        if (!auto) setError("请填写标题、摘要、分类和有效的页面地址");
+        if (!auto) setError("请填写标题、摘要和所属主题");
         return null;
       }
       if (snapshot.accessType === "CREDIT" && snapshot.creditPrice <= 0) {
@@ -225,9 +230,10 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
     return () => window.removeEventListener("keydown", keyboard);
   }, [persist]);
   useEffect(() => {
+    // 捕获站内导航，避免侧栏或返回链接在自动保存完成前丢失正文。
     const intercept = (e: MouseEvent) => {
       if (
-        !dirty ||
+        (!dirty && !uploading) ||
         e.defaultPrevented ||
         e.button !== 0 ||
         e.metaKey ||
@@ -247,7 +253,7 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
     };
     document.addEventListener("click", intercept, true);
     return () => document.removeEventListener("click", intercept, true);
-  }, [dirty]);
+  }, [dirty, uploading]);
   async function submit(e: FormEvent) {
     e.preventDefault();
     await persist();
@@ -276,22 +282,34 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
   }
   async function cover(selected: File) {
     if (
-      !["image/png", "image/jpeg", "image/webp"].includes(selected.type) ||
-      selected.size > 10 * 1024 * 1024
+      !IMAGE_MIME_TYPES.includes(selected.type) ||
+      selected.size > PUBLICATION_MEDIA.COVER.maxBytes
     ) {
       setError("封面支持 PNG、JPEG、WebP，最大 10 MiB");
       return;
     }
     setUploading(true);
+    setCoverName(selected.name);
+    setCoverProgress({
+      loaded: 0,
+      total: null,
+      percentage: null,
+      phase: "uploading",
+    });
+    const controller = new AbortController();
+    uploadController.current = controller;
     setError("");
     const body = new FormData();
     body.set("kind", "COVER");
     body.set("file", selected);
-    const r = await adminRequest<{ id: string }>("/media", {
-      method: "POST",
+    const r = await uploadRequest<{ id: string }>(
+      "/api/v1/admin/media",
       body,
-    });
+      setCoverProgress,
+      controller.signal,
+    );
     setUploading(false);
+    setCoverProgress(undefined);
     if (r.ok) field("coverFileId", r.data.id);
     else setError(r.error.msg);
   }
@@ -303,7 +321,7 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
       </div>
     );
   if (!categories || (id && !detail))
-    return <p className="ops-loading">正在准备写作空间…</p>;
+    return <PageSkeleton variant="editor" label="正在准备写作空间" />;
   const headings = draft.fullMarkdown
     .split("\n")
     .filter((l) => /^#{2,3} /.test(l))
@@ -346,6 +364,16 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
           </p>
         </div>
         <div className="writer-actions">
+          {detail?.status === "PUBLISHED" && (
+            <Link
+              className="ops-secondary"
+              href={`/publications/${detail.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              查看文章 <Eye size={16} />
+            </Link>
+          )}
           <button
             type="button"
             className="ops-secondary"
@@ -544,9 +572,9 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
               <span>整理好，再分享</span>
             </div>
             <label className="writer-setting">
-              内容类型
+              内容形式
               <select
-                aria-label="内容类型"
+                aria-label="内容形式"
                 name="publicationType"
                 value={draft.publicationType}
                 onChange={(e) => field("publicationType", e.target.value)}
@@ -555,18 +583,21 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                 <option value="ARTICLE">学习文章</option>
                 <option value="COURSE">课程</option>
               </select>
+              <small>
+                案例记录过程与结果；学习文章分享方法；课程组织系统的学习路径。
+              </small>
             </label>
             <label className="writer-setting">
-              内容分类
+              所属主题
               <select
-                aria-label="内容分类"
+                aria-label="所属主题"
                 name="categoryId"
                 value={draft.categoryId}
                 onChange={(e) => field("categoryId", e.target.value)}
                 required
               >
                 <option value="" disabled>
-                  选择分类
+                  选择主题
                 </option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -574,6 +605,10 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                   </option>
                 ))}
               </select>
+              <small>
+                按文章涉及的方向归档，如 AI 编程、AI
+                演示。与内容形式、免费或积分阅读无关。
+              </small>
             </label>
             <div className="writer-setting">
               <span>文章封面</span>
@@ -600,7 +635,7 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                   disabled={uploading}
                 >
                   <ImagePlus size={25} />
-                  <strong>{uploading ? "上传中…" : "上传文章封面"}</strong>
+                  <strong>{coverProgress ? "上传中…" : "上传文章封面"}</strong>
                   <small>PNG / JPEG / WebP · 10 MiB</small>
                 </button>
               )}
@@ -608,7 +643,7 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                 ref={file}
                 hidden
                 type="file"
-                accept="image/png,image/jpeg,image/webp"
+                accept={PUBLICATION_MEDIA.COVER.accept}
                 aria-label="上传封面文件"
                 onChange={(e) => {
                   const selected = e.target.files?.[0];
@@ -616,6 +651,13 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                   e.target.value = "";
                 }}
               />
+              {coverProgress && (
+                <UploadProgress
+                  filename={coverName}
+                  progress={coverProgress}
+                  onCancel={() => uploadController.current?.abort()}
+                />
+              )}
             </div>
             <div className="writer-setting writer-pricing">
               <span>阅读方式</span>
@@ -668,18 +710,14 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                 设为精选内容<small>用于社区精选与内容推荐</small>
               </span>
             </label>
-            <label className="writer-setting">
-              页面地址
-              <input
-                aria-label="页面地址"
-                name="slug"
-                value={draft.slug}
-                onChange={(e) => field("slug", e.target.value)}
-                pattern="[a-z0-9-]{1,120}"
-                required
-              />
-              <small>/publications/{draft.slug}</small>
-            </label>
+            <div className="writer-setting">
+              <span>文章链接</span>
+              <small>
+                {detail
+                  ? `/publications/${detail.id}`
+                  : "首次保存后自动生成唯一链接"}
+              </small>
+            </div>
             <details className="writer-extra">
               <summary>交付说明与版本</summary>
               <label>

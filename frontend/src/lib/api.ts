@@ -35,8 +35,11 @@ export async function readApiResponse<T>(
       ok: false,
       status: response.ok ? 502 : response.status,
       error: {
-        code: "INVALID_RESPONSE",
-        msg: "服务返回格式不正确，请稍后再试",
+        code: response.status >= 500 ? "UPSTREAM_ERROR" : "INVALID_RESPONSE",
+        msg:
+          response.status >= 500
+            ? "服务端或转发连接异常，请稍后重试"
+            : "服务返回格式不正确，请稍后再试",
         traceId: response.headers.get("X-Trace-Id") ?? undefined,
       },
     };
@@ -66,22 +69,61 @@ export async function readApiResponse<T>(
   return { ok: false, status: response.status, error };
 }
 
-export async function apiRequest<T>(
+// 只共享浏览器中尚未完成的读取，避免开发模式 Effect 重放和多个组件重复读取。
+// 不缓存已完成的响应，也不在服务端跨用户共享带会话的请求。
+const pendingReads = new Map<string, Promise<ApiResponse<unknown>>>();
+const shareableOptions = new Set(["method", "headers", "cache", "credentials"]);
+
+export function apiRequest<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<ApiResponse<T>> {
+  const headers = new Headers(init.headers);
+  if (!headers.has("Accept")) headers.set("Accept", "application/json");
+  if (
+    init.body &&
+    !(init.body instanceof FormData) &&
+    !headers.has("Content-Type")
+  )
+    headers.set("Content-Type", "application/json");
+  const method = (init.method ?? "GET").toUpperCase();
+  const options: RequestInit = {
+    ...init,
+    method,
+    credentials: "same-origin",
+    headers,
+  };
+  const browser = typeof window !== "undefined";
+  const mutation = !["GET", "HEAD"].includes(method);
+
+  // 写操作开始和结束均失效在途读取，后续刷新不能复用写入前的旧结果。
+  if (browser && mutation) pendingReads.clear();
+  // 带独立取消信号或特殊 Fetch 选项的请求不共享，保留调用方的控制语义。
+  const key =
+    browser &&
+    method === "GET" &&
+    Object.keys(init).every((name) => shareableOptions.has(name))
+      ? JSON.stringify([path, init.cache ?? "default", [...headers.entries()]])
+      : null;
+  if (key) {
+    const pending = pendingReads.get(key);
+    if (pending) return pending as Promise<ApiResponse<T>>;
+  }
+  const request = sendRequest<T>(path, options).finally(() => {
+    if (browser && mutation) pendingReads.clear();
+    // 写操作失效后可能已有同 URL 的新请求，旧请求不能删除新请求的记录。
+    if (key && pendingReads.get(key) === request) pendingReads.delete(key);
+  });
+  if (key) pendingReads.set(key, request);
+  return request;
+}
+
+async function sendRequest<T>(
+  path: string,
+  init: RequestInit,
+): Promise<ApiResponse<T>> {
   try {
-    const response = await fetch(path, {
-      ...init,
-      credentials: "same-origin",
-      headers: {
-        Accept: "application/json",
-        ...(init.body && !(init.body instanceof FormData)
-          ? { "Content-Type": "application/json" }
-          : {}),
-        ...init.headers,
-      },
-    });
+    const response = await fetch(path, init);
     return await readApiResponse<T>(response);
   } catch {
     return {

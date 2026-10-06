@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/** 运营查询适配器；只读取持久化事实，不提供账本变更能力。 */
 @Repository
 @RequiredArgsConstructor
 public class MybatisOperationsReadPort implements OperationsReadPort {
@@ -26,6 +27,6 @@ public class MybatisOperationsReadPort implements OperationsReadPort {
     }
 
     public long ledgerCount() {
-        return mapper.ledgerCount();
+        return mapper.selectCount(null);
     }
 }

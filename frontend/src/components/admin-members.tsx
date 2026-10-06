@@ -4,6 +4,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Search, RefreshCw, Users } from "lucide-react";
 import { adminRequest } from "@/lib/admin";
 import type { Member, Page } from "@/lib/operations";
+import { PageSkeleton } from "./page-skeleton";
 export function AdminMembers() {
   const [data, setData] = useState<Page<Member>>();
   const [query, setQuery] = useState("");
@@ -159,7 +160,9 @@ export function AdminMembers() {
         {data?.items.length === 0 && (
           <div className="ops-empty">没有找到匹配的成员，试试其他关键词。</div>
         )}
-        {!data && !error && <p className="ops-loading">正在读取成员…</p>}
+        {!data && !error && (
+          <PageSkeleton variant="table" heading={false} label="正在读取成员" />
+        )}
         <div className="ops-pagination">
           <span>
             第 {page} 页 · 共 {data?.total ?? 0} 位成员
