@@ -1,5 +1,7 @@
 # S3 / 阿里云 OSS 文件存储
 
+所有接口返回统一 `Result {code, msg, data, traceId}`，下文的业务响应字段位于 `data` 内。
+
 ## 实现范围
 
 独立 `storage` 模块提供通用文件写入、元数据查询和签名工具，应用层依赖 `ObjectStorage` 端口，AWS SDK 2.x 仅在基础设施中使用。`FileStorageService` 不读取会话，不决定头像、附件或视频的格式、大小及授权规则。

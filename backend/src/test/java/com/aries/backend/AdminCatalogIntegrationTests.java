@@ -37,10 +37,10 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
 
         Cookie admin = register("admin@example.com", "admin1234", "管理员");
         mvc.perform(get("/api/v1/users/me").cookie(admin))
-                .andExpect(jsonPath("$.role").value("ADMIN"));
+                .andExpect(jsonPath("$.data.role").value("ADMIN"));
         mvc.perform(get("/api/v1/admin/categories").cookie(admin))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(2)));
+                .andExpect(jsonPath("$.data", hasSize(2)));
 
         mvc.perform(post("/api/v1/admin/publications").cookie(admin)
                         .contentType("application/json")
@@ -61,19 +61,19 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
                             }
                             """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("DRAFT"));
+                .andExpect(jsonPath("$.data.status").value("DRAFT"));
         Long id = database.publicationIdBySlug("admin-created-case");
 
         mvc.perform(get("/api/v1/publications/admin-created-case"))
                 .andExpect(status().isNotFound());
         mvc.perform(post("/api/v1/admin/publications/" + id + "/publish").cookie(admin))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("PUBLISHED"));
+                .andExpect(jsonPath("$.data.status").value("PUBLISHED"));
         mvc.perform(get("/api/v1/publications/admin-created-case"))
                 .andExpect(status().isOk());
         mvc.perform(post("/api/v1/admin/publications/" + id + "/archive").cookie(admin))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("ARCHIVED"));
+                .andExpect(jsonPath("$.data.status").value("ARCHIVED"));
         mvc.perform(get("/api/v1/publications/admin-created-case"))
                 .andExpect(status().isNotFound());
     }

@@ -54,7 +54,7 @@ export function AuthExperience({
   const [pending, setPending] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
   const [error, setError] = useState("");
-  const [requestId, setRequestId] = useState("");
+  const [traceId, setTraceId] = useState("");
   const [cooldown, setCooldown] = useState(0);
   const [demo, setDemo] = useState(false);
   const [sent, setSent] = useState(false);
@@ -68,7 +68,7 @@ export function AuthExperience({
       if (!remaining) {
         setRetryAt(0);
         setError("");
-        setRequestId("");
+        setTraceId("");
       }
     };
     tick();
@@ -76,8 +76,8 @@ export function AuthExperience({
     return () => clearInterval(timer);
   }, [retryAt]);
   function showError(error: ApiError) {
-    setError(error.message);
-    setRequestId(error.requestId ?? "");
+    setError(error.msg);
+    setTraceId(error.traceId ?? "");
     if (error.retryAfterSeconds && error.retryAfterSeconds > 0) {
       setRetrySeconds(error.retryAfterSeconds);
       setRetryAt(Date.now() + error.retryAfterSeconds * 1000);
@@ -126,7 +126,7 @@ export function AuthExperience({
   function move(next: number) {
     if (transitioning || pending) return;
     setError("");
-    setRequestId("");
+    setTraceId("");
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setStep(next);
       return;
@@ -177,7 +177,7 @@ export function AuthExperience({
       return false;
     }
     setError("");
-    setRequestId("");
+    setTraceId("");
     setPending(true);
     if (demo) {
       setCooldown(30);
@@ -206,7 +206,7 @@ export function AuthExperience({
     e.preventDefault();
     if (pending || transitioning || retrySeconds > 0) return;
     setError("");
-    setRequestId("");
+    setTraceId("");
     if (
       (!register || step === 0) &&
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
@@ -444,7 +444,7 @@ export function AuthExperience({
                 {retrySeconds > 0
                   ? `操作过于频繁，请在 ${Math.floor(retrySeconds / 60)} 分 ${retrySeconds % 60} 秒后重试`
                   : error}
-                {requestId && <small>请求编号：{requestId}</small>}
+                {traceId && <small>请求编号：{traceId}</small>}
                 {register && step === 4 && (
                   <Button variant="link" type="button" onClick={() => move(1)}>
                     返回修改验证码

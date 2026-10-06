@@ -38,8 +38,8 @@ class StorageIntegrationTests extends IntegrationTestSupport {
         var response = mvc.perform(multipart("/api/v1/users/me/avatar").file(png())
                         .cookie(owner))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.purpose").value("AVATAR"))
-                .andExpect(jsonPath("$.size").value(12))
+                .andExpect(jsonPath("$.data.purpose").value("AVATAR"))
+                .andExpect(jsonPath("$.data.size").value(12))
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andReturn().getResponse().getContentAsString();
         String id = response.split("\"id\":\"")[1].split("\"")[0];
@@ -50,8 +50,8 @@ class StorageIntegrationTests extends IntegrationTestSupport {
         when(objects.downloadUrl(eq(stored.objectKey()), eq("avatar.png"), eq(Duration.ofMinutes(5))))
                 .thenReturn("https://files.example.com/temporary-link");
         mvc.perform(get("/api/v1/storage/files/" + id + "/download-url").cookie(owner))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.url").value("https://files.example.com/temporary-link"))
-                .andExpect(jsonPath("$.expiresAt").exists());
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.url").value("https://files.example.com/temporary-link"))
+                .andExpect(jsonPath("$.data.expiresAt").exists());
         Cookie stranger = register("stranger@example.com", "storage123", "其他用户");
         mvc.perform(get("/api/v1/storage/files/" + id + "/download-url").cookie(stranger))
                 .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("FILE_NOT_FOUND"));
@@ -80,7 +80,7 @@ class StorageIntegrationTests extends IntegrationTestSupport {
         }
         mvc.perform(multipart("/api/v1/users/me/avatar").file(png()).cookie(owner))
                 .andExpect(status().isTooManyRequests()).andExpect(header().exists("Retry-After"))
-                .andExpect(jsonPath("$.retryAfterSeconds").isNumber());
+                .andExpect(jsonPath("$.data.retryAfterSeconds").isNumber());
         verify(objects, times(21)).put(anyString(), any(), anyLong(), anyString());
     }
     @Test void providerFailureDoesNotCreateFileMetadata() throws Exception {

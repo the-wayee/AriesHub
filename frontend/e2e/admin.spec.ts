@@ -1,3 +1,4 @@
+import { fulfillResult } from "./api-result";
 import { expect, test } from "@playwright/test";
 import { mockMemberSession } from "./member-session";
 
@@ -8,13 +9,13 @@ test("administrator can browse publications and open the editor", async ({
   await page.route("**/api/v1/admin/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/categories")) {
-      await route.fulfill({
+      await fulfillResult(route, {
         json: [{ id: "1", slug: "coding", name: "Codex 编程" }],
       });
       return;
     }
     if (path.endsWith("/publications/41")) {
-      await route.fulfill({
+      await fulfillResult(route, {
         json: {
           id: "41",
           categoryId: "1",
@@ -38,7 +39,7 @@ test("administrator can browse publications and open the editor", async ({
       });
       return;
     }
-    await route.fulfill({
+    await fulfillResult(route, {
       json: [
         {
           id: "41",

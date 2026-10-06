@@ -3,7 +3,7 @@
   "info": {
     "title": "AriesHub API",
     "version": "0.7.0",
-    "description": "Public content catalog, Redis-backed cookie identity, flat paged discussions with comment likes, administrator content and moderation API. Credit balance lives on users and pricing on publications; the credit ledger and unlock tables exist but the credit application API is not implemented yet. Private S3-compatible file uploads and owner-only temporary downloads."
+    "description": "Public content catalog, Redis-backed cookie identity, flat paged discussions with comment likes, administrator content and moderation API. Credit balance lives on users and pricing on publications; the credit ledger and unlock tables exist but the credit application API is not implemented yet. Private S3-compatible file uploads and owner-only temporary downloads. All JSON responses use Result {code,msg,data,traceId}; success code is SUCCESS, failures retain semantic HTTP status and business codes. Empty successes use HTTP 200 with data:null; throttling includes Retry-After and data.retryAfterSeconds."
   },
   "servers": [
     {
@@ -29,12 +29,42 @@
                   "type": "string",
                   "const": "no-store"
                 }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             },
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Health"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Health"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
                 }
               }
             }
@@ -51,6 +81,13 @@
                 "schema": {
                   "type": "string",
                   "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             },
@@ -74,6 +111,13 @@
                 "schema": {
                   "type": "string",
                   "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             },
@@ -108,7 +152,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EmailCodeDispatch"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/EmailCodeDispatch"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -121,6 +197,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "429": {
@@ -131,6 +216,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "503": {
@@ -139,6 +233,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -166,7 +269,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CurrentUser"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CurrentUser"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -179,6 +314,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "409": {
@@ -189,6 +333,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "429": {
@@ -197,6 +350,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -224,7 +386,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CurrentUser"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CurrentUser"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -237,6 +431,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "401": {
@@ -247,6 +450,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "429": {
@@ -255,6 +467,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -277,7 +498,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CurrentUser"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CurrentUser"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -288,6 +541,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -305,8 +567,47 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "Signed out"
+          "200": {
+            "description": "Success with an empty result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "null"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
           },
           "401": {
             "description": "Not signed in",
@@ -314,6 +615,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -336,10 +646,42 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AdminCategory"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AdminCategory"
+                      }
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
                   }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -371,14 +713,44 @@
                   "type": "string",
                   "const": "no-store"
                 }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             },
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Category"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Category"
+                      }
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
                   }
                 }
               }
@@ -396,6 +768,13 @@
                 "schema": {
                   "type": "string",
                   "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             },
@@ -419,6 +798,13 @@
                 "schema": {
                   "type": "string",
                   "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             },
@@ -503,7 +889,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CommentPage"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CommentPage"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -516,6 +934,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "404": {
@@ -526,6 +953,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "500": {
@@ -534,6 +970,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -565,7 +1010,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CommentView"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CommentView"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -578,6 +1055,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "401": {
@@ -586,6 +1072,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -598,6 +1093,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "409": {
@@ -608,6 +1112,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "500": {
@@ -616,6 +1129,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -638,10 +1160,42 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AdminPublicationSummary"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AdminPublicationSummary"
+                      }
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
                   }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -678,7 +1232,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminPublicationDetail"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AdminPublicationDetail"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -718,7 +1304,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminPublicationDetail"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AdminPublicationDetail"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -758,7 +1376,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminPublicationDetail"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AdminPublicationDetail"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -801,7 +1451,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminPublicationDetail"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AdminPublicationDetail"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -838,7 +1520,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AdminPublicationDetail"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AdminPublicationDetail"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -873,12 +1587,42 @@
                   "type": "string",
                   "const": "no-store"
                 }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             },
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PublicationPage"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PublicationPage"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
                 }
               }
             }
@@ -895,6 +1639,13 @@
                 "schema": {
                   "type": "string",
                   "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             },
@@ -919,6 +1670,13 @@
                   "type": "string",
                   "const": "no-store"
                 }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             },
             "content": {
@@ -941,6 +1699,13 @@
                 "schema": {
                   "type": "string",
                   "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             },
@@ -1043,12 +1808,42 @@
                   "type": "string",
                   "const": "no-store"
                 }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             },
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PublicationDetail"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PublicationDetail"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
                 }
               }
             }
@@ -1065,6 +1860,13 @@
                 "schema": {
                   "type": "string",
                   "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             },
@@ -1089,6 +1891,13 @@
                   "type": "string",
                   "const": "no-store"
                 }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             },
             "content": {
@@ -1112,6 +1921,13 @@
                   "type": "string",
                   "const": "no-store"
                 }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             },
             "content": {
@@ -1134,6 +1950,13 @@
                 "schema": {
                   "type": "string",
                   "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             },
@@ -1177,12 +2000,42 @@
                   "type": "string",
                   "const": "no-store"
                 }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             },
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PublicationContent"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/PublicationContent"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
                 }
               }
             }
@@ -1199,6 +2052,13 @@
                 "schema": {
                   "type": "string",
                   "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             },
@@ -1223,6 +2083,13 @@
                   "type": "string",
                   "const": "no-store"
                 }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             },
             "content": {
@@ -1245,6 +2112,13 @@
                 "schema": {
                   "type": "string",
                   "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             },
@@ -1269,6 +2143,13 @@
                   "type": "string",
                   "const": "no-store"
                 }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             },
             "content": {
@@ -1291,6 +2172,13 @@
                 "schema": {
                   "type": "string",
                   "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             },
@@ -1376,7 +2264,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ReplyPage"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/ReplyPage"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1389,6 +2309,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "404": {
@@ -1399,6 +2328,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "500": {
@@ -1407,6 +2345,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1444,13 +2391,45 @@
                   "type": "object",
                   "additionalProperties": false,
                   "required": [
-                    "liked"
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
                   ],
                   "properties": {
-                    "liked": {
-                      "type": "boolean"
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "liked"
+                      ],
+                      "properties": {
+                        "liked": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
                     }
                   }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1463,6 +2442,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "404": {
@@ -1473,6 +2461,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "500": {
@@ -1481,6 +2478,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1510,8 +2516,47 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "已删除"
+          "200": {
+            "description": "Success with an empty result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "null"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
           },
           "401": {
             "description": "需要登录",
@@ -1519,6 +2564,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1531,6 +2585,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "404": {
@@ -1541,6 +2604,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "500": {
@@ -1549,6 +2621,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1578,8 +2659,47 @@
           }
         ],
         "responses": {
-          "204": {
-            "description": "已隐藏"
+          "200": {
+            "description": "Success with an empty result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "null"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
           },
           "401": {
             "description": "需要登录",
@@ -1587,6 +2707,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1599,6 +2728,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "404": {
@@ -1609,6 +2747,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "500": {
@@ -1617,6 +2764,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1644,8 +2800,47 @@
           }
         },
         "responses": {
-          "204": {
-            "description": "已锁定"
+          "200": {
+            "description": "Success with an empty result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "null"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
           },
           "400": {
             "description": "目标参数不合法",
@@ -1653,6 +2848,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1665,6 +2869,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "403": {
@@ -1673,6 +2886,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1685,6 +2907,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "500": {
@@ -1693,6 +2924,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1726,7 +2966,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/FileDownload"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/FileDownload"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1746,6 +3018,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1778,7 +3059,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CurrentUser"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CurrentUser"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1791,6 +3104,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "401": {
@@ -1799,6 +3121,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1811,6 +3142,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "404": {
@@ -1821,6 +3161,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "503": {
@@ -1829,6 +3178,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1851,7 +3209,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AvatarImage"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/AvatarImage"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1864,6 +3254,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "403": {
@@ -1872,6 +3271,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1884,6 +3292,15 @@
                   "$ref": "#/components/schemas/Error"
                 }
               }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
             }
           },
           "503": {
@@ -1892,6 +3309,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1934,7 +3360,39 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/StoredFile"
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/StoredFile"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1951,6 +3409,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -1970,6 +3437,13 @@
                   "type": "integer",
                   "minimum": 1
                 }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
               }
             }
           },
@@ -1979,6 +3453,15 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
                 }
               }
             }
@@ -2226,18 +3709,40 @@
         "additionalProperties": false,
         "required": [
           "code",
-          "message",
-          "requestId"
+          "msg",
+          "data",
+          "traceId"
         ],
         "properties": {
           "code": {
             "type": "string"
           },
-          "message": {
+          "msg": {
             "type": "string"
           },
-          "requestId": {
-            "type": "string"
+          "data": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "retryAfterSeconds"
+                ],
+                "properties": {
+                  "retryAfterSeconds": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                }
+              }
+            ]
+          },
+          "traceId": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       },
@@ -2906,6 +4411,30 @@
           "expiresAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "Result": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "msg",
+          "data",
+          "traceId"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "const": "SUCCESS"
+          },
+          "msg": {
+            "type": "string"
+          },
+          "data": {},
+          "traceId": {
+            "type": "string",
+            "format": "uuid"
           }
         }
       }

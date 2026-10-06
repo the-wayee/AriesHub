@@ -21,7 +21,7 @@ export function AdminPublicationList() {
           setError(
             result.status === 401 || result.status === 403
               ? "当前账号没有内容管理权限"
-              : result.error.message,
+              : result.error.msg,
           );
         }
       },

@@ -1,5 +1,6 @@
 package com.aries.backend.discussion.interfaces.rest;
 
+import com.aries.backend.shared.interfaces.rest.Result;
 import com.aries.backend.discussion.application.service.DiscussionService;
 import com.aries.backend.discussion.application.view.DiscussionViews.CommentPage;
 import com.aries.backend.discussion.application.view.DiscussionViews.CommentView;
@@ -34,37 +35,38 @@ public class DiscussionController {
     private final DiscussionService discussions;
 
     @GetMapping
-    public CommentPage comments(
+    public Result<CommentPage> comments(
             @RequestParam @Pattern(regexp = TARGET_TYPE_PATTERN) String targetType,
             @RequestParam @NotBlank @Size(max = 120) String targetKey,
             @Valid @ModelAttribute CommentListRequest query) {
-        return discussions.comments(new DiscussionTarget(targetType, targetKey), query.toQuery());
+        return Result.success(discussions.comments(new DiscussionTarget(targetType, targetKey), query.toQuery()));
     }
 
     /** 展开某条根评论下的全部回复；根评论自身由列表接口给出。 */
     @GetMapping("/{rootId}/replies")
-    public ReplyPage replies(@PathVariable @Positive long rootId,
+    public Result<ReplyPage> replies(@PathVariable @Positive long rootId,
                              @Valid @ModelAttribute CommentListRequest query) {
-        return discussions.replies(rootId, query.toQuery());
+        return Result.success(discussions.replies(rootId, query.toQuery()));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CommentView add(@Valid @RequestBody CreateCommentRequest request) {
-        return discussions.add(new DiscussionTarget(request.targetType(), request.targetKey()),
-                request.parentId(), request.body());
+    public Result<CommentView> add(@Valid @RequestBody CreateCommentRequest request) {
+        return Result.success(discussions.add(new DiscussionTarget(request.targetType(), request.targetKey()),
+                request.parentId(), request.body()));
     }
 
     /** 作者删除自己的评论；管理员删除他人的评论走这里也会通过权限校验。 */
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable @Positive long id) {
+    @ResponseStatus(HttpStatus.OK)
+    public Result<Void> delete(@PathVariable @Positive long id) {
         discussions.delete(id);
+        return Result.success(null);
     }
 
     /** 切换点赞状态，返回切换后是否已点赞。 */
     @PostMapping("/{id}/like")
-    public Map<String, Boolean> toggleLike(@PathVariable @Positive long id) {
-        return Map.of("liked", discussions.toggleLike(id));
+    public Result<Map<String, Boolean>> toggleLike(@PathVariable @Positive long id) {
+        return Result.success(Map.of("liked", discussions.toggleLike(id)));
     }
 }

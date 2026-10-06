@@ -63,3 +63,5 @@ npm run test:e2e
 - `src/components`：站点外壳、身份表单、账号面板、后台编辑器、案例卡片、Markdown、统一提示。
 - `src/lib`：API 类型、服务端案例请求、浏览器身份与后台请求和筛选条件处理。
 - `e2e`：真实后端驱动的浏览器流程测试。
+
+API JSON 响应统一为 `Result {code, msg, data, traceId}`。成功码为 `SUCCESS`；前端统一解析 `data`，失败通过 `msg` 和 `traceId` 提供提示与追踪。退出和删除成功返回 HTTP 200、`data: null`，业务失败保留相应 HTTP 状态。

@@ -1,3 +1,4 @@
+import { fulfillResult } from "./api-result";
 import { test, expect } from "@playwright/test";
 test("landing discovery, carousel and local assets", async ({ page }) => {
   await page.goto("/");
@@ -103,7 +104,7 @@ test("login keeps rate-limit feedback and no verification code", async ({
   page,
 }) => {
   await page.route("**/api/v1/auth/login", (r) =>
-    r.fulfill({
+    fulfillResult(r, {
       status: 429,
       json: {
         code: "AUTH_RATE_LIMITED",

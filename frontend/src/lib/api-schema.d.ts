@@ -516,8 +516,12 @@ export interface components {
     };
     Error: {
       code: string;
-      message: string;
-      requestId: string;
+      msg: string;
+      data: null | {
+        retryAfterSeconds: number;
+      };
+      /** Format: uuid */
+      traceId: string;
     };
     Health: {
       /** @enum {string} */
@@ -699,6 +703,14 @@ export interface components {
       /** Format: date-time */
       expiresAt: string;
     };
+    Result: {
+      /** @constant */
+      code: "SUCCESS";
+      msg: string;
+      data: unknown;
+      /** Format: uuid */
+      traceId: string;
+    };
   };
   responses: {
     /** @description Invalid request */
@@ -770,10 +782,19 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Health"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["Health"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       /** @description Unexpected server error */
@@ -781,6 +802,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -792,6 +815,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -816,15 +841,26 @@ export interface operations {
       /** @description Registration code request accepted */
       202: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["EmailCodeDispatch"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["EmailCodeDispatch"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       /** @description Invalid email or purpose */
       400: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -834,6 +870,8 @@ export interface operations {
       /** @description Code resend cooldown or rate limit reached */
       429: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -843,6 +881,8 @@ export interface operations {
       /** @description Email delivery failed */
       503: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -867,15 +907,26 @@ export interface operations {
       /** @description Account created; session cookie is set */
       201: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["CurrentUser"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["CurrentUser"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       /** @description Invalid input or verification code */
       400: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -885,6 +936,8 @@ export interface operations {
       /** @description Email already registered */
       409: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -894,6 +947,8 @@ export interface operations {
       /** @description Registration rate limit reached */
       429: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -918,15 +973,26 @@ export interface operations {
       /** @description Signed in; session cookie is set */
       200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["CurrentUser"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["CurrentUser"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       /** @description Invalid request */
       400: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -936,6 +1002,8 @@ export interface operations {
       /** @description Invalid credentials */
       401: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -945,6 +1013,8 @@ export interface operations {
       /** @description Login rate limit reached */
       429: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -965,15 +1035,26 @@ export interface operations {
       /** @description Current member */
       200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["CurrentUser"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["CurrentUser"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       /** @description Not signed in */
       401: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -991,16 +1072,29 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Signed out */
-      204: {
+      /** @description Success with an empty result */
+      200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: null;
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
       };
       /** @description Not signed in */
       401: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1021,10 +1115,19 @@ export interface operations {
       /** @description Category options */
       200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AdminCategory"][];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["AdminCategory"][];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       401: components["responses"]["Unauthorized"];
@@ -1045,10 +1148,19 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["Category"][];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["Category"][];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       /** @description Unexpected server error */
@@ -1056,6 +1168,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1067,6 +1181,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1094,15 +1210,26 @@ export interface operations {
       /** @description 根评论分页 */
       200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["CommentPage"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["CommentPage"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       /** @description 目标类型或分页参数不合法 */
       400: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1112,6 +1239,8 @@ export interface operations {
       /** @description 目标不存在或未公开（草稿、下架、暂停交付） */
       404: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1121,6 +1250,8 @@ export interface operations {
       /** @description 服务端异常 */
       500: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1145,15 +1276,26 @@ export interface operations {
       /** @description 创建后的评论 */
       201: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["CommentView"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["CommentView"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       /** @description 正文不符合要求 */
       400: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1163,6 +1305,8 @@ export interface operations {
       /** @description 需要登录 */
       401: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1172,6 +1316,8 @@ export interface operations {
       /** @description 目标或父评论不存在 */
       404: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1181,6 +1327,8 @@ export interface operations {
       /** @description 讨论已锁定（DISCUSSION_THREAD_CLOSED），或被回复的评论已隐藏、已删除（COMMENT_NOT_REPLYABLE） */
       409: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1190,6 +1338,8 @@ export interface operations {
       /** @description 服务端异常 */
       500: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1210,10 +1360,19 @@ export interface operations {
       /** @description All publications */
       200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AdminPublicationSummary"][];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["AdminPublicationSummary"][];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       401: components["responses"]["Unauthorized"];
@@ -1236,10 +1395,19 @@ export interface operations {
       /** @description Draft created */
       201: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AdminPublicationDetail"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["AdminPublicationDetail"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       400: components["responses"]["BadRequest"];
@@ -1262,10 +1430,19 @@ export interface operations {
       /** @description Editable publication */
       200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AdminPublicationDetail"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["AdminPublicationDetail"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       401: components["responses"]["Unauthorized"];
@@ -1291,10 +1468,19 @@ export interface operations {
       /** @description Publication updated */
       200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AdminPublicationDetail"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["AdminPublicationDetail"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       400: components["responses"]["BadRequest"];
@@ -1318,10 +1504,19 @@ export interface operations {
       /** @description Published publication */
       200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AdminPublicationDetail"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["AdminPublicationDetail"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       401: components["responses"]["Unauthorized"];
@@ -1343,10 +1538,19 @@ export interface operations {
       /** @description Archived publication */
       200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AdminPublicationDetail"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["AdminPublicationDetail"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       401: components["responses"]["Unauthorized"];
@@ -1375,10 +1579,19 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["PublicationPage"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationPage"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       /** @description Invalid query */
@@ -1386,6 +1599,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1397,6 +1612,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1408,6 +1625,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1432,10 +1651,19 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["PublicationDetail"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationDetail"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       /** @description Invalid slug */
@@ -1443,6 +1671,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1454,6 +1684,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1465,6 +1697,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1476,6 +1710,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1500,10 +1736,19 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["PublicationContent"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationContent"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       /** @description Invalid ID */
@@ -1511,6 +1756,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1522,6 +1769,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1533,6 +1782,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1544,6 +1795,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1555,6 +1808,8 @@ export interface operations {
         headers: {
           "X-Request-Id"?: string;
           "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1582,15 +1837,26 @@ export interface operations {
       /** @description 回复分页 */
       200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["ReplyPage"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["ReplyPage"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       /** @description 分页参数不合法 */
       400: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1600,6 +1866,8 @@ export interface operations {
       /** @description 根评论不存在、已隐藏，或其所在讨论与目标不可见 */
       404: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1609,6 +1877,8 @@ export interface operations {
       /** @description 服务端异常 */
       500: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1631,17 +1901,28 @@ export interface operations {
       /** @description 切换结果 */
       200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
           "application/json": {
-            liked: boolean;
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: {
+              liked: boolean;
+            };
+            /** Format: uuid */
+            traceId: string;
           };
         };
       };
       /** @description 需要登录 */
       401: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1651,6 +1932,8 @@ export interface operations {
       /** @description 评论不存在或不可见 */
       404: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1660,6 +1943,8 @@ export interface operations {
       /** @description 服务端异常 */
       500: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1679,16 +1964,29 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description 已删除 */
-      204: {
+      /** @description Success with an empty result */
+      200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: null;
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
       };
       /** @description 需要登录 */
       401: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1698,6 +1996,8 @@ export interface operations {
       /** @description 不是作者本人，也不是管理员 */
       403: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1707,6 +2007,8 @@ export interface operations {
       /** @description 评论不存在 */
       404: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1716,6 +2018,8 @@ export interface operations {
       /** @description 服务端异常 */
       500: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1735,16 +2039,29 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description 已隐藏 */
-      204: {
+      /** @description Success with an empty result */
+      200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: null;
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
       };
       /** @description 需要登录 */
       401: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1754,6 +2071,8 @@ export interface operations {
       /** @description 需要管理员角色 */
       403: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1763,6 +2082,8 @@ export interface operations {
       /** @description 评论不存在 */
       404: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1772,6 +2093,8 @@ export interface operations {
       /** @description 服务端异常 */
       500: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1793,16 +2116,29 @@ export interface operations {
       };
     };
     responses: {
-      /** @description 已锁定 */
-      204: {
+      /** @description Success with an empty result */
+      200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
-        content?: never;
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: null;
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
       };
       /** @description 目标参数不合法 */
       400: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1812,6 +2148,8 @@ export interface operations {
       /** @description 需要登录 */
       401: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1821,6 +2159,8 @@ export interface operations {
       /** @description 需要管理员角色 */
       403: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1830,6 +2170,8 @@ export interface operations {
       /** @description 目标不存在 */
       404: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1839,6 +2181,8 @@ export interface operations {
       /** @description 服务端异常 */
       500: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1861,10 +2205,19 @@ export interface operations {
       /** @description Temporary download URL; do not persist it */
       200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["FileDownload"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["FileDownload"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       400: components["responses"]["BadRequest"];
@@ -1873,6 +2226,8 @@ export interface operations {
       /** @description Storage unavailable */
       503: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1897,15 +2252,26 @@ export interface operations {
       /** @description Profile saved */
       200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["CurrentUser"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["CurrentUser"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       /** @description Invalid profile */
       400: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1915,6 +2281,8 @@ export interface operations {
       /** @description Not signed in */
       401: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1924,6 +2292,8 @@ export interface operations {
       /** @description Account disabled */
       403: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1933,6 +2303,8 @@ export interface operations {
       /** @description Avatar file missing, foreign or wrong purpose */
       404: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1942,6 +2314,8 @@ export interface operations {
       /** @description Database temporarily unavailable */
       503: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1962,15 +2336,26 @@ export interface operations {
       /** @description Temporary image URL */
       200: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["AvatarImage"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["AvatarImage"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       /** @description Not signed in */
       401: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1980,6 +2365,8 @@ export interface operations {
       /** @description Account disabled */
       403: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1989,6 +2376,8 @@ export interface operations {
       /** @description No avatar */
       404: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -1998,6 +2387,8 @@ export interface operations {
       /** @description Storage unavailable */
       503: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -2025,10 +2416,19 @@ export interface operations {
       /** @description Uploaded */
       201: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
-          "application/json": components["schemas"]["StoredFile"];
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["StoredFile"];
+            /** Format: uuid */
+            traceId: string;
+          };
         };
       };
       400: components["responses"]["BadRequest"];
@@ -2036,6 +2436,8 @@ export interface operations {
       /** @description Multipart upload exceeds 20MB file or 21MB request limit */
       413: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -2046,6 +2448,8 @@ export interface operations {
       429: {
         headers: {
           "Retry-After"?: number;
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -2055,6 +2459,8 @@ export interface operations {
       /** @description Storage unavailable */
       503: {
         headers: {
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
           [name: string]: unknown;
         };
         content: {

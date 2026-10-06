@@ -1,3 +1,4 @@
+import { readApiResponse } from "./api";
 import "server-only";
 import { cache } from "react";
 import type {
@@ -8,7 +9,7 @@ import type {
 } from "./catalog-types";
 
 export type ApiResult<T> =
-  { ok: true; data: T } | { ok: false; status: number; requestId?: string };
+  { ok: true; data: T } | { ok: false; status: number; traceId?: string };
 
 function backendOrigin() {
   const url = new URL(process.env.BACKEND_ORIGIN ?? "http://127.0.0.1:8080");
@@ -34,14 +35,15 @@ async function get<T>(path: string): Promise<ApiResult<T>> {
       signal: AbortSignal.timeout(6000),
       headers: { Accept: "application/json" },
     });
-    if (!response.ok) {
+    const result = await readApiResponse<T>(response);
+    if (!result.ok) {
       return {
         ok: false,
-        status: response.status,
-        requestId: response.headers.get("X-Request-Id") ?? undefined,
+        status: result.status,
+        traceId: result.error.traceId,
       };
     }
-    return { ok: true, data: (await response.json()) as T };
+    return result;
   } catch {
     return { ok: false, status: 503 };
   }

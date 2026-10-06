@@ -19,11 +19,12 @@ public class RequestIdFilter extends OncePerRequestFilter {
                                     FilterChain chain) throws ServletException, IOException {
         String id = UUID.randomUUID().toString();
         request.setAttribute(ATTRIBUTE, id);
+        response.setHeader("X-Trace-Id", id);
         response.setHeader("X-Request-Id", id);
         // 禁止共享缓存，确保后续发布、下架或价格变更能在下一次请求中生效。
         if (request.getRequestURI().startsWith("/api/")) response.setHeader("Cache-Control", "no-store");
-        MDC.put("requestId", id);
+        MDC.put("traceId", id);
         try { chain.doFilter(request, response); }
-        finally { MDC.remove("requestId"); }
+        finally { MDC.remove("traceId"); }
     }
 }

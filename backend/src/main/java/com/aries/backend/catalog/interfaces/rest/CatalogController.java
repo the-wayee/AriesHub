@@ -1,5 +1,6 @@
 package com.aries.backend.catalog.interfaces.rest;
 
+import com.aries.backend.shared.interfaces.rest.Result;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Pattern;
@@ -18,16 +19,16 @@ public class CatalogController {
     private final CatalogQueryService service;
 
     @GetMapping("/categories")
-    public List<Category> categories() { return service.categories(); }
+    public Result<List<Category>> categories() { return Result.success(service.categories()); }
 
     @GetMapping("/publications")
-    public Page<PublicationSummary> publications(@Valid @ModelAttribute PublicationListRequest query) { return service.list(query.toQuery()); }
+    public Result<Page<PublicationSummary>> publications(@Valid @ModelAttribute PublicationListRequest query) { return Result.success(service.list(query.toQuery())); }
 
     @GetMapping("/publications/{slug}")
-    public PublicationDetail detail(@PathVariable @Pattern(regexp = "[a-z0-9-]{1,120}") String slug) {
-        return service.detail(slug);
+    public Result<PublicationDetail> detail(@PathVariable @Pattern(regexp = "[a-z0-9-]{1,120}") String slug) {
+        return Result.success(service.detail(slug));
     }
 
     @GetMapping("/publications/{id}/content")
-    public Content content(@PathVariable @Positive long id) { return service.content(id); }
+    public Result<Content> content(@PathVariable @Positive long id) { return Result.success(service.content(id)); }
 }

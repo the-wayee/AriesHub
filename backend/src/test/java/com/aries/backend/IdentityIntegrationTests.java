@@ -30,7 +30,7 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
 
         mvc.perform(get("/api/v1/users/me").cookie(session))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("redis-session@example.com"));
+                .andExpect(jsonPath("$.data.email").value("redis-session@example.com"));
     }
 
     @Test void registrationCreatesSessionAndStoresPasswordHash() throws Exception {
@@ -41,11 +41,11 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
                             {"email":"Hello@Example.com","password":"hello1234","nickname":"小羊","code":"%s"}
                             """.formatted(code)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value("1"))
-                .andExpect(jsonPath("$.email").value("hello@example.com"))
-                .andExpect(jsonPath("$.nickname").value("小羊"))
-                .andExpect(jsonPath("$.emailVerified").value(true))
-                .andExpect(jsonPath("$.passwordHash").doesNotExist())
+                .andExpect(jsonPath("$.data.id").value("1"))
+                .andExpect(jsonPath("$.data.email").value("hello@example.com"))
+                .andExpect(jsonPath("$.data.nickname").value("小羊"))
+                .andExpect(jsonPath("$.data.emailVerified").value(true))
+                .andExpect(jsonPath("$.data.passwordHash").doesNotExist())
                 .andExpect(header().string("Set-Cookie", containsString("HttpOnly")))
                 .andReturn();
 
@@ -57,7 +57,7 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
         assertThat(session).isNotNull();
         mvc.perform(get("/api/v1/users/me").cookie(session))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("hello@example.com"));
+                .andExpect(jsonPath("$.data.email").value("hello@example.com"));
     }
 
     @Test void duplicateRegistrationAndInvalidLoginReturnStableErrors() throws Exception {
@@ -86,14 +86,14 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
                             {"email":"LOGIN@example.com","password":"login1234"}
                             """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value("login@example.com"))
+                .andExpect(jsonPath("$.data.email").value("login@example.com"))
                 .andReturn();
         Cookie session = loggedIn.getResponse().getCookie("arieshub_token");
         assertThat(session).isNotNull();
         assertThat(database.userHasLastLogin("login@example.com")).isTrue();
 
         mvc.perform(post("/api/v1/auth/logout").cookie(session))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
         mvc.perform(get("/api/v1/users/me").cookie(session))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
@@ -161,7 +161,7 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"))
                 .andExpect(header().exists("Retry-After"))
-                .andExpect(jsonPath("$.retryAfterSeconds").isNumber());
+                .andExpect(jsonPath("$.data.retryAfterSeconds").isNumber());
         assertThat(redisTemplate.keys("arieshub:auth:rate:login-email:*")).hasSize(1)
                 .allMatch(key -> !key.contains("limit@example.com"));
     }
@@ -179,7 +179,7 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"))
                 .andExpect(header().exists("Retry-After"))
-                .andExpect(jsonPath("$.retryAfterSeconds").isNumber());
+                .andExpect(jsonPath("$.data.retryAfterSeconds").isNumber());
         mvc.perform(post("/api/v1/auth/login")
                         .with(request -> {
                             request.setRemoteAddr("198.51.100.10");
@@ -196,7 +196,7 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"))
                 .andExpect(header().exists("Retry-After"))
-                .andExpect(jsonPath("$.retryAfterSeconds").isNumber());
+                .andExpect(jsonPath("$.data.retryAfterSeconds").isNumber());
     }
 
     @Test void registrationCodesAreOnlyIssuedForRegistrationAndHaveSourceLimit() throws Exception {
@@ -212,7 +212,7 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"))
                 .andExpect(header().exists("Retry-After"))
-                .andExpect(jsonPath("$.retryAfterSeconds").isNumber());
+                .andExpect(jsonPath("$.data.retryAfterSeconds").isNumber());
     }
 
     @Test void registrationAttemptsAreAlsoLimitedByNormalizedEmail() throws Exception {
@@ -229,6 +229,6 @@ class IdentityIntegrationTests extends IntegrationTestSupport {
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.code").value("AUTH_RATE_LIMITED"))
                 .andExpect(header().exists("Retry-After"))
-                .andExpect(jsonPath("$.retryAfterSeconds").isNumber());
+                .andExpect(jsonPath("$.data.retryAfterSeconds").isNumber());
     }
 }

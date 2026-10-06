@@ -9,7 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -24,10 +25,10 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 @Slf4j
 @RestControllerAdvice
 public class ApiExceptionHandler {
-    public record ErrorBody(String code, String message, String requestId, Long retryAfterSeconds) {}
+    public record RetryAfter(long retryAfterSeconds) {}
 
     @ExceptionHandler(BusinessException.class)
-    ResponseEntity<ErrorBody> business(BusinessException error, HttpServletRequest request) {
+    Result<?> business(BusinessException error, HttpServletRequest request, HttpServletResponse response) {
         HttpStatus status = switch (error.getCode().getKind()) {
             case BAD_REQUEST -> HttpStatus.BAD_REQUEST;
             case UNAUTHORIZED -> HttpStatus.UNAUTHORIZED;
@@ -37,67 +38,77 @@ public class ApiExceptionHandler {
             case TOO_MANY_REQUESTS -> HttpStatus.TOO_MANY_REQUESTS;
             case SERVICE_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
         };
-        var builder = ResponseEntity.status(status);
+        response.setStatus(status.value());
         if (error.getRetryAfterSeconds() != null) {
-            builder.header("Retry-After", error.getRetryAfterSeconds().toString());
+            response.setHeader("Retry-After", error.getRetryAfterSeconds().toString());
         }
-        return builder.body(new ErrorBody(error.getCode().name(), error.getMessage(),
-                (String) request.getAttribute(RequestIdFilter.ATTRIBUTE), error.getRetryAfterSeconds()));
+        return Result.failure(error.getCode().name(), error.getMessage(),
+                error.getRetryAfterSeconds() == null ? null : new RetryAfter(error.getRetryAfterSeconds()),
+                (String) request.getAttribute(RequestIdFilter.ATTRIBUTE));
     }
 
     @ExceptionHandler(NotLoginException.class)
-    ResponseEntity<ErrorBody> notLoggedIn(Exception error, HttpServletRequest request) {
-        return response(HttpStatus.UNAUTHORIZED, "UNAUTHENTICATED", "请先登录后再访问", request);
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    Result<?> notLoggedIn(Exception error, HttpServletRequest request) {
+        return failure("UNAUTHENTICATED", "请先登录后再访问", request);
     }
 
     @ExceptionHandler({NotPermissionException.class, NotRoleException.class})
-    ResponseEntity<ErrorBody> forbidden(Exception error, HttpServletRequest request) {
-        return response(HttpStatus.FORBIDDEN, "FORBIDDEN", "当前账号无权执行此操作", request);
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    Result<?> forbidden(Exception error, HttpServletRequest request) {
+        return failure("FORBIDDEN", "当前账号无权执行此操作", request);
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class, HandlerMethodValidationException.class,
             MethodArgumentTypeMismatchException.class, HttpMessageNotReadableException.class,
             ConstraintViolationException.class,
             MissingServletRequestParameterException.class})
-    ResponseEntity<ErrorBody> invalid(Exception error, HttpServletRequest request) {
-        return response(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "请求参数不正确，请检查筛选条件或页码", request);
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    Result<?> invalid(Exception error, HttpServletRequest request) {
+        return failure("INVALID_REQUEST", "请求参数不正确，请检查筛选条件或页码", request);
     }
 
     @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
-    ResponseEntity<ErrorBody> oversized(Exception error, HttpServletRequest request) {
-        return response(HttpStatus.PAYLOAD_TOO_LARGE, "FILE_TOO_LARGE", "文件超过上传大小限制（最大 20MB）", request);
+    @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
+    Result<?> oversized(Exception error, HttpServletRequest request) {
+        return failure("FILE_TOO_LARGE", "文件超过上传大小限制（最大 20MB）", request);
     }
 
     @ExceptionHandler(org.springframework.web.multipart.support.MissingServletRequestPartException.class)
-    ResponseEntity<ErrorBody> missingFile(Exception error, HttpServletRequest request) {
-        return response(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "请提供要上传的文件", request);
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    Result<?> missingFile(Exception error, HttpServletRequest request) {
+        return failure("INVALID_REQUEST", "请提供要上传的文件", request);
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
-    ResponseEntity<ErrorBody> notFound(Exception error, HttpServletRequest request) {
-        return response(HttpStatus.NOT_FOUND, "NOT_FOUND", "请求的资源不存在", request);
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    Result<?> notFound(Exception error, HttpServletRequest request) {
+        return failure("NOT_FOUND", "请求的资源不存在", request);
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    ResponseEntity<ErrorBody> method(Exception error, HttpServletRequest request) {
-        return response(HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED", "此接口不支持该请求方式", request);
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    Result<?> method(Exception error, HttpServletRequest request) {
+        return failure("METHOD_NOT_ALLOWED", "此接口不支持该请求方式", request);
     }
 
     @ExceptionHandler(DataAccessException.class)
-    ResponseEntity<ErrorBody> database(Exception error, HttpServletRequest request) {
-        log.error("数据库请求失败，requestId={}", request.getAttribute(RequestIdFilter.ATTRIBUTE), error);
-        return response(HttpStatus.SERVICE_UNAVAILABLE, "SERVICE_UNAVAILABLE", "内容服务暂时不可用，请稍后重试", request);
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    Result<?> database(Exception error, HttpServletRequest request) {
+        log.error("数据库请求失败，traceId={}", request.getAttribute(RequestIdFilter.ATTRIBUTE), error);
+        return failure("SERVICE_UNAVAILABLE", "内容服务暂时不可用，请稍后重试", request);
     }
 
     @ExceptionHandler(Exception.class)
-    ResponseEntity<ErrorBody> unexpected(Exception error, HttpServletRequest request) {
-        log.error("请求发生未预期错误，requestId={}", request.getAttribute(RequestIdFilter.ATTRIBUTE), error);
-        return response(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", "服务暂时无法处理请求，请稍后重试", request);
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    Result<?> unexpected(Exception error, HttpServletRequest request) {
+        log.error("请求发生未预期错误，traceId={}", request.getAttribute(RequestIdFilter.ATTRIBUTE), error);
+        return failure("INTERNAL_ERROR", "服务暂时无法处理请求，请稍后重试", request);
     }
 
-    private ResponseEntity<ErrorBody> response(HttpStatus status, String code, String message,
-                                               HttpServletRequest request) {
-        return ResponseEntity.status(status).body(new ErrorBody(code, message,
-                (String) request.getAttribute(RequestIdFilter.ATTRIBUTE), null));
+    private Result<Void> failure(String code, String message,
+                                 HttpServletRequest request) {
+        return Result.failure(code, message, null,
+                (String) request.getAttribute(RequestIdFilter.ATTRIBUTE));
     }
 }

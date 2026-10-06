@@ -15,7 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestEmailConfiguration.class)
 class PlatformIntegrationTest extends IntegrationTestSupport {
     @Test void healthChecksActualDatabase() throws Exception {
-        mvc.perform(get("/api/v1/health")).andExpect(status().isOk()).andExpect(jsonPath("$.database").value("UP"));
+        mvc.perform(get("/api/v1/health")).andExpect(status().isOk()).andExpect(jsonPath("$.data.database").value("UP"));
         assertThat(database.successfulFlywayMigrations()).isPositive();
     }
 }

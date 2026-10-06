@@ -77,7 +77,7 @@ export function AuthSessionProvider({
         ) {
           setUser(null);
           setSessionError(null);
-        } else setSessionError(result.error.message);
+        } else setSessionError(result.error.msg);
       });
     };
     const sync = (event: Event) => {

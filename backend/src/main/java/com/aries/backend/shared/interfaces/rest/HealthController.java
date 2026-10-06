@@ -1,5 +1,6 @@
 package com.aries.backend.shared.interfaces.rest;
 
+import com.aries.backend.shared.interfaces.rest.Result;
 import com.aries.backend.shared.infrastructure.health.DatabaseProbe;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,8 +14,8 @@ public class HealthController {
     public record Health(String status, String database) {}
 
     @GetMapping("/api/v1/health")
-    public Health health() {
+    public Result<Health> health() {
         database.verify();
-        return new Health("UP", "UP");
+        return Result.success(new Health("UP", "UP"));
     }
 }

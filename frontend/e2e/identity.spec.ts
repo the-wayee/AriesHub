@@ -1,3 +1,4 @@
+import { fulfillResult } from "./api-result";
 import { expect, test } from "@playwright/test";
 
 test("guest navigation is present in the first HTML response", async ({
@@ -6,7 +7,7 @@ test("guest navigation is present in the first HTML response", async ({
   let meRequests = 0;
   await page.route("**/api/v1/users/me", async (route) => {
     meRequests += 1;
-    await route.fulfill({
+    await fulfillResult(route, {
       status: 401,
       json: { code: "UNAUTHORIZED", message: "请先登录" },
     });
@@ -50,7 +51,7 @@ test("header keeps the signed-in entry stable while a refresh checks the session
   ]);
   await page.route("**/api/v1/users/me", async (route) => {
     await sessionGate;
-    await route.fulfill({ status: 200, json: member });
+    await fulfillResult(route, { status: 200, json: member });
   });
 
   await page.goto("/");
@@ -77,7 +78,7 @@ test("email delivery failures show a support request number", async ({
   page,
 }) => {
   await page.route("**/api/v1/auth/email-codes", async (route) => {
-    await route.fulfill({
+    await fulfillResult(route, {
       status: 503,
       json: {
         code: "EMAIL_DELIVERY_FAILED",
@@ -106,7 +107,7 @@ test("login shows the server rate-limit message without asking for a code", asyn
       email: "reader@example.com",
       password: "reader1234",
     });
-    await route.fulfill({
+    await fulfillResult(route, {
       status: 429,
       json: {
         code: "AUTH_RATE_LIMITED",
@@ -151,7 +152,7 @@ test("member can request codes, register, log out and log back in", async ({
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/email-codes")) {
       codeRequestCount += 1;
-      await route.fulfill({
+      await fulfillResult(route, {
         status: 202,
         contentType: "application/json",
         body: JSON.stringify({ expiresInSeconds: 600, resendAfterSeconds: 60 }),
@@ -163,7 +164,7 @@ test("member can request codes, register, log out and log back in", async ({
         expect(route.request().postDataJSON()).not.toHaveProperty("code");
       }
       loggedIn = true;
-      await route.fulfill({
+      await fulfillResult(route, {
         status: path.endsWith("/register") ? 201 : 200,
         headers: {
           "set-cookie":
@@ -175,14 +176,15 @@ test("member can request codes, register, log out and log back in", async ({
     }
     if (path.endsWith("/logout")) {
       loggedIn = false;
-      await route.fulfill({
+      await fulfillResult(route, {
         status: 204,
         body: "",
         headers: { "set-cookie": "arieshub_token=; Path=/; Max-Age=0" },
       });
       return;
     }
-    await route.fulfill(
+    await fulfillResult(
+      route,
       loggedIn
         ? { status: 200, json: user }
         : {
@@ -243,7 +245,8 @@ for (const conflictAt of ["email-codes", "register"]) {
   }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.route("**/api/v1/auth/email-codes", (route) =>
-      route.fulfill(
+      fulfillResult(
+        route,
         conflictAt === "email-codes"
           ? {
               status: 409,
@@ -256,7 +259,7 @@ for (const conflictAt of ["email-codes", "register"]) {
       ),
     );
     await page.route("**/api/v1/auth/register", (route) =>
-      route.fulfill({
+      fulfillResult(route, {
         status: 409,
         json: {
           code: "EMAIL_ALREADY_REGISTERED",
@@ -308,7 +311,7 @@ for (const mode of ["login", "register"]) {
     await page.route(
       `**/api/v1/auth/${mode === "login" ? "login" : "email-codes"}`,
       (route) =>
-        route.fulfill({
+        fulfillResult(route, {
           status: 429,
           headers: { "Retry-After": "65" },
           json: {

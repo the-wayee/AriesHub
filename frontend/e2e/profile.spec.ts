@@ -1,3 +1,4 @@
+import { fulfillResult } from "./api-result";
 import { expect, test, type Page } from "@playwright/test";
 
 const image = Buffer.from(
@@ -25,15 +26,15 @@ async function memberSession(page: Page) {
     },
   ]);
   await page.route("**/api/v1/users/me", (route) =>
-    route.fulfill({ json: member }),
+    fulfillResult(route, { json: member }),
   );
   await page.route("**/api/v1/users/me/profile", async (route) => {
     expect(route.request().method()).toBe("PUT");
     member = { ...member, ...route.request().postDataJSON() };
-    await route.fulfill({ json: member });
+    await fulfillResult(route, { json: member });
   });
   await page.route("**/api/v1/users/me/avatar-url", (route) =>
-    route.fulfill({
+    fulfillResult(route, {
       json: {
         url: `http://localhost:${process.env.E2E_PORT ?? "3200"}/test-avatar.png`,
         expiresAt: new Date(Date.now() + 300_000).toISOString(),
@@ -41,7 +42,7 @@ async function memberSession(page: Page) {
     }),
   );
   await page.route("**/test-avatar.png", (route) =>
-    route.fulfill({ contentType: "image/png", body: image }),
+    fulfillResult(route, { contentType: "image/png", body: image }),
   );
 }
 
@@ -98,7 +99,7 @@ test("avatar uploads before profile save and can be removed", async ({
       "multipart/form-data",
     );
     expect(route.request().postData()).toContain("avatar.png");
-    await route.fulfill({
+    await fulfillResult(route, {
       status: 201,
       json: { id: avatarId, purpose: "AVATAR" },
     });
@@ -126,7 +127,7 @@ test("upload failures preserve edits and invalid file types are rejected", async
 }) => {
   await memberSession(page);
   await page.route("**/api/v1/users/me/avatar", (route) =>
-    route.fulfill({
+    fulfillResult(route, {
       status: 503,
       json: {
         code: "STORAGE_UNAVAILABLE",
@@ -164,12 +165,12 @@ test("user menu opens by keyboard, links to settings and logs out", async ({
   await page.route("**/api/v1/auth/logout", async (route) => {
     await page.unroute("**/api/v1/users/me");
     await page.route("**/api/v1/users/me", (r) =>
-      r.fulfill({
+      fulfillResult(r, {
         status: 401,
         json: { code: "UNAUTHENTICATED", message: "请先登录" },
       }),
     );
-    await route.fulfill({ status: 204 });
+    await fulfillResult(route, { status: 204 });
   });
   await page.goto("/community");
   await expect(
@@ -198,7 +199,7 @@ test("account service errors show retry instead of treating member as logged out
 }) => {
   await memberSession(page);
   await page.route("**/api/v1/users/me", (route) =>
-    route.fulfill({
+    fulfillResult(route, {
       status: 503,
       json: { code: "SERVICE_UNAVAILABLE", message: "账号服务暂时不可用" },
     }),

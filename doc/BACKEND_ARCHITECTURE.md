@@ -49,6 +49,16 @@ com.aries.backend
 
 认证用例：`AuthController` → `AuthApplicationService` → `UserRepository`，负责注册、登录和退出。用户资料用例：`UserController` → `UserApplicationService` → `UserRepository`，负责当前用户查询、昵称与签名修改、头像上传、绑定和读取。两者共享 `identity` 边界和 `UserAccount` 聚合，头像不构成独立领域。认证接口位于 `/api/v1/auth/**`，当前用户与资料接口位于 `/api/v1/users/me/**`。邮箱在领域内以 `Email` 值对象表示，由构造器完成规范化和校验。注册通过 `EmailVerificationService` 验证 Resend 邮件中的一次性验证码，登录只验证邮箱和 BCrypt 密码。Redis 保存验证码摘要、限流窗口和 Sa-Token 登录态；`sa-token-redis-template` 使用现有 Spring Data Redis 连接，使会话可跨重启和多实例共享。`AuthTrafficGuard` 通过 Redis 原子计数按来源地址和规范化邮箱分别限制登录、注册、注册发码，超限返回 429；来源地址只取服务端连接地址，不信任客户端可伪造的转发头。Sa-Token 在基础设施层实现 `SessionManager`；密码摘要不进入接口视图。身份路由由 identity 配置保护，管理员路由由 catalog 自身配置保护，未登录统一返回 401，非管理员返回 403。
 
+## 统一 HTTP 返回体
+
+所有 JSON 接口（含健康检查、认证、用户、目录、评论与文件签名）显式返回接口层的 `Result<T>`：`{code, msg, data, traceId}`。应用与领域层继续返回业务视图，不依赖 HTTP 返回契约；Controller 和 `ApiExceptionHandler` 均直接返回 `Result<T>`，不再使用 `ResponseEntity` 包装。固定 HTTP 状态通过 `@ResponseStatus` 声明；业务异常的动态状态和 `Retry-After` 通过 `HttpServletResponse` 设置。文件接口的 `no-store` 由 `RequestIdFilter` 统一设置。
+
+成功码为字符串 `SUCCESS`，失败码沿用所属模块的稳定业务码；`msg` 为用户可读提示。`data` 为业务数据或 `null`，四个字段始终存在。创建和异步受理保持 201/202；退出、删除、隐藏、锁帖由原 204 改为 200、`data: null`。失败保留 400/401/403/404/409/429/500/503 等 HTTP 状态，前端同时校验 HTTP 状态和成功码。
+
+`RequestIdFilter` 为每次请求生成 UUID，写入请求属性、日志 MDC 的 `traceId` 和 `X-Trace-Id` 响应头，返回体使用同一编号。过滤器不信任客户端传入的编号，并在请求结束时清理 MDC；`X-Request-Id` 暂保留为同值兼容头。内部异常详情只记录到服务端日志。限流信息通过 `Retry-After` 头及 `data.retryAfterSeconds` 返回，避免增加顶层字段。
+
+前端的 `src/lib/api.ts` 集中验证与解包契约，认证、用户、后台和服务端目录请求共用解析器；不接受旧的裸数据响应。完整端点契约见 `openapi.json`。
+
 ## 当前用例
 
 评论：公开读取 `/api/v1/discussions/comments`，返回根评论分页，每条带回复总数与前两条预览；`GET /comments/{rootId}/replies` 分页展开全部回复；`POST /comments/{id}/like` 切换点赞。登录成员可发布根评论或回复，作者可删除自己的评论，管理员通过 `/api/v1/admin/discussions/**` 隐藏评论或锁定讨论。接口使用 `targetType + targetKey` 定位挂载对象，应用层按类型路由到对应的 `DiscussionTargetResolver`，`composition` 提供校验实现。

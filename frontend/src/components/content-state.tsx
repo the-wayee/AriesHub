@@ -5,14 +5,14 @@ export function ContentState({
   message,
   href = "/publications",
   label = "返回案例库",
-  requestId,
+  traceId,
   reload = false,
 }: {
   title: string;
   message: string;
   href?: string;
   label?: string;
-  requestId?: string;
+  traceId?: string;
   reload?: boolean;
 }) {
   const Action = reload ? "a" : Link;
@@ -24,7 +24,7 @@ export function ContentState({
       <Action className="text-link" href={href}>
         {label} →
       </Action>
-      {requestId && <small>问题编号：{requestId}</small>}
+      {traceId && <small>问题编号：{traceId}</small>}
     </div>
   );
 }

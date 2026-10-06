@@ -22,8 +22,8 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
     @Test void commentsArePubliclyReadableButWritingRequiresLogin() throws Exception {
         mvc.perform(get(TARGET))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items", hasSize(0)))
-                .andExpect(jsonPath("$.total").value(0));
+                .andExpect(jsonPath("$.data.items", hasSize(0)))
+                .andExpect(jsonPath("$.data.total").value(0));
 
         mvc.perform(post("/api/v1/discussions/comments")
                         .contentType("application/json")
@@ -43,9 +43,9 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 {"targetType":"PUBLICATION","targetKey":"free-case","body":"根评论"}
                                 """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.depth").value(0))
-                .andExpect(jsonPath("$.authorName").value("讨论成员"))
-                .andExpect(jsonPath("$.canDelete").value(true));
+                .andExpect(jsonPath("$.data.depth").value(0))
+                .andExpect(jsonPath("$.data.authorName").value("讨论成员"))
+                .andExpect(jsonPath("$.data.canDelete").value(true));
 
         Long rootId = database.commentIdByBody("根评论");
         mvc.perform(post("/api/v1/discussions/comments").cookie(member)
@@ -55,8 +55,8 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                  "parentId":%d,"body":"回复根评论"}
                                 """.formatted(rootId)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.depth").value(1))
-                .andExpect(jsonPath("$.parentId").value(rootId.toString()));
+                .andExpect(jsonPath("$.data.depth").value(1))
+                .andExpect(jsonPath("$.data.parentId").value(rootId.toString()));
 
         Long replyId = database.commentIdByBody("回复根评论");
         mvc.perform(post("/api/v1/discussions/comments").cookie(member)
@@ -66,19 +66,19 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                  "parentId":%d,"body":"回复那条回复"}
                                 """.formatted(replyId)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.depth").value(1))
-                .andExpect(jsonPath("$.parentId").value(replyId.toString()))
-                .andExpect(jsonPath("$.rootId").value(rootId.toString()));
+                .andExpect(jsonPath("$.data.depth").value(1))
+                .andExpect(jsonPath("$.data.parentId").value(replyId.toString()))
+                .andExpect(jsonPath("$.data.rootId").value(rootId.toString()));
 
         mvc.perform(get(TARGET))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].comment.body").value("根评论"))
-                .andExpect(jsonPath("$.items[0].replyCount").value(2));
+                .andExpect(jsonPath("$.data.items[0].comment.body").value("根评论"))
+                .andExpect(jsonPath("$.data.items[0].replyCount").value(2));
 
         mvc.perform(get("/api/v1/discussions/comments/" + rootId + "/replies"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(2))
-                .andExpect(jsonPath("$.items[*].depth", org.hamcrest.Matchers.everyItem(
+                .andExpect(jsonPath("$.data.total").value(2))
+                .andExpect(jsonPath("$.data.items[*].depth", org.hamcrest.Matchers.everyItem(
                         org.hamcrest.Matchers.is(1))));
     }
 
@@ -97,31 +97,31 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
 
         mvc.perform(get(TARGET + "&page=1&size=10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items", hasSize(10)))
-                .andExpect(jsonPath("$.total").value(30))
-                .andExpect(jsonPath("$.totalPages").value(3));
+                .andExpect(jsonPath("$.data.items", hasSize(10)))
+                .andExpect(jsonPath("$.data.total").value(30))
+                .andExpect(jsonPath("$.data.totalPages").value(3));
 
         // 最新：评论 30 最新，排在第一页首位。
         mvc.perform(get(TARGET + "&sort=LATEST&page=1&size=10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].comment.body").value("评论 30"));
+                .andExpect(jsonPath("$.data.items[0].comment.body").value("评论 30"));
         // 最早的评论落在最后一页的末尾。
         mvc.perform(get(TARGET + "&sort=LATEST&page=3&size=10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items", hasSize(10)))
-                .andExpect(jsonPath("$.items[9].comment.body").value("评论 1"));
+                .andExpect(jsonPath("$.data.items", hasSize(10)))
+                .andExpect(jsonPath("$.data.items[9].comment.body").value("评论 1"));
 
         // 热度：点赞最多的排在最前，与发布时间无关。
         mvc.perform(get(TARGET + "&sort=HOT&page=1&size=10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].comment.body").value("评论 1"))
-                .andExpect(jsonPath("$.items[0].comment.likeCount").value(99));
+                .andExpect(jsonPath("$.data.items[0].comment.body").value("评论 1"))
+                .andExpect(jsonPath("$.data.items[0].comment.likeCount").value(99));
 
         // 越界页不截断，返回空 items 和真实 total。
         mvc.perform(get(TARGET + "&page=99&size=10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items", hasSize(0)))
-                .andExpect(jsonPath("$.total").value(30));
+                .andExpect(jsonPath("$.data.items", hasSize(0)))
+                .andExpect(jsonPath("$.data.total").value(30));
     }
 
     @Test void rootCommentsCarryReplyCountAndPreview() throws Exception {
@@ -140,14 +140,14 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
 
         mvc.perform(get(TARGET + "&sort=LATEST"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].comment.body").value("有回复的根评论"))
-                .andExpect(jsonPath("$.items[0].replyCount").value(5))
+                .andExpect(jsonPath("$.data.items[0].comment.body").value("有回复的根评论"))
+                .andExpect(jsonPath("$.data.items[0].replyCount").value(5))
                 // 默认只带两条预览，前端据 replyCount > preview 显示「展开全部」。
-                .andExpect(jsonPath("$.items[0].previewReplies", hasSize(2)))
-                .andExpect(jsonPath("$.items[0].previewReplies[0].body").value("回复 1"))
-                .andExpect(jsonPath("$.items[1].comment.body").value("没有回复的根评论"))
-                .andExpect(jsonPath("$.items[1].replyCount").value(0))
-                .andExpect(jsonPath("$.items[1].previewReplies", hasSize(0)));
+                .andExpect(jsonPath("$.data.items[0].previewReplies", hasSize(2)))
+                .andExpect(jsonPath("$.data.items[0].previewReplies[0].body").value("回复 1"))
+                .andExpect(jsonPath("$.data.items[1].comment.body").value("没有回复的根评论"))
+                .andExpect(jsonPath("$.data.items[1].replyCount").value(0))
+                .andExpect(jsonPath("$.data.items[1].previewReplies", hasSize(0)));
     }
 
     @Test void likesToggleIdempotentlyAndUpdateTheCount() throws Exception {
@@ -162,14 +162,14 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
 
         mvc.perform(post("/api/v1/discussions/comments/" + commentId + "/like").cookie(member))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.liked").value(true));
+                .andExpect(jsonPath("$.data.liked").value(true));
         assertThat(database.likeCount(commentId)).isEqualTo(1);
         assertThat(database.activeLikes(commentId)).isEqualTo(1);
 
         // 再次点击是取消，不是重复点赞。
         mvc.perform(post("/api/v1/discussions/comments/" + commentId + "/like").cookie(member))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.liked").value(false));
+                .andExpect(jsonPath("$.data.liked").value(false));
         assertThat(database.likeCount(commentId)).isZero();
         assertThat(database.activeLikes(commentId)).isZero();
 
@@ -177,15 +177,15 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
         // 若只靠 INSERT ... ON CONFLICT 会插入重复行，使这次点击变成「取消」。
         mvc.perform(post("/api/v1/discussions/comments/" + commentId + "/like").cookie(member))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.liked").value(true));
+                .andExpect(jsonPath("$.data.liked").value(true));
         assertThat(database.likeCount(commentId)).isEqualTo(1);
         assertThat(database.activeLikes(commentId)).isEqualTo(1);
 
         // 必须带登录态：likedByMe 取决于「当前用户」，匿名请求得到的是 false。
         mvc.perform(get(TARGET).cookie(member))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].comment.likeCount").value(1))
-                .andExpect(jsonPath("$.items[0].comment.likedByMe").value(true));
+                .andExpect(jsonPath("$.data.items[0].comment.likeCount").value(1))
+                .andExpect(jsonPath("$.data.items[0].comment.likedByMe").value(true));
     }
 
     @Test void guestsSeeLikesButCannotLike() throws Exception {
@@ -202,8 +202,8 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
 
         mvc.perform(get(TARGET))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items[0].comment.likeCount").value(1))
-                .andExpect(jsonPath("$.items[0].comment.likedByMe").value(false));
+                .andExpect(jsonPath("$.data.items[0].comment.likeCount").value(1))
+                .andExpect(jsonPath("$.data.items[0].comment.likedByMe").value(false));
 
         mvc.perform(post("/api/v1/discussions/comments/" + commentId + "/like"))
                 .andExpect(status().isUnauthorized());
@@ -236,18 +236,18 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.code").value("COMMENT_DELETE_FORBIDDEN"));
 
         mvc.perform(delete("/api/v1/discussions/comments/" + rootId).cookie(author))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
         assertThat(database.commentStatus(rootId)).isEqualTo("DELETED");
 
         // 根评论以「已删除」占位保留，其下别人的回复继续可见：
         // 作者删除自己的发言，不该顺带抹掉别人在他下面的回复。
         mvc.perform(get(TARGET))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(1))
-                .andExpect(jsonPath("$.items[0].comment.deleted").value(true))
-                .andExpect(jsonPath("$.items[0].comment.body").value(""))
-                .andExpect(jsonPath("$.items[0].replyCount").value(1))
-                .andExpect(jsonPath("$.items[0].previewReplies[0].body").value("别人的回复"));
+                .andExpect(jsonPath("$.data.total").value(1))
+                .andExpect(jsonPath("$.data.items[0].comment.deleted").value(true))
+                .andExpect(jsonPath("$.data.items[0].comment.body").value(""))
+                .andExpect(jsonPath("$.data.items[0].replyCount").value(1))
+                .andExpect(jsonPath("$.data.items[0].previewReplies[0].body").value("别人的回复"));
     }
 
     @Test void adminsHideCommentsAndLockThreads() throws Exception {
@@ -268,20 +268,20 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
 
         Cookie admin = register("admin@example.com", "admin1234", "管理员");
         mvc.perform(post("/api/v1/admin/discussions/comments/" + commentId + "/hide").cookie(admin))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
         assertThat(database.commentStatus(commentId)).isEqualTo("HIDDEN");
 
         // 隐藏后不再出现在公开列表里。
         mvc.perform(get(TARGET))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(0));
+                .andExpect(jsonPath("$.data.total").value(0));
 
         mvc.perform(post("/api/v1/admin/discussions/threads/lock").cookie(admin)
                         .contentType("application/json")
                         .content("""
                                 {"targetType":"PUBLICATION","targetKey":"free-case"}
                                 """))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
         assertThat(database.threadStatus(database.threadId("PUBLICATION", "free-case")))
                 .isEqualTo("LOCKED");
 
@@ -304,13 +304,13 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                             .content("""
                                     {"targetType":"PUBLICATION","targetKey":"free-case"}
                                     """))
-                    .andExpect(status().isNoContent());
+                    .andExpect(status().isOk());
         }
         assertThat(database.threadStatus(database.threadId("PUBLICATION", "free-case")))
                 .isEqualTo("LOCKED");
         mvc.perform(get(TARGET))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(0));
+                .andExpect(jsonPath("$.data.total").value(0));
         mvc.perform(post("/api/v1/discussions/comments").cookie(admin)
                         .contentType("application/json")
                         .content("""
@@ -413,7 +413,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
 
         Cookie admin = register("admin@example.com", "admin1234", "管理员");
         mvc.perform(post("/api/v1/admin/discussions/comments/" + rootId + "/hide").cookie(admin))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
 
         mvc.perform(get("/api/v1/discussions/comments/" + rootId + "/replies"))
                 .andExpect(status().isNotFound())
@@ -440,7 +440,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
         Long lockedComment = database.commentIdByBody("锁定线程内的评论");
         mvc.perform(post("/api/v1/discussions/comments/" + lockedComment + "/like").cookie(member))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.liked").value(true));
+                .andExpect(jsonPath("$.data.liked").value(true));
 
         database.insertThread("PUBLICATION", "credit-publication", "HIDDEN");
         Long hiddenThread = database.threadId("PUBLICATION", "credit-publication");
@@ -464,7 +464,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                 .andExpect(status().isCreated());
         Long rootId = database.commentIdByBody("马上删除");
         mvc.perform(delete("/api/v1/discussions/comments/" + rootId).cookie(member))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
 
         mvc.perform(post("/api/v1/discussions/comments").cookie(member)
                         .contentType("application/json")
@@ -517,7 +517,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
         Thread.sleep(20);
 
         mvc.perform(delete("/api/v1/discussions/comments/" + commentId).cookie(author))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
         assertThat(database.commentUpdatedAt(commentId)).isAfter(commentBefore);
 
         Cookie admin = register("admin@example.com", "admin1234", "管理员");
@@ -526,7 +526,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                         .content("""
                                 {"targetType":"PUBLICATION","targetKey":"free-case"}
                                 """))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
         assertThat(database.threadUpdatedAt("PUBLICATION", "free-case")).isAfter(threadBefore);
     }
 

@@ -13,7 +13,7 @@ export function useLogout() {
     setError("");
     const result = await authRequest<void>("/logout", { method: "POST" });
     if (!result.ok) {
-      setError(result.error.message);
+      setError(result.error.msg);
       setBusy(false);
       return;
     }

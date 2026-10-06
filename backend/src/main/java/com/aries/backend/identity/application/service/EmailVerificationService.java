@@ -84,11 +84,11 @@ public class EmailVerificationService {
         if (error instanceof RestClientResponseException response) {
             var matcher = PROVIDER_ERROR_NAME.matcher(response.getResponseBodyAsString());
             String providerError = matcher.find() ? matcher.group(1) : "unknown";
-            log.warn("验证码邮件投递失败，requestId={}，providerStatus={}，providerError={}",
-                    MDC.get("requestId"), response.getStatusCode().value(), providerError);
+            log.warn("验证码邮件投递失败，traceId={}，providerStatus={}，providerError={}",
+                    MDC.get("traceId"), response.getStatusCode().value(), providerError);
         } else {
-            log.warn("验证码邮件投递失败，requestId={}，cause={}",
-                    MDC.get("requestId"), error.getClass().getSimpleName());
+            log.warn("验证码邮件投递失败，traceId={}，cause={}",
+                    MDC.get("traceId"), error.getClass().getSimpleName());
         }
     }
 

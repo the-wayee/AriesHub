@@ -74,8 +74,8 @@ abstract class IntegrationTestSupport {
                             {"email":"%s","purpose":"%s"}
                             """.formatted(email, purpose.name())))
                 .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.expiresInSeconds").value(600))
-                .andExpect(jsonPath("$.resendAfterSeconds").value(60));
+                .andExpect(jsonPath("$.data.expiresInSeconds").value(600))
+                .andExpect(jsonPath("$.data.resendAfterSeconds").value(60));
         return emailSender.latest(email.toLowerCase(), purpose);
     }
 

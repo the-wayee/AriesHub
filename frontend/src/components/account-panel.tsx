@@ -50,7 +50,7 @@ export function AccountPanel() {
         window.dispatchEvent(
           new CustomEvent("arieshub:auth", { detail: null }),
         );
-      } else setLoadError(result.error.message);
+      } else setLoadError(result.error.msg);
     });
     return () => {
       active = false;
@@ -185,7 +185,7 @@ function ProfileEditor({
     if (file) {
       const upload = await uploadAvatar(file);
       if (!upload.ok) {
-        setError(upload.error.message);
+        setError(upload.error.msg);
         setBusy(false);
         return;
       }
@@ -203,7 +203,7 @@ function ProfileEditor({
     });
     setBusy(false);
     if (!result.ok) {
-      setError(result.error.message);
+      setError(result.error.msg);
       return;
     }
     onSaved(result.data);

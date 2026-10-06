@@ -5,6 +5,9 @@ import com.tngtech.archunit.core.importer.ClassFileImporter;
 import org.junit.jupiter.api.Test;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
+import com.aries.backend.shared.interfaces.rest.Result;
+import org.springframework.web.bind.annotation.RestController;
 
 /** 把模块边界写成构建时可执行的规则。 */
 class ArchitectureTest {
@@ -77,4 +80,15 @@ class ArchitectureTest {
                 .because("database access must go through MyBatis-Plus mappers")
                 .check(code);
     }
+    @Test
+    void jsonControllersReturnResultDirectly() {
+        methods().that().areDeclaredInClassesThat().areAnnotatedWith(RestController.class)
+                .and().arePublic()
+                .should().haveRawReturnType(Result.class)
+                .check(code);
+        noClasses().that().resideInAPackage("..interfaces..")
+                .should().dependOnClassesThat().haveFullyQualifiedName("org.springframework.http.ResponseEntity")
+                .check(code);
+    }
+
 }

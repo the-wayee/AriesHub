@@ -24,16 +24,16 @@ class ProfileIntegrationTests extends IntegrationTestSupport {
         Cookie owner = register("profile@example.com", "profile123", "原昵称");
         mvc.perform(put("/api/v1/users/me/profile").cookie(owner).contentType("application/json")
                 .content("{\"nickname\":\" 新昵称 \",\"bio\":\" 探索 AI 与设计 \",\"avatarFileId\":null,\"role\":\"ADMIN\"}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.nickname").value("新昵称"))
-                .andExpect(jsonPath("$.bio").value("探索 AI 与设计"))
-                .andExpect(jsonPath("$.email").value("profile@example.com"))
-                .andExpect(jsonPath("$.role").value("USER"))
-                .andExpect(jsonPath("$.passwordHash").doesNotExist());
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.nickname").value("新昵称"))
+                .andExpect(jsonPath("$.data.bio").value("探索 AI 与设计"))
+                .andExpect(jsonPath("$.data.email").value("profile@example.com"))
+                .andExpect(jsonPath("$.data.role").value("USER"))
+                .andExpect(jsonPath("$.data.passwordHash").doesNotExist());
         mvc.perform(get("/api/v1/users/me").cookie(owner))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.bio").value("探索 AI 与设计"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.bio").value("探索 AI 与设计"));
         mvc.perform(post("/api/v1/auth/login").contentType("application/json")
                 .content("{\"email\":\"profile@example.com\",\"password\":\"profile123\"}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.nickname").value("新昵称"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.nickname").value("新昵称"));
     }
 
     @Test void invalidProfilesDoNotChangeSavedData() throws Exception {
@@ -46,7 +46,7 @@ class ProfileIntegrationTests extends IntegrationTestSupport {
                     .andExpect(status().isBadRequest());
         }
         mvc.perform(get("/api/v1/users/me").cookie(owner))
-                .andExpect(jsonPath("$.nickname").value("原昵称"));
+                .andExpect(jsonPath("$.data.nickname").value("原昵称"));
     }
 
     @Test void avatarBindingChecksOwnerPurposeAndSupportsRemoval() throws Exception {
@@ -58,11 +58,11 @@ class ProfileIntegrationTests extends IntegrationTestSupport {
         String id = uploaded.split("\"id\":\"")[1].split("\"")[0];
         String body = "{\"nickname\":\"头像成员\",\"bio\":\"\",\"avatarFileId\":\"" + id + "\"}";
         mvc.perform(put("/api/v1/users/me/profile").cookie(owner).contentType("application/json").content(body))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.avatarFileId").value(id));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.avatarFileId").value(id));
         when(objects.imageUrl(anyString(), any())).thenReturn("https://files.example.com/avatar.png");
         mvc.perform(get("/api/v1/users/me/avatar-url").cookie(owner))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.url").value("https://files.example.com/avatar.png"))
-                .andExpect(jsonPath("$.expiresAt").exists()).andExpect(header().string("Cache-Control", "no-store"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.url").value("https://files.example.com/avatar.png"))
+                .andExpect(jsonPath("$.data.expiresAt").exists()).andExpect(header().string("Cache-Control", "no-store"));
         Cookie stranger = register("stranger-profile@example.com", "profile123", "其他成员");
         mvc.perform(put("/api/v1/users/me/profile").cookie(stranger).contentType("application/json").content(body))
                 .andExpect(status().isNotFound());
@@ -77,7 +77,7 @@ class ProfileIntegrationTests extends IntegrationTestSupport {
         }
         mvc.perform(put("/api/v1/users/me/profile").cookie(owner).contentType("application/json")
                 .content("{\"nickname\":\"头像成员\",\"bio\":\"\",\"avatarFileId\":null}"))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.avatarFileId").doesNotExist());
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.avatarFileId").doesNotExist());
         mvc.perform(get("/api/v1/users/me/avatar-url").cookie(owner)).andExpect(status().isNotFound());
         verify(objects, times(1)).imageUrl(anyString(), any());
     }

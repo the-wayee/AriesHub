@@ -1,5 +1,6 @@
 package com.aries.backend.discussion.interfaces.rest;
 
+import com.aries.backend.shared.interfaces.rest.Result;
 import com.aries.backend.discussion.application.service.DiscussionService;
 import com.aries.backend.discussion.domain.model.DiscussionTarget;
 import com.aries.backend.discussion.interfaces.rest.request.LockThreadRequest;
@@ -25,15 +26,17 @@ public class AdminDiscussionController {
 
     /** 隐藏一条违规评论；与作者自删区分，正文不再对外返回。 */
     @PostMapping("/comments/{id}/hide")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void hide(@PathVariable @Positive long id) {
+    @ResponseStatus(HttpStatus.OK)
+    public Result<Void> hide(@PathVariable @Positive long id) {
         discussions.hide(id);
+        return Result.success(null);
     }
 
     /** 锁定讨论：线程保留可见，但不再接受新的评论和回复。 */
     @PostMapping("/threads/lock")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void lock(@Valid @RequestBody LockThreadRequest request) {
+    @ResponseStatus(HttpStatus.OK)
+    public Result<Void> lock(@Valid @RequestBody LockThreadRequest request) {
         discussions.lockThread(new DiscussionTarget(request.targetType(), request.targetKey()));
+        return Result.success(null);
     }
 }

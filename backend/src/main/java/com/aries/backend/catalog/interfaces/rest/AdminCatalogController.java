@@ -1,5 +1,6 @@
 package com.aries.backend.catalog.interfaces.rest;
 
+import com.aries.backend.shared.interfaces.rest.Result;
 import com.aries.backend.catalog.application.service.AdminCatalogService;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.CategoryOption;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetail;
@@ -9,7 +10,6 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,38 +22,39 @@ public class AdminCatalogController {
     private final AdminCatalogService service;
 
     @GetMapping("/categories")
-    public List<CategoryOption> categories() {
-        return service.categories();
+    public Result<List<CategoryOption>> categories() {
+        return Result.success(service.categories());
     }
 
     @GetMapping("/publications")
-    public List<AdminPublicationSummary> publications() {
-        return service.publications();
+    public Result<List<AdminPublicationSummary>> publications() {
+        return Result.success(service.publications());
     }
 
     @GetMapping("/publications/{id}")
-    public AdminPublicationDetail detail(@PathVariable @Positive long id) {
-        return service.detail(id);
+    public Result<AdminPublicationDetail> detail(@PathVariable @Positive long id) {
+        return Result.success(service.detail(id));
     }
 
     @PostMapping("/publications")
-    public ResponseEntity<AdminPublicationDetail> create(@Valid @RequestBody AdminPublicationRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(request.toCommand()));
+    @ResponseStatus(HttpStatus.CREATED)
+    public Result<AdminPublicationDetail> create(@Valid @RequestBody AdminPublicationRequest request) {
+        return Result.success(service.create(request.toCommand()));
     }
 
     @PutMapping("/publications/{id}")
-    public AdminPublicationDetail update(@PathVariable @Positive long id,
+    public Result<AdminPublicationDetail> update(@PathVariable @Positive long id,
                              @Valid @RequestBody AdminPublicationRequest request) {
-        return service.update(id, request.toCommand());
+        return Result.success(service.update(id, request.toCommand()));
     }
 
     @PostMapping("/publications/{id}/publish")
-    public AdminPublicationDetail publish(@PathVariable @Positive long id) {
-        return service.publish(id);
+    public Result<AdminPublicationDetail> publish(@PathVariable @Positive long id) {
+        return Result.success(service.publish(id));
     }
 
     @PostMapping("/publications/{id}/archive")
-    public AdminPublicationDetail archive(@PathVariable @Positive long id) {
-        return service.archive(id);
+    public Result<AdminPublicationDetail> archive(@PathVariable @Positive long id) {
+        return Result.success(service.archive(id));
     }
 }

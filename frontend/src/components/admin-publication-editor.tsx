@@ -42,13 +42,13 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
       ([categoryResult, detailResult]) => {
         if (!active) return;
         if (!categoryResult.ok) {
-          setLoadError(categoryResult.error.message);
+          setLoadError(categoryResult.error.msg);
           return;
         }
         setCategories(categoryResult.data);
         if (id && detailResult) {
           if (detailResult.ok) setDetail(detailResult.data);
-          else setLoadError(detailResult.error.message);
+          else setLoadError(detailResult.error.msg);
         }
       },
     );
@@ -78,7 +78,7 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
     );
     setPending(false);
     if (!result.ok) {
-      setError(result.error.message);
+      setError(result.error.msg);
       return;
     }
     setDetail(result.data);
@@ -97,7 +97,7 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
     );
     setPending(false);
     if (result.ok) setDetail(result.data);
-    else setError(result.error.message);
+    else setError(result.error.msg);
   }
 
   if (loadError)

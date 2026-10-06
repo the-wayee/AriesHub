@@ -1,3 +1,4 @@
+import { fulfillResult } from "./api-result";
 import { expect, test } from "@playwright/test";
 import { mockMemberSession } from "./member-session";
 
@@ -31,7 +32,7 @@ test("forged or expired cookies cannot display member content", async ({
 }) => {
   await mockMemberSession(page);
   await page.route("**/api/v1/users/me", (route) =>
-    route.fulfill({
+    fulfillResult(route, {
       status: 401,
       json: { code: "UNAUTHENTICATED", message: "请先登录" },
     }),
@@ -48,7 +49,7 @@ test("members cannot enter administrator pages", async ({ page }) => {
   let adminRequests = 0;
   await page.route("**/api/v1/admin/**", (route) => {
     adminRequests++;
-    return route.fulfill({ json: [] });
+    return fulfillResult(route, { json: [] });
   });
   await page.goto("/admin/publications/new");
   await expect(

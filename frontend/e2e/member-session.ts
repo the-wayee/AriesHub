@@ -1,3 +1,4 @@
+import { fulfillResult } from "./api-result";
 import type { Page } from "@playwright/test";
 
 export async function mockMemberSession(page: Page, role = "USER") {
@@ -9,7 +10,7 @@ export async function mockMemberSession(page: Page, role = "USER") {
     },
   ]);
   await page.route("**/api/v1/users/me", (route) =>
-    route.fulfill({
+    fulfillResult(route, {
       json: {
         id: "9001",
         email: "member@example.com",
