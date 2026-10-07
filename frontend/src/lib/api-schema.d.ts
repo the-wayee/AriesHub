@@ -903,11 +903,16 @@ export interface components {
       title: string;
       summary: string;
       accessType: components["schemas"]["AccessType"];
-      previewMarkdown: string;
+      /** @description Legacy optional preview. New editors omit this field; server derives paid preview from the <!-- arieshub:paid --> boundary in fullMarkdown. Without boundary no paid body is public. */
+      previewMarkdown?: string;
       fullMarkdown: string;
       requirements: string;
       deliverables: string;
-      version: string;
+      /**
+       * @deprecated
+       * @description Ignored compatibility field. Server generates the reading revision when fullMarkdown changes.
+       */
+      version?: string;
       publicationType: components["schemas"]["PublicationType"];
       /** Format: int64 */
       creditPrice: number;
@@ -973,6 +978,11 @@ export interface components {
       version: string;
       /** Format: date-time */
       createdAt: string;
+      cover?: {
+        url: string;
+        /** Format: date-time */
+        expiresAt: string;
+      } | null;
     };
     /** @enum {string} */
     PublicationType: "CASE_STUDY" | "ARTICLE" | "COURSE";

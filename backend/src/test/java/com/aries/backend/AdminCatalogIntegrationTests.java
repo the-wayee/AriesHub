@@ -1,9 +1,12 @@
 package com.aries.backend;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import jakarta.servlet.http.Cookie;
 
@@ -18,6 +21,98 @@ import org.springframework.test.web.servlet.MvcResult;
 @Import(TestEmailConfiguration.class)
 class AdminCatalogIntegrationTests extends IntegrationTestSupport {
     /** 同标题不产生地址冲突，重命名后仍按同一个 ID 读取；公开规则同样作用于 ID。 */
+    /** 新编辑器不提交独立试读；公开接口只能拿到边界前的正文。 */
+    @Test
+    void derivesTrialOnServerAndKeepsPaidBodyPrivate() throws Exception {
+        Cookie admin = register("admin@example.com", "admin1234", "管理员");
+        String body =
+                """
+                {"categoryId":1,"title":"试读边界","summary":"摘要",
+                "publicationType":"ARTICLE","accessType":"CREDIT","creditPrice":50,
+                "fullMarkdown":"免费段落\\n\\n<!-- arieshub:paid -->\\n\\n绝密正文",
+                "requirements":"","deliverables":""}
+                """;
+        MvcResult created =
+                mvc.perform(
+                                post("/api/v1/admin/publications")
+                                        .cookie(admin)
+                                        .contentType("application/json")
+                                        .content(body))
+                        .andExpect(status().isCreated())
+                        .andExpect(jsonPath("$.data.previewMarkdown").value("免费段落"))
+                        .andReturn();
+        String id =
+                com.jayway.jsonpath.JsonPath.read(
+                        created.getResponse().getContentAsString(), "$.data.id");
+        mvc.perform(post("/api/v1/admin/publications/" + id + "/publish").cookie(admin))
+                .andExpect(status().isOk());
+        MvcResult visible =
+                mvc.perform(get("/api/v1/publications/" + id))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.preview.previewMarkdown").value("免费段落"))
+                        .andReturn();
+        assertThat(visible.getResponse().getContentAsString()).doesNotContain("绝密正文");
+        mvc.perform(get("/api/v1/publications/" + id + "/content"))
+                .andExpect(status().isForbidden());
+        mvc.perform(
+                        put("/api/v1/admin/publications/" + id)
+                                .cookie(admin)
+                                .contentType("application/json")
+                                .content(body.replace("<!-- arieshub:paid -->", "")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.previewMarkdown").value(""));
+    }
+
+    @Test
+    void revisionIsGeneratedAndChangesOnlyWithBody() throws Exception {
+        Cookie admin = register("admin@example.com", "admin1234", "管理员");
+        String body =
+                """
+                {"categoryId":1,"title":"修订测试","summary":"自动管理正文修订",
+                "publicationType":"ARTICLE","accessType":"FREE","creditPrice":0,
+                "previewMarkdown":"预览","fullMarkdown":"正文初稿","requirements":"","deliverables":""}
+                """;
+        MvcResult created =
+                mvc.perform(
+                                post("/api/v1/admin/publications")
+                                        .cookie(admin)
+                                        .contentType("application/json")
+                                        .content(body))
+                        .andExpect(status().isCreated())
+                        .andReturn();
+        String id =
+                com.jayway.jsonpath.JsonPath.read(
+                        created.getResponse().getContentAsString(), "$.data.id");
+        String revision =
+                com.jayway.jsonpath.JsonPath.read(
+                        created.getResponse().getContentAsString(), "$.data.version");
+        assertThat(revision).hasSize(32);
+        // 作者传入旧版本也不能改变内部修订；仅改标题保留原阅读位置。
+        mvc.perform(
+                        put("/api/v1/admin/publications/" + id)
+                                .cookie(admin)
+                                .contentType("application/json")
+                                .content(
+                                        body.replace("修订测试", "新标题")
+                                                .replace(
+                                                        "\"deliverables\":\"\"",
+                                                        "\"deliverables\":\"\",\"version\":\"manual\"")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.version").value(revision));
+        MvcResult updated =
+                mvc.perform(
+                                put("/api/v1/admin/publications/" + id)
+                                        .cookie(admin)
+                                        .contentType("application/json")
+                                        .content(body.replace("正文初稿", "正文更新")))
+                        .andExpect(status().isOk())
+                        .andReturn();
+        String nextRevision =
+                com.jayway.jsonpath.JsonPath.read(
+                        updated.getResponse().getContentAsString(), "$.data.version");
+        assertThat(nextRevision).hasSize(32).isNotEqualTo(revision);
+    }
+
     @Test
     void idsRemainUniqueAndStableWhenTitlesRepeatOrChange() throws Exception {
         Cookie admin = register("admin@example.com", "admin1234", "管理员");

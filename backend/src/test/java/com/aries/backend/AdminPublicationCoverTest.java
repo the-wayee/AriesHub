@@ -11,6 +11,7 @@ import com.aries.backend.catalog.application.port.PublicationCoverPort;
 import com.aries.backend.catalog.application.port.PublicationMediaPort.SignedUrl;
 import com.aries.backend.catalog.application.service.AdminCatalogService;
 import com.aries.backend.catalog.application.service.PublicationMediaService;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetailRow;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationListItem;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationSummary;
 import com.aries.backend.catalog.domain.repository.PublicationRepository;
@@ -21,6 +22,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /** 管理列表一次批量签名，相同封面只读取一次；无封面文章仍正常返回。 */
 class AdminPublicationCoverTest {
@@ -51,6 +53,29 @@ class AdminPublicationCoverTest {
         assertThat(result.get(1).cover()).isEqualTo(signed);
         assertThat(result.get(2).cover()).isNull();
         assertThat(result.get(0).coverFileId()).isEqualTo("cover");
+        verify(covers).sign(List.of("cover"));
+    }
+
+    @Test
+    void detailIncludesSignedCover() {
+        AdminCatalogReadPort reads = mock(AdminCatalogReadPort.class);
+        PublicationCoverPort covers = mock(PublicationCoverPort.class);
+        AdminPublicationDetailRow row = mock(AdminPublicationDetailRow.class);
+        when(row.coverFileId()).thenReturn("cover");
+        when(reads.find(9)).thenReturn(Optional.of(row));
+        SignedUrl signed =
+                new SignedUrl(
+                        "https://storage.example/cover?signature=test",
+                        Instant.now().plusSeconds(300));
+        when(covers.sign(List.of("cover"))).thenReturn(Map.of("cover", signed));
+        AdminCatalogService service =
+                new AdminCatalogService(
+                        reads,
+                        covers,
+                        mock(CategoryWritePort.class),
+                        mock(PublicationRepository.class),
+                        mock(PublicationMediaService.class));
+        assertThat(service.detail(9).cover()).isEqualTo(signed);
         verify(covers).sign(List.of("cover"));
     }
 

@@ -1,6 +1,7 @@
 import { ReadingProgressTracker } from "./reading-progress";
 import { PublicationInteractions } from "./publication-interactions";
 import Link from "next/link";
+import { LockKeyhole, BookOpen } from "lucide-react";
 import { Markdown } from "./markdown";
 import { PublicationMedia } from "./publication-media";
 import {
@@ -23,6 +24,7 @@ export function PublicationDetailView({
   contentError?: boolean;
 }) {
   const { publication: article, preview } = detail;
+  const locked = article.accessType === "CREDIT" && !content && !contentError;
   return (
     <article className="hub-article-detail published-article">
       <Link className="hub-back" href="/discover">
@@ -43,7 +45,6 @@ export function PublicationDetailView({
             access={article.accessType}
             credits={article.creditPrice}
           />
-          <span>版本 {preview.version}</span>
         </div>
         <PublicationInteractions id={article.id} />
       </header>
@@ -59,7 +60,7 @@ export function PublicationDetailView({
       <div className="hub-detail-grid">
         <section
           className="hub-detail-body"
-          aria-label={content ? "完整正文" : "公开预览"}
+          aria-label={content ? "完整正文" : "免费试读"}
         >
           {content ? (
             <ReadingProgressTracker id={article.id} version={content.version}>
@@ -67,10 +68,58 @@ export function PublicationDetailView({
             </ReadingProgressTracker>
           ) : (
             <>
-              <h2>公开预览</h2>
-              <Markdown publicationId={article.id}>
-                {preview.previewMarkdown || "主理人尚未提供公开预览。"}
-              </Markdown>
+              {preview.previewMarkdown ? (
+                <div
+                  className={locked ? "publication-trial-excerpt" : undefined}
+                >
+                  <Markdown publicationId={article.id}>
+                    {preview.previewMarkdown}
+                  </Markdown>
+                </div>
+              ) : !locked ? (
+                <p>暂未提供试读内容。</p>
+              ) : null}
+              {locked && (
+                <section
+                  className="publication-unlock"
+                  aria-label="解锁完整内容"
+                >
+                  <span
+                    className="publication-unlock-symbol"
+                    aria-hidden="true"
+                  >
+                    <LockKeyhole size={22} />
+                  </span>
+                  <p className="publication-unlock-eyebrow">
+                    {preview.previewMarkdown
+                      ? "免费试读到这里"
+                      : "这篇内容需要解锁"}
+                  </p>
+                  <h2>解锁后，继续阅读完整内容</h2>
+                  <p>阅读全文，查看作者分享的完整实践与随文资源。</p>
+                  <div className="publication-unlock-price">
+                    <strong>
+                      {article.creditPrice.toLocaleString("zh-CN")}
+                    </strong>
+                    <span>积分 / 篇</span>
+                  </div>
+                  <button
+                    type="button"
+                    disabled
+                    aria-describedby="unlock-availability"
+                  >
+                    <LockKeyhole size={16} />
+                    积分解锁 · 暂未开放
+                  </button>
+                  <small id="unlock-availability">
+                    解锁功能即将开放，当前不会扣除积分。
+                  </small>
+                  <Link href="/discover?access=FREE">
+                    <BookOpen size={15} />
+                    先读其他免费内容
+                  </Link>
+                </section>
+              )}
               {contentError && (
                 <div className="hub-empty" role="alert">
                   <p>完整正文暂时无法读取，请稍后重试。</p>

@@ -1,6 +1,9 @@
 "use client";
 import { CategoryCreateFields } from "./admin-category-manager";
 import Link from "next/link";
+import { TRIAL_BOUNDARY, migrateTrialBody } from "@/lib/publication-trial";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
 import { Dialog } from "@base-ui/react/dialog";
 import { useRouter } from "next/navigation";
 import {
@@ -35,6 +38,8 @@ import { useBeforeUnload } from "@/lib/use-before-unload";
 import { uploadRequest, type UploadProgress as Progress } from "@/lib/upload";
 import { UploadProgress } from "./upload-progress";
 import { PageSkeleton } from "./page-skeleton";
+gsap.registerPlugin(useGSAP);
+
 interface Draft {
   title: string;
   summary: string;
@@ -42,11 +47,9 @@ interface Draft {
   publicationType: string;
   accessType: string;
   creditPrice: number;
-  previewMarkdown: string;
   fullMarkdown: string;
   requirements: string;
   deliverables: string;
-  version: string;
   coverFileId: string | null;
   featured: boolean;
 }
@@ -57,21 +60,25 @@ const empty: Draft = {
   publicationType: "ARTICLE",
   accessType: "FREE",
   creditPrice: 0,
-  previewMarkdown: "",
   fullMarkdown: "",
   requirements: "",
   deliverables: "",
-  version: "1.0",
   coverFileId: null,
   featured: false,
 };
 function fromDetail(d: AdminPublicationDetail): Draft {
-  return Object.fromEntries(
+  const result = Object.fromEntries(
     Object.keys(empty).map((k) => [
       k,
       d[k as keyof AdminPublicationDetail] ?? empty[k as keyof Draft],
     ]),
   ) as unknown as Draft;
+  result.fullMarkdown = migrateTrialBody(
+    result.fullMarkdown,
+    d.previewMarkdown ?? "",
+    result.accessType === "CREDIT",
+  );
+  return result;
 }
 export function AdminPublicationEditor({ id }: { id?: string }) {
   const router = useRouter();
@@ -88,19 +95,76 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
   const [coverName, setCoverName] = useState("");
   const uploadController = useRef<AbortController | null>(null);
   useEffect(() => () => uploadController.current?.abort(), []);
-  const [activeTab, setActiveTab] = useState<
-    "fullMarkdown" | "previewMarkdown"
-  >("fullMarkdown");
   const [preview, setPreview] = useState(false);
   const [settings, setSettings] = useState(true);
+  const [settingsAnimating, setSettingsAnimating] = useState(false);
+  const writer = useRef<HTMLFormElement>(null);
+  const previousCanvas = useRef<DOMRect | null>(null);
   const [saved, setSaved] = useState("");
   const [saveTime, setSaveTime] = useState("");
   const [autoError, setAutoError] = useState("");
   const [notice, setNotice] = useState("");
   const [leaveTo, setLeaveTo] = useState<string>();
   const file = useRef<HTMLInputElement>(null);
+  const canvas = useRef<HTMLElement>(null);
   const current = useRef(draft);
   const busy = useRef(false);
+  const { contextSafe } = useGSAP(
+    () => {
+      const before = previousCanvas.current;
+      const document = canvas.current;
+      if (!before || !document) return;
+      previousCanvas.current = null;
+      const after = document.getBoundingClientRect();
+      // 先读取最终布局，再从旧宽度与位置过渡；结束后清除内联样式，继续响应窗口尺寸。
+      gsap.fromTo(
+        document,
+        { width: before.width, x: before.left - after.left },
+        {
+          width: after.width,
+          x: 0,
+          duration: 0.38,
+          ease: "power3.out",
+          clearProps: "width,transform",
+          onComplete: () => setSettingsAnimating(false),
+        },
+      );
+      if (settings)
+        gsap.fromTo(
+          writer.current?.querySelector(".writer-settings") ?? [],
+          { opacity: 0, x: 14 },
+          {
+            opacity: 1,
+            x: 0,
+            duration: 0.3,
+            ease: "power2.out",
+            clearProps: "opacity,transform",
+          },
+        );
+    },
+    { scope: writer, dependencies: [settings], revertOnUpdate: true },
+  );
+  function toggleSettings() {
+    contextSafe(() => {
+      if (settingsAnimating) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        setSettings(!settings);
+        return;
+      }
+      previousCanvas.current = canvas.current?.getBoundingClientRect() ?? null;
+      setSettingsAnimating(true);
+      if (settings) {
+        // 等侧栏退出后再卸载，避免 React 条件渲染截断退出动画。
+        gsap.to(writer.current?.querySelector(".writer-settings") ?? [], {
+          opacity: 0,
+          x: 14,
+          duration: 0.16,
+          ease: "power2.in",
+          onComplete: () => setSettings(false),
+        });
+      } else setSettings(true);
+    })();
+  }
   useEffect(() => {
     current.current = draft;
   }, [draft]);
@@ -330,6 +394,7 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
   return (
     <form
       className={`writer-page admin-editor ${settings ? "" : "writer-focused"}`}
+      ref={writer}
       onSubmit={submit}
     >
       <div className="writer-header">
@@ -357,7 +422,9 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                   ? "有未保存的修改"
                   : saveTime
                     ? `${saveTime} 已保存`
-                    : "开始记录你的实践"}{" "}
+                    : id
+                      ? "所有修改已保存"
+                      : "开始记录你的实践"}{" "}
             ·{" "}
             {id && detail?.status === "DRAFT"
               ? "修改后自动保存"
@@ -387,16 +454,19 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
           </button>
           <button
             type="button"
-            className="ops-icon-button writer-settings-toggle"
+            className="ops-secondary writer-settings-toggle"
             aria-label="切换发布设置"
             aria-pressed={settings}
-            onClick={() => setSettings(!settings)}
+            disabled={settingsAnimating}
+            aria-expanded={settings}
+            onClick={toggleSettings}
           >
             {settings ? (
               <PanelRightClose size={18} />
             ) : (
               <PanelRightOpen size={18} />
             )}
+            {settings ? "专注写作" : "发布设置"}
           </button>
           <button
             type="submit"
@@ -480,7 +550,7 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
         </Dialog.Portal>
       </Dialog.Root>
       <div className="writer-layout">
-        <section className="writer-canvas">
+        <section className="writer-canvas" ref={canvas}>
           <div className="writer-document-heading">
             <label className="writer-title-label">
               <span className="sr-only">标题</span>
@@ -495,6 +565,10 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                 required
               />
             </label>
+            <div className="writer-summary-caption">
+              <span>内容摘要</span>
+              <span>{draft.summary.length} / 500</span>
+            </div>
             <textarea
               className="writer-summary-input"
               aria-label="内容摘要"
@@ -507,60 +581,60 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
               required
             />
           </div>
-          <div className="writer-tabs" role="tablist" aria-label="正文范围">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "fullMarkdown"}
-              disabled={uploading}
-              onClick={() => setActiveTab("fullMarkdown")}
-            >
-              完整正文
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={activeTab === "previewMarkdown"}
-              disabled={uploading}
-              onClick={() => setActiveTab("previewMarkdown")}
-            >
-              公开预览
-            </button>
+          <div className="writer-tabs">
+            <strong>完整正文</strong>
             <span>
-              {activeTab === "previewMarkdown"
-                ? "所有访客可见"
-                : draft.accessType === "CREDIT"
-                  ? "仅对有权益的读者开放"
-                  : "免费内容发布后可阅读"}
+              {draft.accessType === "CREDIT"
+                ? "分界线前可免费试读，之后解锁可见"
+                : "免费文章，发布后可阅读全文"}
             </span>
           </div>
+          {draft.accessType === "CREDIT" &&
+            !draft.fullMarkdown.includes(TRIAL_BOUNDARY) && (
+              <p className="writer-trial-hint">
+                尚未设置试读范围。将光标放到正文中的合适位置，点击工具栏「试读到这里」；不设置则不开放正文试读。
+              </p>
+            )}
+          {detail?.accessType === "CREDIT" &&
+            detail.previewMarkdown?.trim() &&
+            !detail.fullMarkdown.includes(TRIAL_BOUNDARY) && (
+              <p className="writer-trial-hint">
+                旧版试读已合并到正文开头，请检查分界线位置；保存后生效。
+              </p>
+            )}
           {preview ? (
             <div className="writer-reading-preview">
-              {activeTab === "fullMarkdown" && draft.coverFileId && (
+              {draft.coverFileId && (
                 <PublicationMedia
                   id={draft.coverFileId}
+                  key={draft.coverFileId}
+                  signedUrl={
+                    draft.coverFileId === detail?.coverFileId
+                      ? detail?.cover?.url
+                      : undefined
+                  }
                   admin
                   label="文章封面"
                 />
               )}
               <Markdown admin>
-                {draft[activeTab] || "还没有正文。切换到编辑模式开始写作。"}
+                {draft.fullMarkdown || "还没有正文。切换到编辑模式开始写作。"}
               </Markdown>
             </div>
           ) : (
             <RichEditor
-              key={activeTab}
-              label={activeTab === "fullMarkdown" ? "完整正文" : "公开预览"}
-              value={draft[activeTab]}
-              onChange={(v) => field(activeTab, v)}
+              label="完整正文"
+              trialEnabled={draft.accessType === "CREDIT"}
+              value={draft.fullMarkdown}
+              onChange={(v) => field("fullMarkdown", v)}
               disabled={(pending && !autoSaving) || uploading}
               onUploadStateChange={setUploading}
             />
           )}
           <div className="writer-document-footer">
             <span>
-              {draft[activeTab].replace(/\s/g, "").length.toLocaleString()} 字 ·
-              约 {Math.max(1, Math.ceil(draft[activeTab].length / 500))}{" "}
+              {draft.fullMarkdown.replace(/\s/g, "").length.toLocaleString()} 字
+              · 约 {Math.max(1, Math.ceil(draft.fullMarkdown.length / 500))}{" "}
               分钟阅读
             </span>
             <span>支持插入图片、视频与附件</span>
@@ -571,6 +645,9 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
             <div className="writer-settings-heading">
               <h2>发布设置</h2>
               <span>整理好，再分享</span>
+              {detail?.status === "PUBLISHED" && (
+                <p className="writer-live-note">保存后将立即更新线上内容。</p>
+              )}
             </div>
             <label className="writer-setting">
               内容形式
@@ -642,12 +719,19 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                 <div className="writer-cover">
                   <PublicationMedia
                     id={draft.coverFileId}
+                    key={draft.coverFileId}
+                    signedUrl={
+                      draft.coverFileId === detail?.coverFileId
+                        ? detail?.cover?.url
+                        : undefined
+                    }
                     admin
                     label="文章封面"
                   />
                   <button
                     type="button"
                     aria-label="移除封面"
+                    disabled={uploading}
                     onClick={() => field("coverFileId", null)}
                   >
                     <X size={16} />
@@ -663,6 +747,17 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                   <ImagePlus size={25} />
                   <strong>{coverProgress ? "上传中…" : "上传文章封面"}</strong>
                   <small>PNG / JPEG / WebP · 10 MiB</small>
+                </button>
+              )}
+              {draft.coverFileId && (
+                <button
+                  type="button"
+                  className="writer-cover-replace"
+                  disabled={uploading}
+                  onClick={() => file.current?.click()}
+                >
+                  <ImagePlus size={15} />
+                  {uploading ? "上传中…" : "更换封面"}
                 </button>
               )}
               <input
@@ -693,6 +788,10 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                   aria-pressed={draft.accessType === "FREE"}
                   onClick={() => {
                     field("accessType", "FREE");
+                    field(
+                      "fullMarkdown",
+                      draft.fullMarkdown.replaceAll(TRIAL_BOUNDARY, ""),
+                    );
                     field("creditPrice", 0);
                   }}
                 >
@@ -724,7 +823,9 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                   />
                 </label>
               )}
-              <p>公开预览始终免费；积分内容的完整正文和私有素材按权益开放。</p>
+              <p>
+                积分内容可在正文中设置试读分界线，分界线后的内容与素材按权益开放。
+              </p>
             </div>
             <label className="writer-featured">
               <input
@@ -745,7 +846,7 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
               </small>
             </div>
             <details className="writer-extra">
-              <summary>交付说明与版本</summary>
+              <summary>补充说明（选填）</summary>
               <label>
                 开始之前
                 <textarea
@@ -764,15 +865,6 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                   rows={3}
                 />
               </label>
-              <label>
-                内容版本
-                <input
-                  aria-label="内容版本"
-                  value={draft.version}
-                  onChange={(e) => field("version", e.target.value)}
-                  maxLength={32}
-                />
-              </label>
             </details>
             <div className="writer-outline">
               <h3>
@@ -780,10 +872,28 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
               </h3>
               {headings.length ? (
                 headings.map((h, i) => (
-                  <p key={i}>
+                  <button
+                    type="button"
+                    key={i}
+                    onClick={() => {
+                      // 只定位当前正文区，避免跳到侧栏标题；遵循系统的减少动态效果设置。
+                      const target =
+                        canvas.current?.querySelectorAll<HTMLElement>(
+                          ".tiptap h2, .tiptap h3, .writer-reading-preview .prose h2, .writer-reading-preview .prose h3",
+                        )[i];
+                      target?.scrollIntoView({
+                        behavior: window.matchMedia(
+                          "(prefers-reduced-motion: reduce)",
+                        ).matches
+                          ? "instant"
+                          : "smooth",
+                        block: "center",
+                      });
+                    }}
+                  >
                     <span>{String(i + 1).padStart(2, "0")}</span>
                     {h}
-                  </p>
+                  </button>
                 ))
               ) : (
                 <p>在正文中添加二级标题，自动整理阅读目录。</p>

@@ -29,6 +29,7 @@ export function ReadingProgressTracker({
   const root = useRef<HTMLDivElement>(null);
   const [previous, setPrevious] = useState<ReadingProgress | null>(null);
   const [status, setStatus] = useState("");
+  const [canRestoreChapter, setCanRestoreChapter] = useState(false);
   const restore = useRef<() => void>(() => {});
   useEffect(() => {
     const element = root.current;
@@ -60,11 +61,16 @@ export function ReadingProgressTracker({
           ),
         ),
       );
+      // 首个章节可见但尚未越过顶部时仍记录它，兼容图片加载及提示换行产生的布局位移。
+      const currentHeading =
+        headings.filter((h) => h.getBoundingClientRect().top <= 120).at(-1) ??
+        headings.find((h) => {
+          const box = h.getBoundingClientRect();
+          return box.top >= 0 && box.bottom <= innerHeight;
+        });
       return {
         version,
-        position:
-          headings.filter((h) => h.getBoundingClientRect().top <= 120).at(-1)
-            ?.id ?? "",
+        position: currentHeading?.id ?? "",
         percent,
       };
     };
@@ -120,30 +126,44 @@ export function ReadingProgressTracker({
       setPrevious(old);
       ready = true;
       started = !old;
-      if (old && old.version !== version)
-        setStatus("正文已更新，旧阅读位置不再适用；请从新版正文开始。");
+      const changed = !!old && old.version !== version;
+      const target = headings.find((h) => h.id === old?.position);
+      // 跨修订只迁移仍可唯一识别的章节，不复用旧百分比；重名章节可能已重排，保守要求重新定位。
+      const chapterMatches =
+        !!target &&
+        (!changed || repeats.get(anchor(target.textContent ?? "")) === 1);
+      setCanRestoreChapter(changed && chapterMatches);
+      setStatus(
+        changed
+          ? chapterMatches
+            ? "正文已更新，可继续上次章节；进度将按新版重新计算。"
+            : "正文已更新，原章节已变更或无法定位，请重新选择阅读位置。"
+          : "",
+      );
       restore.current = () => {
         started = true;
-        if (old && old.version === version) {
-          const target = headings.find((h) => h.id === old.position);
-          if (target) target.scrollIntoView({ behavior: "instant" });
-          else {
-            const box = element.getBoundingClientRect();
-            window.scrollTo({
-              top:
-                scrollY +
-                box.top +
-                (Math.max(0, box.height - innerHeight) * old.percent) / 100 -
-                112,
-              behavior: "instant",
-            });
-          }
+        if (chapterMatches && target) {
+          // 使用与进度测量一致的偏移，避免全局 scroll-padding 叠加后丢失当前章节。
+          window.scrollTo({
+            top: scrollY + target.getBoundingClientRect().top - 112,
+            behavior: "instant",
+          });
+        } else if (old && !changed) {
+          const box = element.getBoundingClientRect();
+          window.scrollTo({
+            top:
+              scrollY +
+              box.top +
+              (Math.max(0, box.height - innerHeight) * old.percent) / 100 -
+              112,
+            behavior: "instant",
+          });
         } else element.scrollIntoView({ behavior: "instant" });
         schedule();
       };
       if (
         old &&
-        old.version === version &&
+        (!changed || chapterMatches) &&
         new URLSearchParams(location.search).get("resume") === "1"
       )
         restore.current();
@@ -175,6 +195,8 @@ export function ReadingProgressTracker({
                 percent={previous.percent}
                 label="继续上次位置 ·"
               />
+            ) : canRestoreChapter ? (
+              "继续上次章节"
             ) : (
               "从新版开始阅读"
             )}

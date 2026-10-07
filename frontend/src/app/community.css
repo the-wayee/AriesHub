@@ -3643,3 +3643,110 @@
   font-size: 13px;
   font-weight: 600;
 }
+
+/* 仅对后端返回的公开试读渐隐；未授权正文不会放入 DOM。 */
+.publication-trial-excerpt {
+  padding-bottom: 18px;
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 calc(100% - 110px),
+    transparent 100%
+  );
+}
+.publication-unlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 12px 24px 44px;
+  margin: 0 auto;
+  max-width: 640px;
+}
+.publication-unlock-symbol {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  color: #8a693e;
+  background: #f3ede3;
+  margin-bottom: 18px;
+}
+.publication-unlock .publication-unlock-eyebrow {
+  color: #8a693e;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  margin: 0 0 12px;
+}
+.publication-unlock h2 {
+  margin: 0;
+  color: #26303c;
+  font-size: clamp(21px, 2vw, 28px);
+  font-weight: 550;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+.publication-unlock > p {
+  color: #737d89;
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 14px 0 0;
+}
+.publication-unlock-price {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin: 24px 0 18px;
+  color: #8a693e;
+}
+.publication-unlock-price strong {
+  font-size: 32px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+}
+.publication-unlock-price span {
+  font-size: 13px;
+  color: #7f8791;
+}
+.publication-unlock button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 12px 32px;
+  border: 0;
+  border-radius: 999px;
+  background: #2b3d57;
+  color: #fff;
+  font-size: 14px;
+  cursor: not-allowed;
+}
+.publication-unlock small {
+  margin-top: 12px;
+  color: #7f8791;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.publication-unlock > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 24px;
+  color: #466391;
+  font-size: 13px;
+  text-decoration: none;
+}
+.publication-unlock > a:hover {
+  text-decoration: underline;
+}
+@media (max-width: 600px) {
+  .publication-unlock {
+    padding-inline: 8px;
+  }
+  .publication-unlock button {
+    width: 100%;
+    max-width: 300px;
+  }
+}

@@ -102,7 +102,7 @@ test("a changed body version never restores the old percentage as current", asyn
   );
   await page.goto("/publications/4?resume=1");
   await expect(
-    page.getByText("正文已更新，旧阅读位置不再适用；请从新版正文开始。"),
+    page.getByText("正文已更新，原章节已变更或无法定位，请重新选择阅读位置。"),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "从新版开始阅读" }),
@@ -183,3 +183,35 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     await expect(card.getByRole("status")).toHaveText("已收藏");
   });
 }
+
+test("updated body resumes a surviving chapter and saves the new revision", async ({
+  page,
+  request,
+}) => {
+  const content = await (
+    await request.get("/api/v1/publications/4/content")
+  ).json();
+  await mockMemberSession(page);
+  const api = await mockReaderApi(page);
+  await page.goto("/publications/4");
+  const heading = page.locator(".hub-detail-body h2").first();
+  await expect(heading).toHaveAttribute("id", /^read-/);
+  const position = (await heading.getAttribute("id"))!;
+  api.progress.set("4", {
+    publicationId: "4",
+    version: "old-revision",
+    position,
+    percent: 99,
+    updatedAt: new Date().toISOString(),
+  });
+  await page.goto("/publications/4?resume=1");
+  await expect(
+    page.getByRole("button", { name: "继续上次章节", exact: true }),
+  ).toBeVisible();
+  await expect(heading).toBeInViewport();
+  await expect
+    .poll(() => api.progress.get("4")?.version)
+    .toBe(content.data.version);
+  expect(api.progress.get("4")?.position).toBe(position);
+  expect(api.progress.get("4")?.percent).not.toBe(99);
+});

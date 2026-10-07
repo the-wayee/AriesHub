@@ -1,7 +1,7 @@
 package com.aries.backend.catalog.infrastructure.persistence.repository;
 
 import com.aries.backend.catalog.application.port.AdminCatalogReadPort;
-import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetail;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetailRow;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationSummary;
 import com.aries.backend.catalog.infrastructure.persistence.mapper.AdminCatalogMapper;
 
@@ -24,7 +24,7 @@ public class MybatisAdminCatalogReadRepository implements AdminCatalogReadPort {
     }
 
     @Override
-    public Optional<AdminPublicationDetail> find(long id) {
+    public Optional<AdminPublicationDetailRow> find(long id) {
         return Optional.ofNullable(queries.find(id));
     }
 }

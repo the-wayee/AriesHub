@@ -1,6 +1,6 @@
 package com.aries.backend.catalog.infrastructure.persistence.mapper;
 
-import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetail;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetailRow;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationSummary;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -13,5 +13,5 @@ import java.util.List;
 public interface AdminCatalogMapper {
     List<AdminPublicationSummary> publications();
 
-    AdminPublicationDetail find(@Param("id") long id);
+    AdminPublicationDetailRow find(@Param("id") long id);
 }

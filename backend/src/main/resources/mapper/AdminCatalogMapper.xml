@@ -11,7 +11,7 @@
         ORDER BY p.updated_at DESC, p.id DESC
     </select>
 
-    <select id="find" resultType="com.aries.backend.catalog.application.view.AdminCatalogViews$AdminPublicationDetail">
+    <select id="find" resultType="com.aries.backend.catalog.application.view.AdminCatalogViews$AdminPublicationDetailRow">
         SELECT p.id::text AS id, p.category_id::text AS category_id, p.slug, p.title, p.summary,
                p.publication_type, p.access_type, p.credit_price,
                p.status, p.delivery_status, p.published_at,

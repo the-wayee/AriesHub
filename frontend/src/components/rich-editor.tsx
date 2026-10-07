@@ -7,6 +7,8 @@ import {
   type NodeViewProps,
   useEditorState,
 } from "@tiptap/react";
+import { Node } from "@tiptap/core";
+import { TRIAL_BOUNDARY } from "@/lib/publication-trial";
 import StarterKit from "@tiptap/starter-kit";
 import ImageExtension from "@tiptap/extension-image";
 import { TableKit } from "@tiptap/extension-table";
@@ -64,17 +66,47 @@ const ContentImage = ImageExtension.extend({
     return ReactNodeViewRenderer(MediaNode);
   },
 });
+/** 独立原子节点确保富文本和 Markdown 来回切换不会丢失付费边界。 */
+const TrialBoundary = Node.create({
+  name: "trialBoundary",
+  group: "block",
+  atom: true,
+  parseHTML: () => [{ tag: "div[data-trial-boundary]" }],
+  renderHTML: () => [
+    "div",
+    {
+      "data-trial-boundary": "",
+      class: "writer-trial-boundary",
+      contenteditable: "false",
+    },
+    "试读到这里 · 以下内容解锁后可见",
+  ],
+  markdownTokenName: "trialBoundary",
+  markdownTokenizer: {
+    name: "trialBoundary",
+    level: "block",
+    start: TRIAL_BOUNDARY,
+    tokenize: (src) =>
+      src.startsWith(TRIAL_BOUNDARY)
+        ? { type: "trialBoundary", raw: TRIAL_BOUNDARY }
+        : undefined,
+  },
+  parseMarkdown: (_token, helpers) => helpers.createNode("trialBoundary"),
+  renderMarkdown: () => TRIAL_BOUNDARY,
+});
 export function RichEditor({
   value,
   onChange,
   label,
   disabled = false,
   onUploadStateChange,
+  trialEnabled = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   label: string;
   disabled?: boolean;
+  trialEnabled?: boolean;
   onUploadStateChange?: (uploading: boolean) => void;
 }) {
   const [inputKind, setInputKind] = useState<InlineMediaKind>("IMAGE");
@@ -88,6 +120,11 @@ export function RichEditor({
   const [linkDialog, setLinkDialog] = useState(false);
   const [link, setLink] = useState("");
   const file = useRef<HTMLInputElement>(null);
+  const contentSnapshot = useRef<{
+    original: string;
+    normalized: string;
+    emitted: string;
+  } | null>(null);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -95,6 +132,7 @@ export function RichEditor({
         link: { openOnClick: false, protocols: ["media"] },
       }),
       ContentImage,
+      TrialBoundary,
       // 与阅读器的 GFM 能力一致，避免打开、修改稿件时丢失表格与任务状态。
       TableKit,
       TaskList,
@@ -112,7 +150,31 @@ export function RichEditor({
         class: "writer-prose",
       },
     },
-    onUpdate: ({ editor }) => onChange(editor.getMarkdown()),
+    onCreate: ({ editor }) => {
+      contentSnapshot.current = {
+        original: value,
+        normalized: editor.getMarkdown(),
+        emitted: value,
+      };
+    },
+    onUpdate: ({ editor, transaction, appendedTransactions }) => {
+      // 光标、焦点和选区不是正文修改；插件的附加事务也必须实际改变文档。
+      if (
+        !transaction.docChanged &&
+        !appendedTransactions.some((item) => item.docChanged)
+      )
+        return;
+      const markdown = editor.getMarkdown();
+      const snapshot = contentSnapshot.current;
+      // 保留原始 Markdown 排版；撤销回原文时也恢复原始字符串，避免格式规范化导致脏状态。
+      const next =
+        snapshot && markdown === snapshot.normalized
+          ? snapshot.original
+          : markdown;
+      if (snapshot?.emitted === next) return;
+      if (snapshot) snapshot.emitted = next;
+      onChange(next);
+    },
   });
   const state = useEditorState({
     editor,
@@ -122,14 +184,20 @@ export function RichEditor({
     }),
   });
   useEffect(() => {
-    if (editor && editor.getMarkdown() !== value)
-      editor.commands.setContent(value, {
-        contentType: "markdown",
-        emitUpdate: false,
-      });
+    if (!editor || contentSnapshot.current?.emitted === value) return;
+    editor.commands.setContent(value, {
+      contentType: "markdown",
+      emitUpdate: false,
+    });
+    contentSnapshot.current = {
+      original: value,
+      normalized: editor.getMarkdown(),
+      emitted: value,
+    };
   }, [editor, value]);
   useEffect(() => {
-    editor?.setEditable(!disabled && !uploading);
+    // 只切换交互状态，不能触发正文更新；否则初始化序列化会将原始 Markdown 误判为修改。
+    editor?.setEditable(!disabled && !uploading, false);
   }, [editor, disabled, uploading]);
   async function upload(selected: File) {
     setError("");
@@ -254,6 +322,25 @@ export function RichEditor({
         role="toolbar"
         aria-label={`${label}格式工具`}
       >
+        {trialEnabled && (
+          <button
+            type="button"
+            className="writer-trial-tool"
+            disabled={
+              !editor || disabled || source || value.includes(TRIAL_BOUNDARY)
+            }
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() =>
+              editor
+                ?.chain()
+                .focus()
+                .insertContent({ type: "trialBoundary" })
+                .run()
+            }
+          >
+            试读到这里
+          </button>
+        )}
         {tools.map((t) => (
           <button
             key={t.name}

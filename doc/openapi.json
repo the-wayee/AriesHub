@@ -7131,11 +7131,9 @@
           "publicationType",
           "accessType",
           "creditPrice",
-          "previewMarkdown",
           "fullMarkdown",
           "requirements",
-          "deliverables",
-          "version"
+          "deliverables"
         ],
         "properties": {
           "categoryId": {
@@ -7158,7 +7156,8 @@
           },
           "previewMarkdown": {
             "type": "string",
-            "maxLength": 100000
+            "maxLength": 100000,
+            "description": "Legacy optional preview. New editors omit this field; server derives paid preview from the <!-- arieshub:paid --> boundary in fullMarkdown. Without boundary no paid body is public."
           },
           "fullMarkdown": {
             "type": "string",
@@ -7175,7 +7174,9 @@
           "version": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 32
+            "maxLength": 32,
+            "deprecated": true,
+            "description": "Ignored compatibility field. Server generates the reading revision when fullMarkdown changes."
           },
           "publicationType": {
             "$ref": "#/components/schemas/PublicationType"
@@ -7415,6 +7416,29 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "cover": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "url",
+                  "expiresAt"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  },
+                  "expiresAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         }
       },

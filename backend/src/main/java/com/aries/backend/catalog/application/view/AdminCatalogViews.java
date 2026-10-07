@@ -61,7 +61,7 @@ public final class AdminCatalogViews {
         }
     }
 
-    public record AdminPublicationDetail(
+    public record AdminPublicationDetailRow(
             String id,
             String categoryId,
             String slug,
@@ -82,4 +82,53 @@ public final class AdminCatalogViews {
             OffsetDateTime updatedAt,
             String coverFileId,
             boolean featured) {}
+
+    /** 编辑响应补齐私有封面签名，URL 不参与持久化。 */
+    public record AdminPublicationDetail(
+            String id,
+            String categoryId,
+            String slug,
+            String title,
+            String summary,
+            String publicationType,
+            String accessType,
+            long creditPrice,
+            String status,
+            String deliveryStatus,
+            OffsetDateTime publishedAt,
+            String previewMarkdown,
+            String fullMarkdown,
+            String requirements,
+            String deliverables,
+            String version,
+            OffsetDateTime createdAt,
+            OffsetDateTime updatedAt,
+            String coverFileId,
+            boolean featured,
+            SignedUrl cover) {
+        public AdminPublicationDetail(AdminPublicationDetailRow row, SignedUrl cover) {
+            this(
+                    row.id(),
+                    row.categoryId(),
+                    row.slug(),
+                    row.title(),
+                    row.summary(),
+                    row.publicationType(),
+                    row.accessType(),
+                    row.creditPrice(),
+                    row.status(),
+                    row.deliveryStatus(),
+                    row.publishedAt(),
+                    row.previewMarkdown(),
+                    row.fullMarkdown(),
+                    row.requirements(),
+                    row.deliverables(),
+                    row.version(),
+                    row.createdAt(),
+                    row.updatedAt(),
+                    row.coverFileId(),
+                    row.featured(),
+                    cover);
+        }
+    }
 }
