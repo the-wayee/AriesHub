@@ -7,10 +7,12 @@ export function Markdown({
   children,
   admin = false,
   publicationId,
+  attachmentsLocked = false,
 }: {
   children: string;
   admin?: boolean;
   publicationId?: string;
+  attachmentsLocked?: boolean;
 }) {
   return (
     <div className="prose">
@@ -37,13 +39,19 @@ export function Markdown({
             ),
           a: ({ href, children }) =>
             href?.startsWith("media:") ? (
-              <PublicationMedia
-                id={href.slice(6)}
-                label={String(children)}
-                kind="ATTACHMENT"
-                admin={admin}
-                publicationId={publicationId}
-              />
+              attachmentsLocked ? (
+                <span className="publication-attachment">
+                  {children} · 解锁文章后可下载
+                </span>
+              ) : (
+                <PublicationMedia
+                  id={href.slice(6)}
+                  label={String(children)}
+                  kind="ATTACHMENT"
+                  admin={admin}
+                  publicationId={publicationId}
+                />
+              )
             ) : (
               <a href={href} target="_blank" rel="noopener noreferrer">
                 {children}

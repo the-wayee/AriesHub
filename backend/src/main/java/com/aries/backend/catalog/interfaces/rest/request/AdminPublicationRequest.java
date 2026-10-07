@@ -10,6 +10,8 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
+import java.util.List;
+
 /** 后台发布内容编辑参数；积分价格使用非负整数。 */
 public record AdminPublicationRequest(
         @Positive long categoryId,
@@ -20,12 +22,12 @@ public record AdminPublicationRequest(
         @PositiveOrZero long creditPrice,
         @Size(max = 100_000) String previewMarkdown,
         @NotNull @Size(max = 500_000) String fullMarkdown,
-        @NotNull @Size(max = 2_000) String requirements,
-        @NotNull @Size(max = 2_000) String deliverables,
         // 兼容旧客户端；正文修订标识由服务端生成，不接受作者指定。
         @Size(max = 32) String version,
         @Pattern(regexp = "[0-9a-fA-F-]{36}") String coverFileId,
-        Boolean featured) {
+        Boolean featured,
+        @Size(max = 20)
+                List<@NotBlank @Pattern(regexp = "[0-9a-fA-F-]{36}") String> attachmentIds) {
     @AssertTrue(message = "免费内容积分价格必须为 0，积分内容价格必须大于 0")
     public boolean isPriceValid() {
         return ("FREE".equals(accessType) && creditPrice == 0)
@@ -42,9 +44,8 @@ public record AdminPublicationRequest(
                 creditPrice,
                 previewMarkdown == null ? null : previewMarkdown.trim(),
                 fullMarkdown.trim(),
-                requirements.trim(),
-                deliverables.trim(),
                 coverFileId,
-                Boolean.TRUE.equals(featured));
+                Boolean.TRUE.equals(featured),
+                attachmentIds);
     }
 }

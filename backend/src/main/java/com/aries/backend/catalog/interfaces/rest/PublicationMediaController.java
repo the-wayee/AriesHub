@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.UUID;
 
 /** 管理员素材上传与签名接口；公开素材签名必须通过内容领域授权。 */
@@ -61,6 +62,18 @@ public class PublicationMediaController {
     public Result<Void> cancelUpload(@PathVariable UUID id) {
         media.cancelUpload(id);
         return Result.success(null);
+    }
+
+    @GetMapping("/api/v1/admin/publications/{publicationId}/attachments")
+    public Result<List<PublicationMediaService.Attachment>> adminAttachments(
+            @PathVariable long publicationId) {
+        return Result.success(media.attachments(publicationId, true));
+    }
+
+    @GetMapping("/api/v1/publications/{publicationId}/attachments")
+    public Result<List<PublicationMediaService.Attachment>> attachments(
+            @PathVariable long publicationId) {
+        return Result.success(media.attachments(publicationId, false));
     }
 
     @GetMapping("/api/v1/admin/media/{id}/url")

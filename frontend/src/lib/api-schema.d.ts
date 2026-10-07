@@ -755,6 +755,92 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/publications/{publicationId}/attachments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List article attachment metadata */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          publicationId: number;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Attachment metadata only; download requires article access */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              code: string;
+              msg: string;
+              traceId: string;
+              data: components["schemas"]["PublicationAttachment"][];
+            };
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/admin/publications/{publicationId}/attachments": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List article attachment metadata */
+    get: {
+      parameters: {
+        query?: never;
+        header?: never;
+        path: {
+          publicationId: number;
+        };
+        cookie?: never;
+      };
+      requestBody?: never;
+      responses: {
+        /** @description Attachment metadata only; download requires article access */
+        200: {
+          headers: {
+            [name: string]: unknown;
+          };
+          content: {
+            "application/json": {
+              code: string;
+              msg: string;
+              traceId: string;
+              data: components["schemas"]["PublicationAttachment"][];
+            };
+          };
+        };
+      };
+    };
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -772,8 +858,6 @@ export interface components {
     };
     Preview: {
       previewMarkdown: string;
-      requirements: string;
-      deliverables: string;
       version: string;
       /** Format: date-time */
       updatedAt: string;
@@ -878,6 +962,7 @@ export interface components {
     PublicationDetail: {
       preview: components["schemas"]["Preview"];
       publication: components["schemas"]["PublicationSummary"];
+      chapters?: components["schemas"]["PublicationChapter"][];
     };
     PublicationContent: {
       markdown: string;
@@ -906,8 +991,6 @@ export interface components {
       /** @description Legacy optional preview. New editors omit this field; server derives paid preview from the <!-- arieshub:paid --> boundary in fullMarkdown. Without boundary no paid body is public. */
       previewMarkdown?: string;
       fullMarkdown: string;
-      requirements: string;
-      deliverables: string;
       /**
        * @deprecated
        * @description Ignored compatibility field. Server generates the reading revision when fullMarkdown changes.
@@ -920,6 +1003,8 @@ export interface components {
       coverFileId?: string | null;
       /** @default false */
       featured: boolean;
+      /** @description Independent attachments; omitted preserves existing resources, [] removes them. */
+      attachmentIds?: string[];
     };
     AdminPublicationSummary: {
       id: string;
@@ -973,8 +1058,6 @@ export interface components {
       summary: string;
       previewMarkdown: string;
       fullMarkdown: string;
-      requirements: string;
-      deliverables: string;
       version: string;
       /** Format: date-time */
       createdAt: string;
@@ -1268,6 +1351,19 @@ export interface components {
     UpdateCategoryRequest: {
       name: string;
       color: string;
+    };
+    PublicationAttachment: {
+      id: string;
+      filename: string;
+      contentType: string;
+      size: number;
+      locked: boolean;
+    };
+    PublicationChapter: {
+      title: string;
+      level: number;
+      locked: boolean;
+      headingIndex: number | null;
     };
   };
   responses: {

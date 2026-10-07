@@ -30,3 +30,6 @@ export const PUBLICATION_MEDIA = {
   },
 } as const;
 export type InlineMediaKind = Exclude<keyof typeof PUBLICATION_MEDIA, "COVER">;
+
+export const ARTICLE_ATTACHMENT_LIMIT = 20;
+export const ARTICLE_ATTACHMENT_ACCEPT = `${PUBLICATION_MEDIA.ATTACHMENT.accept},${IMAGE_FILE_ACCEPT}`;

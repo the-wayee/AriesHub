@@ -28,6 +28,7 @@ import java.io.PushbackInputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
@@ -141,11 +142,15 @@ public class PublicationMediaService {
     /** 保存文章前验证引用：本人素材或文章既有绑定允许使用，其他账号的未绑定素材拒绝。 创建时 publicationId 为零，因此不能借用任何旧文章绑定；封面只允许图片类素材。 */
     public void validateReferences(long publicationId, SavePublicationCommand command) {
         long userId = storage.currentUserId();
-        for (String id : referencedIds(command)) {
+        for (String id : referencedIds(publicationId, command)) {
             PublicationMediaPort.Asset asset =
                     assets.find(id).orElseThrow(() -> new BusinessException(MEDIA_NOT_FOUND));
             if (asset.ownerId() != userId && !assets.bound(publicationId, id))
                 throw new BusinessException(MEDIA_NOT_FOUND);
+            if (attachmentIds(publicationId, command).contains(id)
+                    && parseKind(asset.kind()) != PublicationMediaKind.ATTACHMENT
+                    && parseKind(asset.kind()) != PublicationMediaKind.IMAGE)
+                throw new BusinessException(INVALID_MEDIA);
             if (id.equals(command.coverFileId()) && !parseKind(asset.kind()).isImage())
                 throw new BusinessException(INVALID_MEDIA);
         }
@@ -156,8 +161,9 @@ public class PublicationMediaService {
         validateReferences(publicationId, command);
         assets.replaceBindings(
                 publicationId,
-                new ArrayList<>(referencedIds(command)),
-                new ArrayList<>(publicIds(command)));
+                new ArrayList<>(referencedIds(publicationId, command)),
+                new ArrayList<>(publicIds(command)),
+                attachmentIds(publicationId, command));
     }
 
     /** 签名签发前检查文章状态和绑定；仅封面、公开预览及免费正文允许匿名读取。 */
@@ -169,9 +175,48 @@ public class PublicationMediaService {
                         .orElseThrow(() -> new BusinessException(PUBLICATION_NOT_FOUND));
         if (!publication.isPubliclyVisible()) throw new BusinessException(PUBLICATION_NOT_FOUND);
         if (!assets.bound(publicationId, id)) throw new BusinessException(MEDIA_NOT_FOUND);
-        if (!assets.publiclyVisible(publicationId, id) && !publication.allowsPublicReading())
-            throw new BusinessException(CONTENT_LOCKED);
+        PublicationMediaPort.Asset asset =
+                assets.find(id).orElseThrow(() -> new BusinessException(MEDIA_NOT_FOUND));
+        // 附件始终跟随文章阅读权限，即使引用被放入公开试读也不能获得免费签名。
+        if ((!assets.publiclyVisible(publicationId, id)
+                        || parseKind(asset.kind()) == PublicationMediaKind.ATTACHMENT
+                        || assets.resourceIds(publicationId).contains(id))
+                && !publication.allowsPublicReading()) throw new BusinessException(CONTENT_LOCKED);
         return adminUrl(id);
+    }
+
+    /** 详情只公开附件元数据，绝不在未授权响应中签发下载地址。 */
+    public record Attachment(
+            String id, String filename, String contentType, long size, boolean locked) {}
+
+    @Transactional(readOnly = true)
+    public List<Attachment> attachments(long publicationId, boolean admin) {
+        Publication publication =
+                publications
+                        .findById(publicationId)
+                        .orElseThrow(() -> new BusinessException(PUBLICATION_NOT_FOUND));
+        if (!admin && !publication.isPubliclyVisible())
+            throw new BusinessException(PUBLICATION_NOT_FOUND);
+        boolean locked = !admin && !publication.allowsPublicReading();
+        List<String> resourceIds = admin ? assets.resourceIds(publicationId) : List.of();
+        return assets.attachments(publicationId).stream()
+                .filter(asset -> !admin || resourceIds.contains(asset.id()))
+                .map(
+                        asset ->
+                                new Attachment(
+                                        asset.id(),
+                                        asset.filename(),
+                                        asset.contentType(),
+                                        asset.size(),
+                                        locked))
+                .toList();
+    }
+
+    private List<String> attachmentIds(long publicationId, SavePublicationCommand command) {
+        // 旧客户端不传该字段时保留独立附件；显式空数组表示移除附件区中的引用。
+        return command.attachmentIds() == null
+                ? assets.resourceIds(publicationId)
+                : command.attachmentIds();
     }
 
     private void validateUpload(
@@ -204,9 +249,10 @@ public class PublicationMediaService {
         }
     }
 
-    private Set<String> referencedIds(SavePublicationCommand command) {
+    private Set<String> referencedIds(long publicationId, SavePublicationCommand command) {
         Set<String> result = references(command.fullMarkdown());
         result.addAll(publicIds(command));
+        result.addAll(attachmentIds(publicationId, command));
         return result;
     }
 

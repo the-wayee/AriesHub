@@ -15,8 +15,6 @@ const draft = {
   deliveryStatus: "AVAILABLE",
   fullMarkdown: "原来的正文",
   previewMarkdown: "公开预览",
-  requirements: "",
-  deliverables: "",
   version: "1.0",
   coverFileId: null,
   featured: false,
@@ -28,6 +26,8 @@ async function editor(page: Page, fullMarkdown = draft.fullMarkdown) {
   await mockMemberSession(page, "ADMIN");
   const saved: Record<string, unknown>[] = [];
   await page.route("**/api/v1/admin/**", async (route) => {
+    if (route.request().url().endsWith("/attachments"))
+      return fulfillResult(route, { json: [] });
     if (route.request().url().endsWith("/categories"))
       return fulfillResult(route, {
         json: [{ id: "1", slug: "coding", name: "AI 编程" }],
@@ -537,4 +537,242 @@ test("legacy paid preview is preserved when adopting a single body", async ({
   await page.getByRole("button", { name: "免费阅读", exact: true }).click();
   await expect(page.locator("[data-trial-boundary]")).toHaveCount(0);
   await expect(body).toContainText("付费实践步骤");
+});
+
+test("independent attachment upload is saved and can be removed without editing body", async ({
+  page,
+}, info) => {
+  const saved = await editor(page);
+  await page.route("**/api/v1/admin/media?*", (route) =>
+    fulfillResult(route, {
+      status: 201,
+      json: {
+        id: "00000000-0000-4000-8000-000000000099",
+        filename: "video-prompts.txt",
+        contentType: "text/plain",
+        size: 4096,
+      },
+    }),
+  );
+  await page.goto("/admin/publications/41");
+  await page.getByLabel("上传文章附件", { exact: true }).setInputFiles({
+    name: "video-prompts.txt",
+    mimeType: "text/plain",
+    buffer: Buffer.from("prompt text"),
+  });
+  const resources = page.getByRole("region", { name: "文章附件", exact: true });
+  await expect(resources).toContainText("video-prompts.txt");
+  await expect(resources).toContainText("4 KB");
+  await page.getByRole("button", { name: "保存草稿", exact: true }).click();
+  await expect
+    .poll(() => saved.at(-1)?.attachmentIds)
+    .toEqual(["00000000-0000-4000-8000-000000000099"]);
+  expect(saved.at(-1)?.fullMarkdown).toBe(draft.fullMarkdown);
+  await resources.scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: info.outputPath("editor-attachments.png"),
+    fullPage: false,
+  });
+  await page
+    .getByRole("button", { name: "移除附件 video-prompts.txt", exact: true })
+    .click();
+  await page.getByRole("button", { name: "保存草稿", exact: true }).click();
+  await expect.poll(() => saved.at(-1)?.attachmentIds).toEqual([]);
+});
+
+test("paid detail shows attachment information without requesting a download", async ({
+  page,
+}, info) => {
+  const id = "00000000-0000-4000-8000-000000000099";
+  let downloads = 0;
+  await page.route("**/api/v1/publications/11/attachments", (route) =>
+    fulfillResult(route, {
+      json: [
+        {
+          id,
+          filename: "AI视频提示词与工程.zip",
+          contentType: "application/zip",
+          size: 8192,
+          locked: true,
+        },
+      ],
+    }),
+  );
+  await page.route(`**/api/v1/publications/11/media/${id}/url`, (route) => {
+    downloads++;
+    return fulfillResult(route, {
+      status: 403,
+      json: { code: "CONTENT_LOCKED", msg: "需要解锁" },
+    });
+  });
+  await page.goto("/publications/11");
+  const resources = page.getByRole("region", { name: "随文附件", exact: true });
+  const toggle = resources.getByRole("button", { name: /随文附件/ });
+  await expect(toggle).toHaveAttribute("aria-expanded", "true");
+  await expect(
+    resources.getByText("AI视频提示词与工程.zip", { exact: true }),
+  ).toBeVisible();
+  await expect(resources).toContainText("AI视频提示词与工程.zip");
+  await expect(
+    resources.getByLabel("解锁后可下载", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    resources.getByRole("button", { name: /下载|待解锁/ }),
+  ).toHaveCount(0);
+  await expect(resources).toContainText("8 KB");
+  const sidebar = page.getByRole("complementary", { name: "文章目录与资源" });
+  await expect(sidebar.getByRole("region", { name: "随文附件" })).toBeVisible();
+  const outline = sidebar.getByRole("navigation", { name: "章节目录" });
+  await expect(outline).toContainText("解锁后可阅读全部章节");
+  const headings = page.locator(
+    ".hub-detail-body .prose h2, .hub-detail-body .prose h3",
+  );
+  const titles = await headings.allTextContents();
+  expect(titles.length).toBeGreaterThan(0);
+  const unlocked = outline.locator("button:not(:disabled)");
+  const lockedChapters = outline.locator("button:disabled");
+  await expect(unlocked).toHaveCount(titles.length);
+  expect(await lockedChapters.count()).toBeGreaterThan(0);
+  await expect(lockedChapters.first()).toContainText("第二课");
+  await expect(page.locator(".hub-detail-body")).not.toContainText("第二课");
+  for (const title of titles) await expect(outline).toContainText(title);
+  await unlocked.last().click();
+  await expect(unlocked.last()).toHaveAttribute("aria-current", "location");
+  await expect(headings.last()).toBeFocused();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  if (info.project.name === "desktop") {
+    const bodyBounds = await page.locator(".hub-detail-body").boundingBox();
+    const sidebarBounds = await sidebar.boundingBox();
+    expect(sidebarBounds!.x).toBeGreaterThan(bodyBounds!.x + bodyBounds!.width);
+  }
+  expect(downloads).toBe(0);
+  await resources.scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: info.outputPath("locked-attachments.png"),
+    fullPage: false,
+  });
+  await toggle.click();
+  await expect(
+    resources.getByText("AI视频提示词与工程.zip", { exact: true }),
+  ).not.toBeVisible();
+  await expect(page.getByText("文章链接 /publications/11")).toHaveCount(0);
+  await expect(page.getByText("关于这份内容", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("开始之前", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("内容与交付", { exact: true })).toHaveCount(0);
+});
+
+test("plus card accepts multiple images and files and preserves all successful uploads", async ({
+  page,
+}, info) => {
+  const saved = await editor(page);
+  const kinds: string[] = [];
+  let number = 0;
+  await page.route("**/api/v1/admin/media?*", (route) => {
+    const body = route.request().postDataBuffer()?.toString() ?? "";
+    kinds.push(body.includes("\r\nIMAGE\r\n") ? "IMAGE" : "ATTACHMENT");
+    number++;
+    return fulfillResult(route, {
+      status: 201,
+      json: {
+        id: `00000000-0000-4000-8000-00000000000${number}`,
+        filename: number === 1 ? "reference.png" : "prompts.txt",
+        contentType: number === 1 ? "image/png" : "text/plain",
+        size: 2048,
+      },
+    });
+  });
+  await page.goto("/admin/publications/41");
+  await expect(
+    page.getByRole("button", { name: "上传附件", exact: true }),
+  ).toHaveClass(/attachment-add-card/);
+  await page.getByLabel("上传文章附件", { exact: true }).setInputFiles([
+    {
+      name: "reference.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("image fixture"),
+    },
+    {
+      name: "prompts.txt",
+      mimeType: "text/plain",
+      buffer: Buffer.from("prompts"),
+    },
+  ]);
+  await expect(
+    page.locator(".attachment-file-card:not(.attachment-queued)"),
+  ).toHaveCount(2);
+  expect(kinds).toEqual(["IMAGE", "ATTACHMENT"]);
+  await page.getByRole("button", { name: "保存草稿", exact: true }).click();
+  await expect
+    .poll(() => saved.at(-1)?.attachmentIds)
+    .toEqual([
+      "00000000-0000-4000-8000-000000000001",
+      "00000000-0000-4000-8000-000000000002",
+    ]);
+  await page
+    .getByRole("region", { name: "文章附件", exact: true })
+    .scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: info.outputPath("multi-attachment-cards.png"),
+    fullPage: false,
+  });
+});
+
+test("failed upload cards are red and removable while the remaining queue continues", async ({
+  page,
+}, info) => {
+  await editor(page);
+  await controlledUploads(page);
+  await page.goto("/admin/publications/41");
+  await page.getByLabel("上传文章附件", { exact: true }).setInputFiles([
+    { name: "empty.txt", mimeType: "text/plain", buffer: Buffer.alloc(0) },
+    { name: "valid.txt", mimeType: "text/plain", buffer: Buffer.from("valid") },
+  ]);
+  const failed = page.locator(".attachment-failed");
+  await expect(failed).toContainText("文件为空");
+  await expect(failed.locator("small")).toHaveCSS("color", "rgb(174, 53, 53)");
+  await expect(page.getByRole("progressbar")).toBeVisible();
+  await failed.scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: info.outputPath("failed-attachment.png"),
+    fullPage: false,
+  });
+  await page
+    .getByRole("button", { name: "移除失败附件 empty.txt", exact: true })
+    .click();
+  await expect(failed).toHaveCount(0);
+  await uploadEvent(page, "success");
+  await expect(page.locator(".attachment-complete")).toHaveCount(1);
+  await expect(page.locator(".attachment-card-grid")).not.toContainText(
+    "empty.txt",
+  );
+});
+
+test("server rejected attachment can be removed", async ({ page }) => {
+  await editor(page);
+  await page.route("**/api/v1/admin/media?*", (route) =>
+    fulfillResult(route, {
+      status: 400,
+      json: { code: "INVALID_MEDIA", msg: "素材格式或大小不符合要求" },
+    }),
+  );
+  await page.goto("/admin/publications/41");
+  await page.getByLabel("上传文章附件", { exact: true }).setInputFiles({
+    name: "broken.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("invalid image"),
+  });
+  await expect(page.locator(".attachment-failed")).toContainText(
+    "素材格式或大小不符合要求",
+  );
+  await page
+    .getByRole("button", { name: "移除失败附件 broken.png", exact: true })
+    .click();
+  await expect(page.locator(".attachment-failed")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "上传附件", exact: true }),
+  ).toBeEnabled();
 });

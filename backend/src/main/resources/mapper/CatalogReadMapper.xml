@@ -41,7 +41,7 @@
         WHERE cat.is_deleted = false AND <include refid="visible"/> AND p.id = #{id}
     </select>
     <select id="preview" resultType="com.aries.backend.catalog.application.view.CatalogViews$Preview">
-        SELECT body.preview_markdown, body.requirements, body.deliverables, body.version, body.updated_at
+        SELECT body.preview_markdown,  body.version, body.updated_at
         FROM publication_contents body JOIN publications p ON p.id = body.publication_id
         WHERE body.is_deleted = false AND <include refid="visible"/> AND p.id = #{id}
     </select>

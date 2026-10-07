@@ -6624,6 +6624,108 @@
           }
         ]
       }
+    },
+    "/api/v1/publications/{publicationId}/attachments": {
+      "get": {
+        "summary": "List article attachment metadata",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publicationId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attachment metadata only; download requires article access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PublicationAttachment"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/publications/{publicationId}/attachments": {
+      "get": {
+        "summary": "List article attachment metadata",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "publicationId",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attachment metadata only; download requires article access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "traceId": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PublicationAttachment"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -6673,19 +6775,11 @@
         "additionalProperties": false,
         "required": [
           "previewMarkdown",
-          "requirements",
-          "deliverables",
           "version",
           "updatedAt"
         ],
         "properties": {
           "previewMarkdown": {
-            "type": "string"
-          },
-          "requirements": {
-            "type": "string"
-          },
-          "deliverables": {
             "type": "string"
           },
           "version": {
@@ -7053,6 +7147,12 @@
           },
           "publication": {
             "$ref": "#/components/schemas/PublicationSummary"
+          },
+          "chapters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicationChapter"
+            }
           }
         }
       },
@@ -7131,9 +7231,7 @@
           "publicationType",
           "accessType",
           "creditPrice",
-          "fullMarkdown",
-          "requirements",
-          "deliverables"
+          "fullMarkdown"
         ],
         "properties": {
           "categoryId": {
@@ -7163,14 +7261,6 @@
             "type": "string",
             "maxLength": 500000
           },
-          "requirements": {
-            "type": "string",
-            "maxLength": 2000
-          },
-          "deliverables": {
-            "type": "string",
-            "maxLength": 2000
-          },
           "version": {
             "type": "string",
             "minLength": 1,
@@ -7196,6 +7286,15 @@
           "featured": {
             "type": "boolean",
             "default": false
+          },
+          "attachmentIds": {
+            "type": "array",
+            "maxItems": 20,
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Independent attachments; omitted preserves existing resources, [] removes them."
           }
         },
         "description": "Article content snapshot. URL is assigned from the database ID after creation; clients cannot set or modify it."
@@ -7327,8 +7426,6 @@
           "summary",
           "previewMarkdown",
           "fullMarkdown",
-          "requirements",
-          "deliverables",
           "version",
           "createdAt"
         ],
@@ -7402,12 +7499,6 @@
             "type": "string"
           },
           "fullMarkdown": {
-            "type": "string"
-          },
-          "requirements": {
-            "type": "string"
-          },
-          "deliverables": {
             "type": "string"
           },
           "version": {
@@ -8446,6 +8537,57 @@
           "color": {
             "type": "string",
             "pattern": "^#[0-9A-Fa-f]{6}$"
+          }
+        }
+      },
+      "PublicationAttachment": {
+        "type": "object",
+        "required": [
+          "id",
+          "filename",
+          "contentType",
+          "size",
+          "locked"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "locked": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PublicationChapter": {
+        "type": "object",
+        "required": [
+          "title",
+          "level",
+          "locked",
+          "headingIndex"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "headingIndex": {
+            "type": "integer",
+            "nullable": true
           }
         }
       }

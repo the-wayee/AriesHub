@@ -1,6 +1,8 @@
 "use client";
 import { CategoryCreateFields } from "./admin-category-manager";
 import Link from "next/link";
+import { ArticleAttachmentEditor } from "./article-attachment-editor";
+import type { ArticleAttachment } from "./publication-attachments";
 import { TRIAL_BOUNDARY, migrateTrialBody } from "@/lib/publication-trial";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
@@ -48,10 +50,9 @@ interface Draft {
   accessType: string;
   creditPrice: number;
   fullMarkdown: string;
-  requirements: string;
-  deliverables: string;
   coverFileId: string | null;
   featured: boolean;
+  attachmentIds: string[];
 }
 const empty: Draft = {
   title: "",
@@ -61,10 +62,9 @@ const empty: Draft = {
   accessType: "FREE",
   creditPrice: 0,
   fullMarkdown: "",
-  requirements: "",
-  deliverables: "",
   coverFileId: null,
   featured: false,
+  attachmentIds: [],
 };
 function fromDetail(d: AdminPublicationDetail): Draft {
   const result = Object.fromEntries(
@@ -83,6 +83,7 @@ function fromDetail(d: AdminPublicationDetail): Draft {
 export function AdminPublicationEditor({ id }: { id?: string }) {
   const router = useRouter();
   const [draft, setDraft] = useState<Draft>(empty);
+  const [attachments, setAttachments] = useState<ArticleAttachment[]>([]);
   const [detail, setDetail] = useState<AdminPublicationDetail>();
   const [categories, setCategories] = useState<AdminCategory[]>();
   const [error, setError] = useState("");
@@ -177,7 +178,10 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
       id
         ? adminRequest<AdminPublicationDetail>(`/publications/${id}`)
         : Promise.resolve(null),
-    ]).then(([c, d]) => {
+      id
+        ? adminRequest<ArticleAttachment[]>(`/publications/${id}/attachments`)
+        : Promise.resolve(null),
+    ]).then(([c, d, resources]) => {
       if (!active) return;
       if (!c.ok) {
         setLoadError(c.error.msg);
@@ -187,6 +191,12 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
         setLoadError(d.error.msg);
         return;
       }
+      if (resources && !resources.ok) {
+        setLoadError(resources.error.msg);
+        return;
+      }
+      const attached = resources?.ok ? resources.data : [];
+      setAttachments(attached);
       setCategories(c.data);
       const initial = d?.ok
         ? fromDetail(d.data)
@@ -194,6 +204,7 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
             ...empty,
             categoryId: c.data[0]?.id ?? "",
           };
+      initial.attachmentIds = attached.map((item) => item.id);
       if (d?.ok) setDetail(d.data);
       setDraft(initial);
       setSaved(JSON.stringify(initial));
@@ -631,6 +642,19 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
               onUploadStateChange={setUploading}
             />
           )}
+          <ArticleAttachmentEditor
+            items={attachments}
+            paid={draft.accessType === "CREDIT"}
+            disabled={pending || uploading}
+            onUploading={setUploading}
+            onChange={(items) => {
+              setAttachments(items);
+              field(
+                "attachmentIds",
+                items.map((item) => item.id),
+              );
+            }}
+          />
           <div className="writer-document-footer">
             <span>
               {draft.fullMarkdown.replace(/\s/g, "").length.toLocaleString()} 字
@@ -845,27 +869,6 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                   : "首次保存后自动生成唯一链接"}
               </small>
             </div>
-            <details className="writer-extra">
-              <summary>补充说明（选填）</summary>
-              <label>
-                开始之前
-                <textarea
-                  aria-label="开始之前"
-                  value={draft.requirements}
-                  onChange={(e) => field("requirements", e.target.value)}
-                  rows={3}
-                />
-              </label>
-              <label>
-                内容与交付
-                <textarea
-                  aria-label="内容与交付"
-                  value={draft.deliverables}
-                  onChange={(e) => field("deliverables", e.target.value)}
-                  rows={3}
-                />
-              </label>
-            </details>
             <div className="writer-outline">
               <h3>
                 {draft.publicationType === "COURSE" ? "课程章节" : "文章目录"}

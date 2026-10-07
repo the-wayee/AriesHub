@@ -64,7 +64,11 @@ public class MybatisPublicationAssetRepository implements PublicationAssetReposi
     }
 
     /** 在外层内容事务中先删后插；数据库联合主键保证同一素材不会重复绑定。 */
-    public void replaceBindings(long publicationId, List<String> all, List<String> publicIds) {
+    public void replaceBindings(
+            long publicationId,
+            List<String> all,
+            List<String> publicIds,
+            List<String> attachmentIds) {
         bindings.delete(
                 Wrappers.<PublicationMediaBindingPO>lambdaQuery()
                         .eq(PublicationMediaBindingPO::getPublicationId, publicationId));
@@ -73,7 +77,57 @@ public class MybatisPublicationAssetRepository implements PublicationAssetReposi
             po.setPublicationId(publicationId);
             po.setFileId(id);
             po.setPubliclyVisible(publicIds.contains(id));
+            po.setResourceAttachment(attachmentIds.contains(id));
             bindings.insert(po);
         }
+    }
+
+    public List<String> resourceIds(long publicationId) {
+        return bindings
+                .selectList(
+                        Wrappers.<PublicationMediaBindingPO>lambdaQuery()
+                                .eq(PublicationMediaBindingPO::getPublicationId, publicationId)
+                                .eq(PublicationMediaBindingPO::getResourceAttachment, true))
+                .stream()
+                .map(PublicationMediaBindingPO::getFileId)
+                .toList();
+    }
+
+    public List<PublicationMediaPort.Asset> attachments(long publicationId) {
+        List<String> ids =
+                bindings
+                        .selectList(
+                                Wrappers.<PublicationMediaBindingPO>lambdaQuery()
+                                        .eq(
+                                                PublicationMediaBindingPO::getPublicationId,
+                                                publicationId))
+                        .stream()
+                        .map(PublicationMediaBindingPO::getFileId)
+                        .toList();
+        if (ids.isEmpty()) return List.of();
+        List<String> resources = resourceIds(publicationId);
+        return assets
+                .selectList(
+                        Wrappers.<PublicationAssetPO>lambdaQuery()
+                                .in(PublicationAssetPO::getId, ids)
+                                .and(
+                                        query -> {
+                                            query.eq(PublicationAssetPO::getKind, "ATTACHMENT");
+                                            if (!resources.isEmpty())
+                                                query.or().in(PublicationAssetPO::getId, resources);
+                                        })
+                                .orderByAsc(
+                                        PublicationAssetPO::getFilename, PublicationAssetPO::getId))
+                .stream()
+                .map(
+                        p ->
+                                new PublicationMediaPort.Asset(
+                                        p.getId(),
+                                        p.getOwnerId(),
+                                        p.getKind(),
+                                        p.getFilename(),
+                                        p.getContentType(),
+                                        p.getSize()))
+                .toList();
     }
 }

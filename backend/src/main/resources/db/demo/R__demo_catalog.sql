@@ -18,7 +18,7 @@ SELECT id, 'organize-materials', '给散落的素材，建立一套整理规则'
 '先定义命名和分类规则，再用小批量样本验证，让素材更容易找到。', 'COURSE', 'FREE', 'PUBLISHED', '2026-09-26T09:00:00Z'
 FROM categories WHERE slug = 'automation' ON CONFLICT (slug) DO NOTHING;
 
-INSERT INTO publication_contents (publication_id, preview_markdown, full_markdown, requirements, deliverables)
+INSERT INTO publication_contents (publication_id, preview_markdown, full_markdown)
 SELECT id, $$## 从一份清晰的任务说明开始
 
 先回答三个问题：这份演示给谁看？希望对方记住什么？有哪些事实能支撑结论？
@@ -44,23 +44,19 @@ $$## 01 / 写出任务说明
 
 ## 使用说明
 
-本页面为演示教程，没有附件或收益承诺。请使用自己的资料，不要向外部工具上传保密信息。$$,
-'能整理一段自己的项目材料；可使用任意具备文字对话能力的 AI 工具。工具费用需自行确认。',
-'本页文字教程与示例指令，不包含 PPT 文件或人工代做。'
+本页面为演示教程，没有附件或收益承诺。请使用自己的资料，不要向外部工具上传保密信息。$$
 FROM publications WHERE slug = 'ai-ppt-outline' ON CONFLICT (publication_id) DO NOTHING;
 
-INSERT INTO publication_contents (publication_id, preview_markdown, full_markdown, requirements, deliverables)
+INSERT INTO publication_contents (publication_id, preview_markdown, full_markdown)
 SELECT id, $$## 一次只解决一个小问题
 
 把需求写成可验证的行为：设置时长、开始计时、暂停和重新开始。再让 AI 分步实现。
 
 当前是付费预览演示，暂未开放购买，也没有可交付源码。$$,
-'PRIVATE_DEMO_BODY: 这是用于验证公开接口不会泄露付费正文的占位内容，不能作为商品出售。',
-'了解浏览器基本操作；后续正式案例会列明开发工具与运行条件。',
-'计划包含源码和操作步骤；当前仅展示商品预览，不售卖、不提供下载。'
+'PRIVATE_DEMO_BODY: 这是用于验证公开接口不会泄露付费正文的占位内容，不能作为商品出售。'
 FROM publications WHERE slug = 'codex-focus-page' ON CONFLICT (publication_id) DO NOTHING;
 
-INSERT INTO publication_contents (publication_id, preview_markdown, full_markdown, requirements, deliverables)
+INSERT INTO publication_contents (publication_id, preview_markdown, full_markdown)
 SELECT id, $$## 先定规则，再做自动化
 
 面对散落的图片、文稿和视频，先用十份素材试验分类方法，再考虑批量处理。$$,
@@ -82,7 +78,5 @@ $$## 01 / 建立一个小样本
 
 把确认过的规则提供给 AI，让它先输出改名计划。检查无误并备份后，再考虑执行脚本。
 
-这是方法演示，不包含可执行脚本或附件。$$,
-'准备十份可公开或可自行处理的样本文件；不要使用唯一副本进行实验。',
-'命名规则、核对清单和方法说明，不包含批量操作服务。'
+这是方法演示，不包含可执行脚本或附件。$$
 FROM publications WHERE slug = 'organize-materials' ON CONFLICT (publication_id) DO NOTHING;

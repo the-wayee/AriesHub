@@ -71,7 +71,10 @@ public class CatalogQueryService {
         PublicationSummary summary = reads.findPublicSummary(publication.getId());
         Preview preview = reads.preview(publication.getId());
         if (summary == null || preview == null) throw missing();
-        return new PublicationDetail(summary, preview);
+        // 普通可见性查询不加载正文；验证发布状态后才读取内容，并只投影目录标题。
+        Publication withContent =
+                publications.findForEditing(publication.getId()).orElseThrow(this::missing);
+        return new PublicationDetail(summary, preview, PublicationOutline.chapters(withContent));
     }
 
     public Content content(long id) {

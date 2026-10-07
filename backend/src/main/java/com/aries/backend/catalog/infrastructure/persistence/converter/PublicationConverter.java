@@ -29,8 +29,6 @@ public final class PublicationConverter {
                                 : new Publication.Content(
                                         body.getPreviewMarkdown(),
                                         body.getFullMarkdown(),
-                                        body.getRequirements(),
-                                        body.getDeliverables(),
                                         body.getVersion()))
                 .build();
     }
@@ -59,8 +57,6 @@ public final class PublicationConverter {
         row.setPublicationId(publicationId);
         row.setPreviewMarkdown(content.previewMarkdown());
         row.setFullMarkdown(content.fullMarkdown());
-        row.setRequirements(content.requirements());
-        row.setDeliverables(content.deliverables());
         row.setVersion(content.version());
         return row;
     }

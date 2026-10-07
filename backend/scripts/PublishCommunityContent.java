@@ -176,8 +176,6 @@ class PublishCommunityContent {
                                     "creditPrice",
                                     "previewMarkdown",
                                     "fullMarkdown",
-                                    "requirements",
-                                    "deliverables",
                                     "version",
                                     "featured")) body.set(field, row.path(field));
                     body.put("categoryId", Long.parseLong(category));

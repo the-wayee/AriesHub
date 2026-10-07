@@ -1,3 +1,5 @@
+import { PublicationOutline } from "./publication-outline";
+import { PublicationAttachments } from "./publication-attachments";
 import { ReadingProgressTracker } from "./reading-progress";
 import { PublicationInteractions } from "./publication-interactions";
 import Link from "next/link";
@@ -72,7 +74,10 @@ export function PublicationDetailView({
                 <div
                   className={locked ? "publication-trial-excerpt" : undefined}
                 >
-                  <Markdown publicationId={article.id}>
+                  <Markdown
+                    publicationId={article.id}
+                    attachmentsLocked={locked}
+                  >
                     {preview.previewMarkdown}
                   </Markdown>
                 </div>
@@ -129,29 +134,12 @@ export function PublicationDetailView({
             </>
           )}
         </section>
-        <aside className="hub-purchase">
-          <p className="hub-kicker">关于这份内容</p>
-          <h2>
-            {article.accessType === "FREE"
-              ? "开放阅读"
-              : `${article.creditPrice} 积分`}
-          </h2>
-          {article.accessType === "CREDIT" && (
-            <p>积分权益尚未开放，当前仅提供免费预览，不会扣除积分。</p>
-          )}
-          {preview.requirements && (
-            <>
-              <h3>开始之前</h3>
-              <Markdown>{preview.requirements}</Markdown>
-            </>
-          )}
-          {preview.deliverables && (
-            <>
-              <h3>内容与交付</h3>
-              <Markdown>{preview.deliverables}</Markdown>
-            </>
-          )}
-          <small>文章链接 /publications/{article.id}</small>
+        <aside className="publication-sidebar" aria-label="文章目录与资源">
+          <PublicationOutline
+            contentKey={content?.markdown ?? preview.previewMarkdown}
+            chapters={detail.chapters}
+          />
+          <PublicationAttachments publicationId={article.id} />
         </aside>
       </div>
     </article>

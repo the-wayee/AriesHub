@@ -16,5 +16,13 @@ public interface PublicationAssetRepository {
     boolean publiclyVisible(long publicationId, String id);
 
     /** 由文章编辑事务调用；替换引用但不删除对象，避免破坏其他文章绑定。 */
-    void replaceBindings(long publicationId, List<String> all, List<String> publicIds);
+    void replaceBindings(
+            long publicationId,
+            List<String> all,
+            List<String> publicIds,
+            List<String> attachmentIds);
+
+    List<Asset> attachments(long publicationId);
+
+    List<String> resourceIds(long publicationId);
 }

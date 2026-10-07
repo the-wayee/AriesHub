@@ -16,8 +16,6 @@ const draft = {
   publishedAt: null,
   previewMarkdown: "公开介绍",
   fullMarkdown: "先找到一个值得解决的问题。",
-  requirements: "",
-  deliverables: "",
   version: "1.0",
   coverFileId: null as string | null,
   featured: false,
@@ -31,6 +29,8 @@ async function editorApi(page: Page, failSave = false) {
   await page.route("**/api/v1/admin/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
+    if (path.endsWith("/attachments"))
+      return fulfillResult(route, { json: [] });
     if (path.endsWith("/categories"))
       return fulfillResult(route, {
         json: [{ id: "1", slug: "coding", name: "AI 编程" }],

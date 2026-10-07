@@ -29,8 +29,7 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
                 """
                 {"categoryId":1,"title":"试读边界","summary":"摘要",
                 "publicationType":"ARTICLE","accessType":"CREDIT","creditPrice":50,
-                "fullMarkdown":"免费段落\\n\\n<!-- arieshub:paid -->\\n\\n绝密正文",
-                "requirements":"","deliverables":""}
+                "fullMarkdown":"免费段落\\n\\n<!-- arieshub:paid -->\\n\\n绝密正文"}
                 """;
         MvcResult created =
                 mvc.perform(
@@ -40,6 +39,8 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
                                         .content(body))
                         .andExpect(status().isCreated())
                         .andExpect(jsonPath("$.data.previewMarkdown").value("免费段落"))
+                        .andExpect(jsonPath("$.data.requirements").doesNotExist())
+                        .andExpect(jsonPath("$.data.deliverables").doesNotExist())
                         .andReturn();
         String id =
                 com.jayway.jsonpath.JsonPath.read(

@@ -40,9 +40,8 @@ interface TestDataMapper {
 
     @Insert(
             """
-            INSERT INTO publication_contents(publication_id, preview_markdown, full_markdown,
-                requirements, deliverables)
-            VALUES (#{publicationId}, '公开预览', #{fullMarkdown}, '基础要求', '交付清单')
+            INSERT INTO publication_contents(publication_id, preview_markdown, full_markdown)
+            VALUES (#{publicationId}, '公开预览', #{fullMarkdown})
             """)
     void insertPublicationContent(
             @Param("publicationId") long publicationId, @Param("fullMarkdown") String fullMarkdown);

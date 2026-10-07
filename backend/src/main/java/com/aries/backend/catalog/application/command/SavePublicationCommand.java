@@ -3,6 +3,8 @@ package com.aries.backend.catalog.application.command;
 import com.aries.backend.catalog.domain.model.Publication;
 import com.aries.backend.catalog.domain.model.PublicationTrial;
 
+import java.util.List;
+
 /** 创建或编辑发布内容时的完整快照。 */
 public record SavePublicationCommand(
         long categoryId,
@@ -13,11 +15,11 @@ public record SavePublicationCommand(
         long creditPrice,
         String previewMarkdown,
         String fullMarkdown,
-        String requirements,
-        String deliverables,
         String coverFileId,
-        boolean featured) {
+        boolean featured,
+        List<String> attachmentIds) {
     public SavePublicationCommand {
+        if (attachmentIds != null) attachmentIds = List.copyOf(attachmentIds);
         // 先生成唯一可信的试读快照，再进行素材校验与绑定，避免付费素材误标为公开。
         previewMarkdown = PublicationTrial.preview(accessType, fullMarkdown, previewMarkdown);
     }
@@ -32,8 +34,7 @@ public record SavePublicationCommand(
                 Publication.PublicationType.valueOf(publicationType),
                 Publication.AccessType.valueOf(accessType),
                 creditPrice,
-                new Publication.Content(
-                        previewMarkdown, fullMarkdown, requirements, deliverables, contentVersion),
+                new Publication.Content(previewMarkdown, fullMarkdown, contentVersion),
                 coverFileId,
                 featured);
     }

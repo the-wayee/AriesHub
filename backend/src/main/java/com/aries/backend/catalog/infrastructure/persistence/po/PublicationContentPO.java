@@ -4,6 +4,7 @@ import com.aries.backend.shared.infrastructure.persistence.po.BasePO;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,9 +15,8 @@ import lombok.Setter;
 public class PublicationContentPO extends BasePO {
     @TableId(value = "publication_id", type = IdType.INPUT)
     private Long publicationId;
+
     private String previewMarkdown;
     private String fullMarkdown;
-    private String requirements;
-    private String deliverables;
     private String version;
 }

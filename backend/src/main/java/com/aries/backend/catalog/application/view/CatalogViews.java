@@ -25,14 +25,13 @@ public final class CatalogViews {
             String coverFileId,
             boolean featured) {}
 
-    public record Preview(
-            String previewMarkdown,
-            String requirements,
-            String deliverables,
-            String version,
-            OffsetDateTime updatedAt) {}
+    public record Preview(String previewMarkdown, String version, OffsetDateTime updatedAt) {}
 
-    public record PublicationDetail(PublicationSummary publication, Preview preview) {}
+    /** 目录只公开标题；headingIndex 仅指向获准阅读正文中的标题，不包含正文或资源地址。 */
+    public record Chapter(String title, int level, boolean locked, Integer headingIndex) {}
+
+    public record PublicationDetail(
+            PublicationSummary publication, Preview preview, List<Chapter> chapters) {}
 
     public record Content(
             String publicationId, String markdown, String version, OffsetDateTime updatedAt) {}

@@ -1,6 +1,8 @@
 package com.aries.backend.catalog.infrastructure.persistence.po;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 
 import lombok.Data;
 
@@ -13,4 +15,5 @@ public class PublicationMediaBindingPO {
 
     private String fileId;
     private Boolean publiclyVisible;
+    private Boolean resourceAttachment;
 }

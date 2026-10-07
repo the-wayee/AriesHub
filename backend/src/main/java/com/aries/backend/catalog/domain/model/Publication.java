@@ -49,12 +49,7 @@ public class Publication {
         SUSPENDED
     }
 
-    public record Content(
-            String previewMarkdown,
-            String fullMarkdown,
-            String requirements,
-            String deliverables,
-            String version) {}
+    public record Content(String previewMarkdown, String fullMarkdown, String version) {}
 
     public record Draft(
             long categoryId,

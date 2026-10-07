@@ -25,8 +25,8 @@
   display: grid;
   grid-template-columns: 1fr minmax(320px, 470px) 1fr;
   align-items: center;
-  background: linear-gradient(#fafaf8 72%, #fafaf8e8 86%, transparent);
-  backdrop-filter: blur(13px);
+  /* 顶栏保持不透明；羽化只由下方导航承接，避免模糊层底边透出彩色横带。 */
+  background: #fafaf8;
 }
 .hub-brand {
   display: flex;
@@ -106,7 +106,7 @@
 }
 .hub-nav {
   position: sticky;
-  top: 62px;
+  top: 76px;
   z-index: 49;
   display: flex;
   justify-content: center;
@@ -1481,7 +1481,7 @@
     display: none;
   }
   .hub-nav {
-    top: 65px;
+    top: 68px;
     padding-top: 58px;
     justify-content: flex-start;
     overflow-x: auto;
@@ -3749,4 +3749,445 @@
     width: 100%;
     max-width: 300px;
   }
+}
+
+.article-resources {
+  margin-top: 40px;
+  border-top: 1px solid #e3e7ed;
+  padding-top: 24px;
+}
+.article-resources header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.article-resources header h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 19px;
+  font-weight: 550;
+}
+.article-resources header > span,
+.article-resources > small {
+  color: #7a8594;
+  font-size: 12px;
+}
+.article-resources > p {
+  color: #697588;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.article-resources button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #dce3ec;
+  background: transparent;
+  border-radius: 7px;
+  padding: 8px 12px;
+  color: #3f5c82;
+  font-size: 12px;
+  cursor: pointer;
+}
+.article-resources button:disabled {
+  cursor: default;
+  color: #8993a1;
+}
+.article-resource {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 0;
+  border-bottom: 1px solid #edf0f4;
+}
+.article-resource > svg {
+  color: #8b7352;
+  flex-shrink: 0;
+}
+.article-resource > div {
+  flex: 1;
+  min-width: 0;
+}
+.article-resource strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  color: #354256;
+  font-weight: 500;
+}
+.article-resource small {
+  display: block;
+  color: #7b8797;
+  font-size: 12px;
+  margin-top: 5px;
+}
+.article-resource button {
+  flex-shrink: 0;
+}
+.writer-resources {
+  margin: 0;
+  padding: 24px 30px;
+}
+
+.attachment-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 20px;
+}
+.attachment-file-card,
+.article-resources .attachment-add-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  min-height: 158px;
+  padding: 20px;
+  border: 1px solid #e0e5eb;
+  border-radius: 12px;
+  background: #fafbfd;
+  min-width: 0;
+}
+.attachment-file-card > svg {
+  color: #657e9e;
+}
+.attachment-file-card strong {
+  font-size: 13px;
+  font-weight: 500;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  padding-right: 8px;
+}
+.attachment-file-card small {
+  color: #7a8798;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.attachment-complete {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #3b8670;
+  font-size: 10px;
+}
+.article-resources .attachment-remove {
+  position: absolute;
+  right: 6px;
+  top: 6px;
+  padding: 4px;
+  border: 0;
+}
+.article-resources .attachment-add-card {
+  align-items: center;
+  text-align: center;
+  border-style: dashed;
+  background: transparent;
+  color: #527093;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.article-resources .attachment-add-card:hover:not(:disabled) {
+  border-color: #7595bb;
+  background: #f1f5fa;
+}
+.article-resources .attachment-add-card:focus-visible {
+  outline: 2px solid #527093;
+  outline-offset: 3px;
+}
+.attachment-add-card strong {
+  font-size: 13px;
+  font-weight: 500;
+}
+.attachment-add-card small {
+  font-size: 11px;
+}
+.attachment-queued {
+  opacity: 0.75;
+}
+@media (max-width: 600px) {
+  .attachment-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .attachment-file-card,
+  .article-resources .attachment-add-card {
+    padding: 14px;
+  }
+}
+
+.attachment-file-card.attachment-failed {
+  background: #fff5f5;
+  border-color: #e8b5b5;
+  opacity: 1;
+}
+.attachment-failed > svg,
+.attachment-failed small,
+.article-resources .attachment-failed .attachment-remove {
+  color: #ae3535;
+}
+.article-resources .attachment-failed .attachment-remove:hover {
+  background: #fbe1e1;
+}
+
+.publication-sidebar {
+  min-width: 0;
+  align-self: start;
+  display: grid;
+  gap: 24px;
+}
+.publication-sidebar .hub-purchase {
+  position: static;
+  margin: 0;
+}
+.publication-outline,
+.publication-sidebar .article-resources {
+  border: 1px solid #e0e5eb;
+  border-radius: 14px;
+  background: #fff;
+  padding: 22px;
+  margin: 0;
+}
+.publication-sidebar .publication-outline {
+  display: block;
+}
+.publication-outline header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.publication-outline h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 550;
+  margin: 0;
+}
+.publication-outline header > span,
+.publication-outline > p {
+  font-size: 12px;
+  color: #7d8898;
+}
+.publication-outline ol {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.publication-outline button {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  border-left: 2px solid transparent;
+  padding: 10px 8px;
+  background: transparent;
+  color: #637083;
+  font-size: 13px;
+  line-height: 1.6;
+  text-align: left;
+  cursor: pointer;
+}
+.publication-outline button > span {
+  color: #929dab;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  padding-top: 2px;
+}
+.publication-outline li[data-level="3"] button {
+  padding-left: 22px;
+  font-size: 12px;
+}
+.publication-outline button[aria-current],
+.publication-outline button:hover {
+  color: #355e92;
+  background: #f1f5fa;
+  border-left-color: #668bb6;
+}
+.publication-outline button:focus-visible {
+  outline: 2px solid #668bb6;
+  outline-offset: -2px;
+}
+.publication-outline > small {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 16px;
+  color: #947747;
+  font-size: 11px;
+}
+.publication-sidebar .article-resource {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.publication-sidebar .article-resource > div {
+  flex-basis: calc(100% - 40px);
+}
+.publication-sidebar .article-resource button {
+  margin-left: 32px;
+}
+.publication-sidebar .article-resources header h2 {
+  font-size: 16px;
+}
+.publication-outline button:disabled {
+  cursor: not-allowed;
+  color: #9298a2;
+  background: transparent;
+  border-left-color: transparent;
+}
+.publication-outline button > svg {
+  margin-left: auto;
+  flex-shrink: 0;
+  align-self: center;
+  color: #a48b68;
+}
+.article-resources .article-resources-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.article-resources-collapse > div > small {
+  display: block;
+  color: #7d8898;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.article-resources .article-resources-toggle:focus-visible {
+  outline: 2px solid #668bb6;
+  outline-offset: 6px;
+}
+.article-resources-toggle header {
+  flex: 1;
+}
+.article-resources-toggle > svg {
+  transition: transform 220ms ease;
+}
+.article-resources-toggle[aria-expanded="true"] > svg {
+  transform: rotate(180deg);
+}
+.article-resources-collapse {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  transition:
+    grid-template-rows 240ms ease,
+    visibility 240ms;
+}
+.article-resources-collapse[data-expanded="true"] {
+  grid-template-rows: 1fr;
+  visibility: visible;
+}
+.article-resources-collapse > div {
+  overflow: hidden;
+  min-height: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .article-resources-collapse,
+  .article-resources-toggle > svg {
+    transition: none;
+  }
+}
+
+/* 阅读侧栏使用轻量文件清单，与编辑器的上传卡片保持独立。 */
+.publication-sidebar .reader-resources {
+  padding: 20px 0 0;
+  border: 0;
+  border-top: 1px solid #e2e4e6;
+  border-radius: 0;
+  background: transparent;
+}
+.reader-resources .article-resources-toggle {
+  min-height: 36px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  color: #303438;
+  font-family: inherit;
+}
+.reader-resources-title {
+  font-size: 14px;
+  font-weight: 550;
+}
+.reader-resources-count {
+  font-size: 11px;
+  color: #8a8f95;
+  font-variant-numeric: tabular-nums;
+}
+.reader-resources .article-resources-toggle > svg {
+  margin-left: auto;
+  color: #8a8f95;
+}
+.reader-resources .article-resources-toggle:focus:not(:focus-visible) {
+  outline: none;
+  box-shadow: none;
+}
+.reader-resources .article-resources-toggle:hover {
+  color: #171b20;
+  background: transparent;
+}
+.publication-sidebar .reader-resources .article-resource {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 0;
+}
+.reader-resources .article-resource + .article-resource {
+  border-top: 1px solid #eceeef;
+}
+.reader-resources .article-resource > svg {
+  width: 18px;
+  color: #7c8f8a;
+}
+.reader-resources .article-resource strong {
+  font-size: 13px;
+  font-weight: 500;
+  color: #343a40;
+  line-height: 1.5;
+}
+.reader-resources .article-resource small {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #969ba1;
+}
+.reader-resources .article-resource > .reader-resource-lock {
+  color: var(--reader-lock-color, #c7a85e);
+  width: 14px;
+}
+.publication-sidebar {
+  --reader-lock-color: #c7a85e;
+}
+.publication-outline button > svg,
+.publication-outline > small > svg {
+  color: var(--reader-lock-color);
+}
+.publication-sidebar .reader-resources .article-resource button {
+  margin: 0;
+  padding: 6px 0 6px 8px;
+  border: 0;
+  background: transparent;
+  color: #526f64;
+  font-size: 11px;
+}
+.reader-resources .article-resources-collapse > div > small {
+  padding: 4px 0 0 34px;
+  font-size: 11px;
+  color: #999da2;
 }

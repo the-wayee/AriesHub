@@ -30,8 +30,6 @@ test("administrator can browse publications and open the editor", async ({
           publishedAt: null,
           previewMarkdown: "公开预览",
           fullMarkdown: "完整正文",
-          requirements: "准备 Codex",
-          deliverables: "教程与源码",
           version: "1.0",
           createdAt: "2026-09-28T10:00:00Z",
           updatedAt: "2026-09-28T10:00:00Z",

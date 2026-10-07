@@ -373,9 +373,7 @@
 .admin-studio textarea[name="fullMarkdown"] {
   min-height: 380px;
 }
-.admin-studio textarea[name="summary"],
-.admin-studio textarea[name="requirements"],
-.admin-studio textarea[name="deliverables"] {
+.admin-studio textarea[name="summary"] {
   min-height: 110px;
 }
 .admin-studio .editor-content-panel textarea {

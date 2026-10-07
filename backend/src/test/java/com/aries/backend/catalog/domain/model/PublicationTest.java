@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.*;
 
 class PublicationTest {
     private final Publication.Content content = new Publication.Content(
-            "预览", "完整正文", "准备", "交付", "1.0");
+            "预览", "完整正文", "1.0");
 
     private Publication.Draft draft(Publication.Content body) {
         return new Publication.Draft(1, "case", "标题", "摘要",
@@ -26,7 +26,7 @@ class PublicationTest {
     @Test
     void publishRequiresFullBodyAndSetsTimestamp() {
         OffsetDateTime now = OffsetDateTime.parse("2026-09-29T10:00:00Z");
-        Publication incomplete = Publication.create(draft(new Publication.Content("预览", " ", "准备", "交付", "1.0")));
+        Publication incomplete = Publication.create(draft(new Publication.Content("预览", " ", "1.0")));
         assertThatThrownBy(() -> incomplete.publish(now)).isInstanceOf(Publication.MissingContent.class);
 
         Publication published = Publication.create(draft(content)).publish(now);
@@ -46,7 +46,7 @@ class PublicationTest {
         assertThat(edited.getPublishedAt()).isEqualTo(published.getPublishedAt());
         assertThat(edited.allowsPublicReading()).isFalse();
         assertThatThrownBy(() -> published.edit(draft(
-                new Publication.Content("预览", " ", "准备", "交付", "1.0"))))
+                new Publication.Content("预览", " ", "1.0"))))
                 .isInstanceOf(Publication.MissingContent.class);
     }
 }
