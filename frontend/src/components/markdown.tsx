@@ -8,11 +8,13 @@ export function Markdown({
   admin = false,
   publicationId,
   attachmentsLocked = false,
+  shareToken,
 }: {
   children: string;
   admin?: boolean;
   publicationId?: string;
   attachmentsLocked?: boolean;
+  shareToken?: string;
 }) {
   return (
     <div className="prose">
@@ -30,6 +32,7 @@ export function Markdown({
                 label={alt ?? "文章图片"}
                 kind={alt?.startsWith("视频：") ? "VIDEO" : "IMAGE"}
                 admin={admin}
+                shareToken={shareToken}
                 publicationId={publicationId}
               />
             ) : (
@@ -49,6 +52,7 @@ export function Markdown({
                   label={String(children)}
                   kind="ATTACHMENT"
                   admin={admin}
+                  shareToken={shareToken}
                   publicationId={publicationId}
                 />
               )

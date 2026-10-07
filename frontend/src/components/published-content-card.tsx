@@ -2,6 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { PublicationMetrics } from "./publication-metrics";
 import { PublicationInteractions } from "./publication-interactions";
 import { PublicationMedia } from "./publication-media";
 import type { PublicationCardData } from "@/lib/publication-reader";
@@ -83,6 +84,7 @@ export function PublishedContentCard({
             <PublicationProgressBadge percent={item.progress.percent} />
           </Link>
         )}
+        <PublicationMetrics id={p.id} initial={item.interaction} />
         <PublicationInteractions id={p.id} initial={item.interaction} />
       </div>
     </article>

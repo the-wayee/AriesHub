@@ -5,9 +5,20 @@
  SELECT p.id::text AS publication_id,
  (SELECT count(*) FROM publication_reactions r WHERE r.publication_id=p.id AND r.kind='LIKE') AS like_count,
  EXISTS(SELECT 1 FROM publication_reactions r WHERE r.publication_id=p.id AND r.user_id=#{userId} AND r.kind='LIKE') AS liked,
- EXISTS(SELECT 1 FROM publication_reactions r WHERE r.publication_id=p.id AND r.user_id=#{userId} AND r.kind='BOOKMARK') AS bookmarked
+ EXISTS(SELECT 1 FROM publication_reactions r WHERE r.publication_id=p.id AND r.user_id=#{userId} AND r.kind='BOOKMARK') AS bookmarked,
+ (SELECT count(*) FROM publication_reactions r WHERE r.publication_id=p.id AND r.kind='BOOKMARK') AS bookmark_count,
+ (SELECT count(*) FROM publication_events e WHERE e.publication_id=p.id AND e.kind='SHARE') AS share_count,
+ (SELECT count(*) FROM publication_events e WHERE e.publication_id=p.id AND e.kind='VIEW') AS view_count
  FROM publications p WHERE p.is_deleted=false AND p.status='PUBLISHED' AND p.delivery_status='AVAILABLE' AND p.id IN
  <foreach collection="ids" item="id" open="(" close=")" separator=",">#{id}</foreach>
+ </select>
+ <select id="activity" resultType="com.aries.backend.catalog.application.view.PublicationReaderViews$Activity">
+ SELECT e.id::text AS id, p.id::text AS publication_id, p.title,
+ e.user_id::text AS user_id, ''::text AS actor_name, e.kind, e.created_at
+ FROM publication_events e JOIN publications p ON p.id=e.publication_id
+ WHERE e.kind IN ('LIKE','BOOKMARK','SHARE') AND e.user_id IS NOT NULL
+ AND p.is_deleted=false AND p.status='PUBLISHED' AND p.delivery_status='AVAILABLE'
+ ORDER BY e.created_at DESC,e.id DESC LIMIT #{size}
  </select>
  <sql id="libraryFrom">
  FROM publications p JOIN categories cat ON cat.id=p.category_id

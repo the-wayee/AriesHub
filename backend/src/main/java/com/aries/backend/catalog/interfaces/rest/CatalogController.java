@@ -1,8 +1,11 @@
 package com.aries.backend.catalog.interfaces.rest;
 
-import static com.aries.backend.catalog.application.view.CatalogViews.*;
-
 import com.aries.backend.catalog.application.service.CatalogQueryService;
+import com.aries.backend.catalog.application.view.CatalogViews.Category;
+import com.aries.backend.catalog.application.view.CatalogViews.Content;
+import com.aries.backend.catalog.application.view.CatalogViews.Page;
+import com.aries.backend.catalog.application.view.CatalogViews.PublicationDetail;
+import com.aries.backend.catalog.application.view.CatalogViews.PublicationSummary;
 import com.aries.backend.catalog.interfaces.rest.request.PublicationListRequest;
 import com.aries.backend.shared.interfaces.rest.Result;
 
@@ -12,7 +15,11 @@ import jakarta.validation.constraints.Positive;
 
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -42,6 +49,6 @@ public class CatalogController {
 
     @GetMapping("/publications/{id}/content")
     public Result<Content> content(@PathVariable @Positive long id) {
-        return Result.success(service.content(id));
+        return Result.success(service.memberContent(id));
     }
 }

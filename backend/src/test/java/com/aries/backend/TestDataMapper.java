@@ -1,6 +1,11 @@
 package com.aries.backend;
 
-import org.apache.ibatis.annotations.*;
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.time.OffsetDateTime;
 
@@ -14,6 +19,11 @@ interface TestDataMapper {
             RESTART IDENTITY CASCADE
             """)
     void reset();
+
+    @Insert(
+            "INSERT INTO content_unlocks(user_id, publication_id, credits_paid) VALUES"
+                    + " (#{user},#{publication},199)")
+    void unlock(@Param("user") long user, @Param("publication") long publication);
 
     @Select("SELECT count(*) FROM stored_files")
     long storedFileCount();
@@ -54,7 +64,7 @@ interface TestDataMapper {
 
     @Select(
             "SELECT created_at IS NOT NULL AND updated_at IS NOT NULL AND NOT is_deleted FROM users"
-                + " WHERE id = #{id}")
+                    + " WHERE id = #{id}")
     boolean userAuditFieldsPresent(@Param("id") long id);
 
     @Select("SELECT last_login_at IS NOT NULL FROM users WHERE email = #{email}")

@@ -12,7 +12,35 @@ public final class PublicationReaderViews {
     private PublicationReaderViews() {}
 
     public record Interaction(
-            String publicationId, long likeCount, boolean liked, boolean bookmarked) {}
+            String publicationId,
+            long likeCount,
+            boolean liked,
+            boolean bookmarked,
+            long bookmarkCount,
+            long shareCount,
+            long viewCount) {}
+
+    /** 动态仅展示已发布内容和互动者昵称，不包含正文或读者浏览记录。 */
+    public record Activity(
+            String id,
+            String publicationId,
+            String title,
+            String userId,
+            String actorName,
+            String kind,
+            OffsetDateTime createdAt) {}
+
+    /** 稳定的站点分享链接，不包含私有素材地址。 */
+    public record ShareLink(
+            String publicationId, String url, String token, SignedUrl cover, String summary) {}
+
+    /** 分享落地页仅提供公开试读和封面；全文通过专用授权端点读取。 */
+    public record SharedPublication(
+            CatalogViews.PublicationDetail detail,
+            SignedUrl cover,
+            String sharedBy,
+            boolean canRead,
+            String sharedAvatarUrl) {}
 
     public record Progress(
             String publicationId,

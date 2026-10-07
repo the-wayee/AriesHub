@@ -41,6 +41,9 @@ function homeFixture(): MemberHome {
     interaction: {
       publicationId: String(index + 4),
       likeCount: index * 3,
+      bookmarkCount: index + 2,
+      shareCount: index + 4,
+      viewCount: 100 + index * 17,
       liked: false,
       bookmarked: false,
     },
@@ -190,6 +193,74 @@ test("reading and access badges share semantic styles including completed articl
     path: info.outputPath("semantic-reading-badges.png"),
     fullPage: true,
   });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("home rotates real interaction events and exposes article metrics", async ({
+  page,
+}) => {
+  await mockMemberSession(page);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.route("**/api/v1/home", (route) =>
+    fulfillResult(route, { json: homeFixture() }),
+  );
+  const rows = [
+    {
+      id: "1",
+      publicationId: "11",
+      title: "阅读有回声",
+      userId: "9001",
+      actorName: "林舟",
+      kind: "LIKE",
+      createdAt: "2026-10-07T08:00:00Z",
+    },
+    {
+      id: "2",
+      publicationId: "12",
+      title: "把想法带给别人",
+      userId: "9002",
+      actorName: "程雨",
+      kind: "SHARE",
+      createdAt: "2026-10-07T07:00:00Z",
+    },
+    {
+      id: "3",
+      publicationId: "13",
+      title: "收藏下次实践",
+      userId: "9003",
+      actorName: "周晴",
+      kind: "BOOKMARK",
+      createdAt: "2026-10-07T06:00:00Z",
+    },
+  ];
+  await page.route("**/api/v1/home/activity", (route) =>
+    fulfillResult(route, { json: rows }),
+  );
+  await page.goto("/home");
+  const activity = page.getByLabel("社区互动动态");
+  await expect(activity).toContainText("林舟");
+  await expect(activity).toContainText("点赞了");
+  await activity.getByRole("button", { name: "下一条动态" }).click();
+  await expect(activity).toContainText("程雨");
+  await expect(activity).toContainText("分享了");
+  await expect(activity.locator("a")).toHaveAttribute(
+    "href",
+    "/publications/12",
+  );
+  await activity.getByRole("button", { name: "下一条动态" }).click();
+  await expect(activity).toContainText("收藏了");
+  await activity.getByRole("button", { name: "上一条动态" }).click();
+  await expect(activity).toContainText("程雨");
+  await expect(
+    page.locator(".home-content-gallery .publication-metrics").first(),
+  ).toContainText("134 阅读");
+  await expect(
+    page.locator(".home-content-gallery .publication-metrics").first(),
+  ).toContainText("6 分享");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,

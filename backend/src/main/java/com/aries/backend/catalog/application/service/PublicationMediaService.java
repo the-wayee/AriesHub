@@ -1,7 +1,12 @@
 package com.aries.backend.catalog.application.service;
 
-import static com.aries.backend.catalog.application.exception.CatalogErrorCode.*;
-import static com.aries.backend.shared.application.util.MediaTypes.*;
+import static com.aries.backend.catalog.application.exception.CatalogErrorCode.CONTENT_LOCKED;
+import static com.aries.backend.catalog.application.exception.CatalogErrorCode.INVALID_MEDIA;
+import static com.aries.backend.catalog.application.exception.CatalogErrorCode.MEDIA_NOT_FOUND;
+import static com.aries.backend.catalog.application.exception.CatalogErrorCode.PUBLICATION_NOT_FOUND;
+import static com.aries.backend.shared.application.util.MediaTypes.IMAGE_WEBP_VALUE;
+import static com.aries.backend.shared.application.util.MediaTypes.VIDEO_MP4_VALUE;
+import static com.aries.backend.shared.application.util.MediaTypes.VIDEO_WEBM_VALUE;
 
 import static org.springframework.util.MimeTypeUtils.IMAGE_JPEG_VALUE;
 import static org.springframework.util.MimeTypeUtils.IMAGE_PNG_VALUE;
@@ -9,6 +14,8 @@ import static org.springframework.util.MimeTypeUtils.IMAGE_PNG_VALUE;
 import com.aries.backend.catalog.application.command.SavePublicationCommand;
 import com.aries.backend.catalog.application.port.PublicationAssetRepository;
 import com.aries.backend.catalog.application.port.PublicationMediaPort;
+import com.aries.backend.catalog.application.port.PublicationReaderIdentity;
+import com.aries.backend.catalog.application.port.PublicationReaderRepository;
 import com.aries.backend.catalog.application.port.PublicationUploadProgress;
 import com.aries.backend.catalog.domain.model.Publication;
 import com.aries.backend.catalog.domain.model.PublicationMediaKind;
@@ -52,6 +59,8 @@ public class PublicationMediaService {
     private final PublicationAssetRepository assets;
     private final PublicationRepository publications;
     private final PublicationUploadProgress progress;
+    private final PublicationReaderIdentity identity;
+    private final PublicationReaderRepository readers;
 
     public record Uploaded(
             String id,
@@ -166,9 +175,14 @@ public class PublicationMediaService {
                 attachmentIds(publicationId, command));
     }
 
-    /** 签名签发前检查文章状态和绑定；仅封面、公开预览及免费正文允许匿名读取。 */
+    /** 签名签发前检查文章状态和绑定；仅封面与公开预览允许普通匿名读取。 */
     @Transactional(readOnly = true)
     public PublicationMediaPort.SignedUrl publicUrl(long publicationId, String id) {
+        return readerUrl(publicationId, id, false);
+    }
+
+    /** 共享链接专用用例先校验令牌和全文权限，再传入单次授权；不写入全局登录状态。 */
+    PublicationMediaPort.SignedUrl readerUrl(long publicationId, String id, boolean authorized) {
         Publication publication =
                 publications
                         .findById(publicationId)
@@ -178,10 +192,15 @@ public class PublicationMediaService {
         PublicationMediaPort.Asset asset =
                 assets.find(id).orElseThrow(() -> new BusinessException(MEDIA_NOT_FOUND));
         // 附件始终跟随文章阅读权限，即使引用被放入公开试读也不能获得免费签名。
-        if ((!assets.publiclyVisible(publicationId, id)
+        boolean privateAsset =
+                !assets.publiclyVisible(publicationId, id)
                         || parseKind(asset.kind()) == PublicationMediaKind.ATTACHMENT
-                        || assets.resourceIds(publicationId).contains(id))
-                && !publication.allowsPublicReading()) throw new BusinessException(CONTENT_LOCKED);
+                        || assets.resourceIds(publicationId).contains(id);
+        if (privateAsset && !authorized) {
+            long user = identity.requireUserId();
+            if (!publication.allowsPublicReading() && !readers.unlocked(user, publicationId))
+                throw new BusinessException(CONTENT_LOCKED);
+        }
         return adminUrl(id);
     }
 

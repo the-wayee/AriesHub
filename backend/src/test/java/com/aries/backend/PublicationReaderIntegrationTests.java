@@ -3,10 +3,13 @@ package com.aries.backend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.jayway.jsonpath.JsonPath;
 
 import jakarta.servlet.http.Cookie;
 
@@ -14,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -26,6 +30,76 @@ import java.util.concurrent.TimeUnit;
 @AutoConfigureMockMvc
 @Import(TestEmailConfiguration.class)
 class PublicationReaderIntegrationTests extends IntegrationTestSupport {
+    @Test
+    void shareLinksUseConfiguredOriginAndRejectUnpublishedArticles() throws Exception {
+        Cookie member = register("links@example.com", "reader1234", "林舟");
+        mvc.perform(post("/api/v1/publications/11/share-link").cookie(member))
+                .andExpect(status().isOk())
+                .andExpect(
+                        jsonPath("$.data.url")
+                                .value(
+                                        org.hamcrest.Matchers.startsWith(
+                                                "http://localhost:3200/s/")));
+        mvc.perform(post("/api/v1/publications/13/share-link").cookie(member))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void eventCountsAreIdempotentAndFeedExcludesViewsAndUnpublishedContent() throws Exception {
+        Cookie member = register("events@example.com", "reader1234", "林舟");
+        String token = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
+        String shared =
+                JsonPath.read(
+                        mvc.perform(post("/api/v1/publications/11/share-link").cookie(member))
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString(),
+                        "$.data.token");
+        for (int i = 0; i < 2; i++) {
+            mvc.perform(
+                            post("/api/v1/publications/11/view")
+                                    .cookie(member)
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content("{\"token\":\"" + token + "\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.viewCount").value(1));
+            mvc.perform(
+                            post("/api/v1/publications/11/share")
+                                    .cookie(member)
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content("{\"token\":\"" + shared + "\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.shareCount").value(1));
+            mvc.perform(put("/api/v1/publications/11/like").cookie(member));
+            mvc.perform(put("/api/v1/publications/11/bookmark").cookie(member));
+        }
+        mvc.perform(get("/api/v1/home/activity").cookie(member))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(3))
+                .andExpect(jsonPath("$.data[0].actorName").value("林舟"));
+        mvc.perform(get("/api/v1/home/activity")).andExpect(status().isUnauthorized());
+        mvc.perform(
+                        post("/api/v1/publications/11/share")
+                                .cookie(member)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"token\":\"invalid\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(
+                        post("/api/v1/publications/13/view")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"token\":\"" + token + "\"}"))
+                .andExpect(status().isNotFound());
+        mvc.perform(
+                        post("/api/v1/publications/11/view")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"token\":\"" + token + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.viewCount").value(2));
+        database.updatePublicationStatus(11, "ARCHIVED");
+        mvc.perform(get("/api/v1/home/activity").cookie(member))
+                .andExpect(jsonPath("$.data.length()").value(0));
+    }
+
     @Test
     void reactionsAreIdempotentPrivateAndFilteredWhenArchived() throws Exception {
         Cookie one = register("reader-one@example.com", "reader1234", "成员一");

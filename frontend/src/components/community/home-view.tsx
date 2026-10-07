@@ -8,6 +8,7 @@ import {
   PublishedContentCard,
   PublishedCover,
 } from "../published-content-card";
+import { PublicationMetrics } from "../publication-metrics";
 import { PublicationInteractions } from "../publication-interactions";
 import { PageSkeleton } from "../page-skeleton";
 import { type MemberHome } from "@/lib/publication-reader";
@@ -129,6 +130,10 @@ export function HomeView() {
                     >
                       阅读文章 <ArrowRight />
                     </Link>
+                    <PublicationMetrics
+                      id={spotlight.publication.id}
+                      initial={spotlight.interaction}
+                    />
                     <PublicationInteractions
                       id={spotlight.publication.id}
                       initial={spotlight.interaction}
@@ -193,7 +198,7 @@ export function HomeView() {
                     </div>
                   )}
                 </section>
-                <CommunityPulse latest={data.latest[0]} />
+                <CommunityPulse />
               </div>
             </div>
             <section className="home-practice-gallery" aria-label="文章画廊">

@@ -1,5 +1,13 @@
 package com.aries.backend.discussion.application.service;
 
+import static com.aries.backend.discussion.application.exception.DiscussionErrorCode.COMMENT_BODY_INVALID;
+import static com.aries.backend.discussion.application.exception.DiscussionErrorCode.COMMENT_DELETE_FORBIDDEN;
+import static com.aries.backend.discussion.application.exception.DiscussionErrorCode.COMMENT_LOGIN_REQUIRED;
+import static com.aries.backend.discussion.application.exception.DiscussionErrorCode.COMMENT_NOT_FOUND;
+import static com.aries.backend.discussion.application.exception.DiscussionErrorCode.COMMENT_NOT_REPLYABLE;
+import static com.aries.backend.discussion.application.exception.DiscussionErrorCode.DISCUSSION_TARGET_NOT_FOUND;
+import static com.aries.backend.discussion.application.exception.DiscussionErrorCode.DISCUSSION_THREAD_CLOSED;
+
 import com.aries.backend.discussion.application.port.DiscussionIdentityProvider;
 import com.aries.backend.discussion.application.port.DiscussionReadPort;
 import com.aries.backend.discussion.application.query.CommentPageQuery;
@@ -12,19 +20,22 @@ import com.aries.backend.discussion.domain.model.DiscussionTarget;
 import com.aries.backend.discussion.domain.model.DiscussionThread;
 import com.aries.backend.discussion.domain.repository.DiscussionRepository;
 import com.aries.backend.shared.application.exception.BusinessException;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-
-import static com.aries.backend.discussion.application.exception.DiscussionErrorCode.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * 评论用例。读取按「根评论分页 + 其下回复平铺」组织，写入覆盖发表、回复、点赞和三种审核动作。
  *
- * <p>目标校验交给 {@link DiscussionTargets} 按 {@code type} 路由：接入新的可评论对象只需
- * 在组合层新增一个实现类，本类不感知任何具体业务模块。
+ * <p>目标校验交给 {@link DiscussionTargets} 按 {@code type} 路由：接入新的可评论对象只需 在组合层新增一个实现类，本类不感知任何具体业务模块。
  *
  * <p>{@code like_count} 是反规范化投影，事实以 {@code comment_likes} 为准。计数只做原子自增；
  * 若与真实行数漂移，修复方式是按点赞表重算，而不是继续增量补偿。
@@ -37,10 +48,7 @@ public class DiscussionService {
     private final DiscussionIdentityProvider identities;
     private final DiscussionTargets targets;
 
-    /**
-     * 读评论同样要校验目标可见：否则内容下架或退回草稿后，
-     * 按原 slug 仍能读出它的全部评论。
-     */
+    /** 读评论同样要校验目标可见：否则内容下架或退回草稿后， 按原 slug 仍能读出它的全部评论。 */
     @Transactional(readOnly = true)
     public CommentPage comments(DiscussionTarget target, CommentPageQuery query) {
         if (!targets.exists(target)) throw new BusinessException(DISCUSSION_TARGET_NOT_FOUND);
@@ -52,27 +60,32 @@ public class DiscussionService {
         long viewer = currentUserIdOrZero();
         long total = reads.countRootComments(thread.id());
         List<RootCommentView> roots = reads.rootComments(thread.id(), viewer, query);
-        return new CommentPage(decorateRoots(roots, viewer),
-                query.getPage(), query.getSize(), total, pages(total, query.getSize()));
+        return new CommentPage(
+                decorateRoots(roots, viewer),
+                query.getPage(),
+                query.getSize(),
+                total,
+                pages(total, query.getSize()));
     }
 
     /**
-     * 回复只按根评论 id 读取，所以要把列表接口的可见性检查在这里补齐：
-     * 根评论存在且未被隐藏、所在线程未被隐藏、挂载目标仍然公开。
-     * 任一不满足都表现为「评论不存在」，不透露具体原因。
+     * 回复只按根评论 id 读取，所以要把列表接口的可见性检查在这里补齐： 根评论存在且未被隐藏、所在线程未被隐藏、挂载目标仍然公开。 任一不满足都表现为「评论不存在」，不透露具体原因。
      */
     @Transactional(readOnly = true)
     public ReplyPage replies(long rootId, CommentPageQuery query) {
-        Comment root = discussions.findComment(rootId)
-                .filter(Comment::isRoot)
-                .filter(comment -> comment.status() != Comment.Status.HIDDEN)
-                .orElseThrow(() -> new BusinessException(COMMENT_NOT_FOUND));
+        Comment root =
+                discussions
+                        .findComment(rootId)
+                        .filter(Comment::isRoot)
+                        .filter(comment -> comment.status() != Comment.Status.HIDDEN)
+                        .orElseThrow(() -> new BusinessException(COMMENT_NOT_FOUND));
         requireVisibleThread(root.threadId());
 
         long viewer = currentUserIdOrZero();
         long total = reads.countReplies(rootId);
         List<CommentView> items = decorate(reads.replies(rootId, viewer, query), viewer);
-        return new ReplyPage(items, query.getPage(), query.getSize(), total, pages(total, query.getSize()));
+        return new ReplyPage(
+                items, query.getPage(), query.getSize(), total, pages(total, query.getSize()));
     }
 
     @Transactional
@@ -81,9 +94,10 @@ public class DiscussionService {
         DiscussionThread thread = writableThread(target);
         Comment draft;
         try {
-            draft = parentId == null
-                    ? Comment.root(thread.id(), authorId, body)
-                    : replyTo(thread, parentId, authorId, body);
+            draft =
+                    parentId == null
+                            ? Comment.root(thread.id(), authorId, body)
+                            : replyTo(thread, parentId, authorId, body);
         } catch (Comment.NotReplyable rejected) {
             throw new BusinessException(COMMENT_NOT_REPLYABLE);
         } catch (Comment.InvalidBody rejected) {
@@ -129,7 +143,8 @@ public class DiscussionService {
         requireVisibleThread(comment.threadId());
         // 隐藏根评论后，其下回复也不再公开，不能通过回复 id 绕过可见性检查。
         if (!comment.isRoot()) {
-            discussions.findComment(comment.rootId())
+            discussions
+                    .findComment(comment.rootId())
                     .filter(Comment::isRoot)
                     .filter(root -> root.threadId() == comment.threadId())
                     .filter(root -> root.status() != Comment.Status.HIDDEN)
@@ -141,7 +156,8 @@ public class DiscussionService {
     // ---- 内部 ----
 
     private void requireVisibleThread(long threadId) {
-        discussions.findThread(threadId)
+        discussions
+                .findThread(threadId)
                 .filter(thread -> thread.status() != DiscussionThread.Status.HIDDEN)
                 .filter(thread -> targets.exists(thread.target()))
                 .orElseThrow(() -> new BusinessException(COMMENT_NOT_FOUND));
@@ -155,21 +171,21 @@ public class DiscussionService {
     }
 
     private Comment replyTo(DiscussionThread thread, long parentId, long authorId, String body) {
-        Comment parent = discussions.findComment(parentId)
-                .filter(comment -> comment.threadId() == thread.id())
-                .orElseThrow(() -> new BusinessException(COMMENT_NOT_FOUND));
+        Comment parent =
+                discussions
+                        .findComment(parentId)
+                        .filter(comment -> comment.threadId() == thread.id())
+                        .orElseThrow(() -> new BusinessException(COMMENT_NOT_FOUND));
         return Comment.reply(thread.id(), authorId, parent, body);
     }
 
     private Comment requireComment(long commentId) {
-        return discussions.findComment(commentId)
+        return discussions
+                .findComment(commentId)
                 .orElseThrow(() -> new BusinessException(COMMENT_NOT_FOUND));
     }
 
-    /**
-     * 未登录访客也能读评论，此时没有「我的点赞」概念，用 0 表示。
-     * 匿名由身份端口以 null 表达，不在这里捕获异常。
-     */
+    /** 未登录访客也能读评论，此时没有「我的点赞」概念，用 0 表示。 匿名由身份端口以 null 表达，不在这里捕获异常。 */
     private long currentUserIdOrZero() {
         Long userId = identities.currentUserId();
         return userId == null ? 0L : userId;
@@ -186,23 +202,23 @@ public class DiscussionService {
     private List<CommentView> decorate(List<CommentView> views, long viewer) {
         if (views.isEmpty()) return views;
         Set<Long> authors = new HashSet<>();
+        Map<String, Long> parents = parentAuthors(views);
+        authors.addAll(parents.values());
         for (CommentView view : views) {
             authors.add(Long.parseLong(view.authorId()));
         }
         Map<Long, String> names = identities.displayNames(authors);
+        Map<Long, String> avatars = identities.avatarUrls(authors);
         boolean admin = identities.currentUserIsAdmin();
 
         List<CommentView> result = new ArrayList<>(views.size());
         for (CommentView view : views) {
-            result.add(decorated(view, names, viewer, admin));
+            result.add(decorated(view, names, avatars, parents, viewer, admin));
         }
         return result;
     }
 
-    /**
-     * 根评论连同其预览回复一起补齐昵称：作者集合要跨层合并，
-     * 否则每条根评论各查一次，前置的批量查询就白做了。
-     */
+    /** 根评论连同其预览回复一起补齐昵称：作者集合要跨层合并， 否则每条根评论各查一次，前置的批量查询就白做了。 */
     private List<RootCommentView> decorateRoots(List<RootCommentView> items, long viewer) {
         if (items.isEmpty()) return items;
         List<CommentView> flat = new ArrayList<>();
@@ -211,36 +227,80 @@ public class DiscussionService {
             flat.addAll(item.previewReplies());
         }
         Set<Long> authors = new HashSet<>();
+        Map<String, Long> parents = parentAuthors(flat);
+        authors.addAll(parents.values());
         for (CommentView view : flat) {
             authors.add(Long.parseLong(view.authorId()));
         }
         Map<Long, String> names = identities.displayNames(authors);
+        Map<Long, String> avatars = identities.avatarUrls(authors);
         boolean admin = identities.currentUserIsAdmin();
 
         List<RootCommentView> result = new ArrayList<>(items.size());
         for (RootCommentView item : items) {
-            List<CommentView> previews = item.previewReplies().stream()
-                    .map(reply -> decorated(reply, names, viewer, admin)).toList();
-            result.add(new RootCommentView(decorated(item.comment(), names, viewer, admin),
-                    item.replyCount(), previews));
+            List<CommentView> previews =
+                    item.previewReplies().stream()
+                            .map(reply -> decorated(reply, names, avatars, parents, viewer, admin))
+                            .toList();
+            result.add(
+                    new RootCommentView(
+                            decorated(item.comment(), names, avatars, parents, viewer, admin),
+                            item.replyCount(),
+                            previews));
         }
         return result;
     }
 
-    private CommentView decorated(CommentView view, Map<Long, String> names, long viewer, boolean admin) {
+    private Map<String, Long> parentAuthors(List<CommentView> views) {
+        Set<Long> parentIds = new HashSet<>();
+        for (CommentView view : views) {
+            if (view.parentId() != null) parentIds.add(Long.parseLong(view.parentId()));
+        }
+        return reads.parentAuthors(parentIds);
+    }
+
+    private CommentView decorated(
+            CommentView view,
+            Map<Long, String> names,
+            Map<Long, String> avatars,
+            Map<String, Long> parents,
+            long viewer,
+            boolean admin) {
         long authorId = Long.parseLong(view.authorId());
         boolean canDelete = !view.deleted() && (authorId == viewer || admin);
-        return new CommentView(view.id(), view.parentId(), view.rootId(), view.depth(),
-                view.authorId(), names.getOrDefault(authorId, "社区成员"), view.body(),
-                view.likeCount(), view.likedByMe(), view.deleted(), canDelete, view.createdAt());
+        return new CommentView(
+                view.id(),
+                view.parentId(),
+                view.rootId(),
+                view.depth(),
+                view.authorId(),
+                names.getOrDefault(authorId, "社区成员"),
+                view.body(),
+                view.likeCount(),
+                view.likedByMe(),
+                view.deleted(),
+                canDelete,
+                view.createdAt(),
+                view.parentId() != null && parents.containsKey(view.parentId())
+                        ? names.getOrDefault(parents.get(view.parentId()), "社区成员")
+                        : null,
+                avatars.get(authorId));
     }
 
     private CommentView toView(Comment comment) {
-        return new CommentView(Long.toString(comment.id()),
+        return new CommentView(
+                Long.toString(comment.id()),
                 comment.parentId() == null ? null : Long.toString(comment.parentId()),
                 comment.rootId() == null ? null : Long.toString(comment.rootId()),
-                comment.depth(), Long.toString(comment.authorId()), null, comment.visibleBody(),
-                comment.likeCount(), false, comment.isDeleted(), false, comment.createdAt());
+                comment.depth(),
+                Long.toString(comment.authorId()),
+                null,
+                comment.visibleBody(),
+                comment.likeCount(),
+                false,
+                comment.isDeleted(),
+                false,
+                comment.createdAt());
     }
 
     private int pages(long total, int size) {

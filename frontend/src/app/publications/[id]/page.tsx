@@ -50,15 +50,12 @@ export default async function PublicationPage({
   }
   if (id !== result.data.publication.id)
     permanentRedirect(`/publications/${result.data.publication.id}`);
-  const content =
-    result.data.publication.accessType === "FREE"
-      ? await getContent(id)
-      : undefined;
+  const content = await getContent(id);
   return (
     <PublicationDetailView
       detail={result.data}
       content={content?.ok ? content.data : undefined}
-      contentError={content !== undefined && !content.ok}
+      contentError={!content.ok && ![401, 403].includes(content.status)}
     />
   );
 }

@@ -28,8 +28,10 @@ export function AttachmentIcon({ name }: { name: string }) {
 /** 只在读者点击下载时请求短期签名；锁定附件不向浏览器请求或缓存下载地址。 */
 export function PublicationAttachments({
   publicationId,
+  shareToken,
 }: {
   publicationId: string;
+  shareToken?: string;
 }) {
   const [items, setItems] = useState<ArticleAttachment[]>();
   const [expanded, setExpanded] = useState(true);
@@ -39,7 +41,9 @@ export function PublicationAttachments({
   useEffect(() => {
     let active = true;
     void apiRequest<ArticleAttachment[]>(
-      `/api/v1/publications/${publicationId}/attachments`,
+      shareToken
+        ? `/api/v1/shares/${shareToken}/attachments`
+        : `/api/v1/publications/${publicationId}/attachments`,
     ).then((result) => {
       if (!active) return;
       if (result.ok) {
@@ -50,13 +54,15 @@ export function PublicationAttachments({
     return () => {
       active = false;
     };
-  }, [publicationId, attempt]);
+  }, [publicationId, attempt, shareToken]);
   async function download(item: ArticleAttachment) {
     if (item.locked || pending) return;
     setPending(item.id);
     setError("");
     const result = await apiRequest<{ url: string }>(
-      `/api/v1/publications/${publicationId}/media/${item.id}/url`,
+      shareToken
+        ? `/api/v1/shares/${shareToken}/media/${item.id}/url`
+        : `/api/v1/publications/${publicationId}/media/${item.id}/url`,
     );
     setPending(undefined);
     if (!result.ok) {

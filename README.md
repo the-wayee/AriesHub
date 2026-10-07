@@ -138,3 +138,5 @@ npm run test:e2e
 当前先完善 UI 与账号基础；之后把新版文章详情和讨论页接入真实内容与评论接口，随后实现积分余额操作、流水与内容解锁，支付放在积分体系稳定之后。
 
 API JSON 响应统一为 `Result {code, msg, data, traceId}`。成功码为 `SUCCESS`；前端统一解析 `data`，失败通过 `msg` 和 `traceId` 提供提示与追踪。退出和删除成功返回 HTTP 200、`data: null`，业务失败保留相应 HTTP 状态。
+
+文章分享域名统一由项目级环境变量 `SITE_URL` 配置（本地默认 `http://localhost:3200`）。将根目录 `.env.example` 中的变量注入后端启动环境，生产改为 HTTPS 正式域名并重启后端；前端通过分享链接接口读取地址，无需重新构建。详见 [文章互动与分享配置](doc/PUBLICATION_INTERACTIONS.md)。

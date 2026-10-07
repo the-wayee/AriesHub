@@ -35,9 +35,11 @@ const interests = [
 export function AuthExperience({
   mode,
   initialEmail = "",
+  returnTo,
 }: {
   mode: "login" | "register";
   initialEmail?: string;
+  returnTo?: string;
 }) {
   const register = mode === "register";
   const router = useRouter();
@@ -272,7 +274,7 @@ export function AuthExperience({
     window.dispatchEvent(
       new CustomEvent("arieshub:auth", { detail: result.data }),
     );
-    router.push("/home");
+    router.push(returnTo ?? "/home");
     router.refresh();
   }
   const emailField = (

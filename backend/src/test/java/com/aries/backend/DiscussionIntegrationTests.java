@@ -3,24 +3,108 @@ package com.aries.backend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.hasSize;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.aries.backend.storage.application.service.FileStorageService;
+import com.aries.backend.storage.domain.model.StoredFile;
 
 import jakarta.servlet.http.Cookie;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 
+import java.io.ByteArrayInputStream;
 import java.time.OffsetDateTime;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestEmailConfiguration.class)
 class DiscussionIntegrationTests extends IntegrationTestSupport {
+    @Autowired FileStorageService files;
+
     private static final String TARGET =
             "/api/v1/discussions/comments" + "?targetType=PUBLICATION&targetKey=free-case";
+
+    @Test
+    void emojiBodyAndReplyRecipientSurvivePagination() throws Exception {
+        Cookie first = register("emoji-first@example.com", "member1234", "林舟");
+        Cookie second = register("emoji-second@example.com", "member1234", "程雨");
+        long userId = database.userIdByEmail("emoji-first@example.com");
+        StoredFile avatar =
+                files.upload(
+                        userId,
+                        StoredFile.Purpose.AVATAR,
+                        "avatar.png",
+                        MediaType.IMAGE_PNG_VALUE,
+                        4,
+                        new ByteArrayInputStream(new byte[] {1, 2, 3, 4}));
+        when(objects.imageUrl(anyString(), any())).thenReturn("https://oss.example.com/avatar");
+        mvc.perform(
+                        put("/api/v1/users/me/profile")
+                                .cookie(first)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"nickname\":\"林舟\",\"bio\":\"\",\"avatarFileId\":\""
+                                                + avatar.id()
+                                                + "\"}"))
+                .andExpect(status().isOk());
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(first)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"这个方法很实用😊✨"}
+                                        """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.body").value("这个方法很实用😊✨"))
+                .andExpect(
+                        jsonPath("$.data.authorAvatarUrl").value("https://oss.example.com/avatar"));
+        Long root = database.commentIdByBody("这个方法很实用😊✨");
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(second)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","parentId":%d,"body":"谢谢分享👏"}
+                                        """
+                                                .formatted(root)))
+                .andExpect(status().isCreated());
+        Long parent = database.commentIdByBody("谢谢分享👏");
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(first)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","parentId":%d,"body":"一起实践💪"}
+                                        """
+                                                .formatted(parent)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.replyToAuthorName").value("程雨"));
+        // 父评论在第一页，第二页仍应包含被回复者昵称，不能依赖前端已经加载父行。
+        mvc.perform(get("/api/v1/discussions/comments/" + root + "/replies?page=2&size=1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items[0].body").value("一起实践💪"))
+                .andExpect(jsonPath("$.data.items[0].parentId").value(parent.toString()))
+                .andExpect(jsonPath("$.data.items[0].replyToAuthorName").value("程雨"))
+                .andExpect(
+                        jsonPath("$.data.items[0].authorAvatarUrl")
+                                .value("https://oss.example.com/avatar"));
+    }
 
     @Test
     void commentsArePubliclyReadableButWritingRequiresLogin() throws Exception {

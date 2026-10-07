@@ -52,4 +52,10 @@
         WHERE body.is_deleted = false AND <include refid="visible"/>
           AND p.access_type = 'FREE' AND p.id = #{id}
     </select>
+    <!-- 只能由已验证登录/解锁权益的用例调用，不作为公开 Controller 入口。 -->
+    <select id="authorizedContent" resultType="com.aries.backend.catalog.application.view.CatalogViews$Content">
+        SELECT p.id::text AS publication_id, body.full_markdown AS markdown, body.version, body.updated_at
+        FROM publication_contents body JOIN publications p ON p.id=body.publication_id
+        WHERE body.is_deleted=false AND <include refid="visible"/> AND p.id=#{id}
+    </select>
 </mapper>

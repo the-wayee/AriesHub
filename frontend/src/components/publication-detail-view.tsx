@@ -1,6 +1,9 @@
 import { PublicationOutline } from "./publication-outline";
+import { PublicationComments } from "./publication-comments";
 import { PublicationAttachments } from "./publication-attachments";
 import { ReadingProgressTracker } from "./reading-progress";
+import { PublicationMetrics } from "./publication-metrics";
+import { PublicationShare } from "./publication-share";
 import { PublicationInteractions } from "./publication-interactions";
 import Link from "next/link";
 import { LockKeyhole, BookOpen } from "lucide-react";
@@ -43,12 +46,12 @@ export function PublicationDetailView({
           <span>
             {new Date(article.publishedAt).toLocaleDateString("zh-CN")}
           </span>
+          <PublicationMetrics key={article.id} id={article.id} trackView />
           <PublicationAccessBadge
             access={article.accessType}
             credits={article.creditPrice}
           />
         </div>
-        <PublicationInteractions id={article.id} />
       </header>
       {article.coverFileId && (
         <div className="published-cover">
@@ -133,6 +136,14 @@ export function PublicationDetailView({
               )}
             </>
           )}
+          <div className="publication-end-actions" aria-label="文章操作">
+            <PublicationInteractions id={article.id} prominent />
+            <PublicationShare id={article.id} title={article.title} />
+          </div>
+          <PublicationComments
+            publicationId={article.id}
+            targetKey={article.slug}
+          />
         </section>
         <aside className="publication-sidebar" aria-label="文章目录与资源">
           <PublicationOutline

@@ -41,7 +41,13 @@ public class DiscussionIdentityAdapter implements DiscussionIdentityProvider {
         return users.isAdmin(userId);
     }
 
-    /** 一次 IN 查询取回全部昵称，避免评论列表变成 N 次单行查询。 */
+    /** 批量提供头像签名，不暴露用户仓储或存储对象键。 */
+    @Override
+    public Map<Long, String> avatarUrls(Set<Long> ids) {
+        return users.avatarUrls(ids);
+    }
+
+    /** 一次 IN 查询取回全部昵称。 */
     @Override
     public Map<Long, String> displayNames(Set<Long> userIds) {
         return users.displayNames(userIds);

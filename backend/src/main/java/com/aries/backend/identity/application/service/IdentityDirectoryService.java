@@ -1,5 +1,6 @@
 package com.aries.backend.identity.application.service;
 
+import com.aries.backend.identity.application.port.UserAvatarStorage;
 import com.aries.backend.identity.domain.model.UserAccount;
 import com.aries.backend.identity.domain.repository.UserRepository;
 
@@ -8,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -17,6 +19,15 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class IdentityDirectoryService {
     private final UserRepository users;
+    private final UserAvatarStorage avatars;
+
+    /** 作者头像与昵称一样按集合补齐，签名由头像端口批量生成。 */
+    public Map<Long, String> avatarUrls(Set<Long> ids) {
+        Map<Long, String> result = new HashMap<>();
+        avatars.publicAvatars(users.findAvatarIdsByIds(ids))
+                .forEach((user, image) -> result.put(user, image.url()));
+        return result;
+    }
 
     public boolean isAdmin(long userId) {
         return users.findById(userId)

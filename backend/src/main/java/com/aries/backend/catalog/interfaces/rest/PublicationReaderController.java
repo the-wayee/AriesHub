@@ -2,12 +2,17 @@ package com.aries.backend.catalog.interfaces.rest;
 
 import com.aries.backend.catalog.application.service.PublicationCardService;
 import com.aries.backend.catalog.application.service.PublicationReaderService;
+import com.aries.backend.catalog.application.service.PublicationShareService;
 import com.aries.backend.catalog.application.view.CatalogViews.Page;
+import com.aries.backend.catalog.application.view.PublicationReaderViews.Activity;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.Home;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.Interaction;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.Progress;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.PublicationCardView;
+import com.aries.backend.catalog.application.view.PublicationReaderViews.ShareLink;
 import com.aries.backend.catalog.domain.model.PublicationReactionKind;
+import com.aries.backend.catalog.interfaces.rest.request.ConfirmPublicationShareRequest;
+import com.aries.backend.catalog.interfaces.rest.request.PublicationEventRequest;
 import com.aries.backend.catalog.interfaces.rest.request.PublicationListRequest;
 import com.aries.backend.catalog.interfaces.rest.request.ReadingProgressRequest;
 import com.aries.backend.shared.interfaces.rest.Result;
@@ -25,11 +30,14 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /** 当前用户无需传 userId；幂等 PUT/DELETE 分离，避免网络重试把点赞反向切换。 */
 @RestController
@@ -39,6 +47,31 @@ import org.springframework.web.bind.annotation.RestController;
 public class PublicationReaderController {
     private final PublicationReaderService readers;
     private final PublicationCardService cards;
+    private final PublicationShareService shares;
+
+    @GetMapping("/home/activity")
+    public Result<List<Activity>> activity(
+            @RequestParam(defaultValue = "12") @Min(1) @Max(24) int size) {
+        return Result.success(readers.activity(size));
+    }
+
+    @PostMapping("/publications/{id}/view")
+    public Result<Interaction> view(
+            @PathVariable @Positive long id, @Valid @RequestBody PublicationEventRequest body) {
+        return Result.success(readers.view(id, body.token()));
+    }
+
+    @PostMapping("/publications/{id}/share-link")
+    public Result<ShareLink> shareLink(@PathVariable @Positive long id) {
+        return Result.success(shares.link(id));
+    }
+
+    @PostMapping("/publications/{id}/share")
+    public Result<Interaction> share(
+            @PathVariable @Positive long id,
+            @Valid @RequestBody ConfirmPublicationShareRequest body) {
+        return Result.success(shares.confirm(id, body.token()));
+    }
 
     @GetMapping("/publications/cards")
     public Result<Page<PublicationCardView>> list(

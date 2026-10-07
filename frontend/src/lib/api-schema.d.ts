@@ -841,6 +841,125 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/publications/{id}/view": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 记录文章阅读 */
+    post: operations["recordPublicationView"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/publications/{id}/share": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 记录已完成的分享操作 */
+    post: operations["recordPublicationShare"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/home/activity": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 读取社区互动动态 */
+    get: operations["getHomeActivity"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/publications/{id}/share-link": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** 为当前账号创建或复用单篇分享授权链接 */
+    post: operations["getPublicationShareLink"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/shares/{token}": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Public detail by stable database ID; legacy slug is read-only compatibility */
+    get: operations["getSharedPublication"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/shares/{token}/content": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Only published and available FREE publications are readable in M1 */
+    get: operations["getSharedContent"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/shares/{token}/media/{id}/url": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Published cover/preview is public; paid full media CONTENT_LOCKED; draft/unbound unavailable */
+    get: operations["getSharedMediaUrl"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1090,6 +1209,10 @@ export interface components {
       canDelete: boolean;
       /** Format: date-time */
       createdAt: string;
+      /** @description 被回复评论的作者昵称，由后端补齐，父评论不在当前页时仍可显示 @昵称 */
+      replyToAuthorName?: string | null;
+      /** @description 作者头像签名地址，未设置时为空 */
+      authorAvatarUrl?: string | null;
     };
     RootCommentView: {
       comment: components["schemas"]["CommentView"];
@@ -1299,6 +1422,12 @@ export interface components {
       likeCount: number;
       liked: boolean;
       bookmarked: boolean;
+      /** Format: int64 */
+      bookmarkCount?: number;
+      /** Format: int64 */
+      shareCount?: number;
+      /** Format: int64 */
+      viewCount?: number;
     };
     ReadingProgress: {
       publicationId: string;
@@ -1364,6 +1493,40 @@ export interface components {
       level: number;
       locked: boolean;
       headingIndex: number | null;
+    };
+    PublicationEventRequest: {
+      /** Format: uuid */
+      token: string;
+    };
+    PublicationActivity: {
+      id: string;
+      publicationId: string;
+      title: string;
+      userId: string;
+      actorName: string;
+      /** @enum {string} */
+      kind: "LIKE" | "BOOKMARK" | "SHARE";
+      /** Format: date-time */
+      createdAt: string;
+    };
+    PublicationShareLink: {
+      publicationId: string;
+      /** Format: uri */
+      url: string;
+      token: string;
+      cover?: components["schemas"]["FileDownload"] | null;
+      summary?: string;
+    };
+    ConfirmPublicationShareRequest: {
+      token: string;
+    };
+    SharedPublication: {
+      detail: components["schemas"]["PublicationDetail"];
+      cover: components["schemas"]["FileDownload"] | null;
+      sharedBy: string;
+      canRead: boolean;
+      /** @description 分享者的头像签名地址，未设置头像时为空 */
+      sharedAvatarUrl?: string | null;
     };
   };
   responses: {
@@ -4464,6 +4627,418 @@ export interface operations {
           "application/json": components["schemas"]["Error"];
         };
       };
+    };
+  };
+  recordPublicationView: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["PublicationEventRequest"];
+      };
+    };
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationInteraction"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Publication unavailable */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  recordPublicationShare: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ConfirmPublicationShareRequest"];
+      };
+    };
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationInteraction"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Publication unavailable */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getHomeActivity: {
+    parameters: {
+      query?: {
+        size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationActivity"][];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Publication unavailable */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getPublicationShareLink: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationShareLink"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Publication unavailable */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getSharedPublication: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        token: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["SharedPublication"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Invalid slug */
+      400: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Missing, draft, archived or suspended publication */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Database temporarily unavailable */
+      503: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getSharedContent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        token: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationContent"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Invalid ID */
+      400: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Paid content is locked; purchases are not implemented */
+      403: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Missing, draft, archived or suspended publication */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Unexpected server error */
+      500: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Database temporarily unavailable */
+      503: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getSharedMediaUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        token: string;
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["FileDownload"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      400: components["responses"]["Forbidden"];
+      403: components["responses"]["Forbidden"];
+      404: components["responses"]["Forbidden"];
     };
   };
 }

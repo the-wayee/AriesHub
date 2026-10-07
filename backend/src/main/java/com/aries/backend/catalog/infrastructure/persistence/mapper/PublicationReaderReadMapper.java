@@ -1,6 +1,7 @@
 package com.aries.backend.catalog.infrastructure.persistence.mapper;
 
 import com.aries.backend.catalog.application.view.CatalogViews.PublicationSummary;
+import com.aries.backend.catalog.application.view.PublicationReaderViews.Activity;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.Interaction;
 
 import org.apache.ibatis.annotations.Mapper;
@@ -11,6 +12,8 @@ import java.util.List;
 /** 跨内容、个人关系和阅读记录的复杂只读查询集中在 XML。 */
 @Mapper
 public interface PublicationReaderReadMapper {
+    List<Activity> activity(@Param("size") int size);
+
     List<Interaction> interactions(@Param("ids") List<Long> ids, @Param("userId") Long userId);
 
     List<PublicationSummary> library(

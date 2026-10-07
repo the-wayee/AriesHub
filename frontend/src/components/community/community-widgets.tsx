@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { PublicationActivity } from "./publication-activity";
 import { useState } from "react";
 import {
   ArrowRight,
@@ -14,7 +15,6 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
-import type { PublicationCardData } from "@/lib/publication-reader";
 
 /** 社区活动接口接入前的独立展示数据，不写入真实评论、成员或文章关系。 */
 const ACTIVITY_PREVIEW = [
@@ -313,8 +313,8 @@ export function CommunityPreviewRail() {
   );
 }
 
-/** 发布动态从真实文章摘要构建，其余没有接口的社区场景显式标为示例。 */
-export function CommunityPulse({ latest }: { latest?: PublicationCardData }) {
+/** 互动轮播接入真实事件，其余尚未对接的成员场景保留明确示例标识。 */
+export function CommunityPulse() {
   return (
     <section
       className="hub-activity-strip community-pulse"
@@ -338,20 +338,7 @@ export function CommunityPulse({ latest }: { latest?: PublicationCardData }) {
         </div>
         <ArrowRight size={15} />
       </Link>
-      <Link
-        href={latest ? `/publications/${latest.publication.id}` : "/discover"}
-      >
-        <span className="hub-activity-icon">
-          <BookOpen />
-        </span>
-        <div>
-          <strong>{latest ? "有新的内容，值得一读" : "发现下一份实践"}</strong>
-          <small>
-            {latest?.publication.title ?? "看看主理人整理的案例与文章"}
-          </small>
-        </div>
-        <ArrowRight size={15} />
-      </Link>
+      <PublicationActivity />
       <Link href="/community">
         <span className="hub-activity-icon">
           <MessageCircle />

@@ -5,6 +5,9 @@ import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import jakarta.servlet.http.Cookie;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -15,6 +18,13 @@ import org.springframework.test.web.servlet.MvcResult;
 @AutoConfigureMockMvc
 @Import(TestEmailConfiguration.class)
 class CatalogIntegrationTests extends IntegrationTestSupport {
+    private Cookie reader;
+
+    @BeforeEach
+    void readerSession() throws Exception {
+        reader = register("catalog-reader@example.com", "reader1234", "读者");
+    }
+
     @Test
     void listAndCountsOnlyIncludePublishedAvailablePublications() throws Exception {
         mvc.perform(get("/api/v1/publications"))
@@ -65,7 +75,7 @@ class CatalogIntegrationTests extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.preview.previewMarkdown").value("公开预览"))
                 .andExpect(jsonPath("$.data.publication.creditPrice").value(199))
                 .andExpect(content().string(not(containsString("CREDIT_SECRET_SENTINEL"))));
-        mvc.perform(get("/api/v1/publications/12/content"))
+        mvc.perform(get("/api/v1/publications/12/content").cookie(reader))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("CONTENT_LOCKED"))
                 .andExpect(content().string(not(containsString("CREDIT_SECRET_SENTINEL"))));
@@ -74,7 +84,7 @@ class CatalogIntegrationTests extends IntegrationTestSupport {
 
     @Test
     void onlyFreePublishedContentIsReadable() throws Exception {
-        mvc.perform(get("/api/v1/publications/11/content"))
+        mvc.perform(get("/api/v1/publications/11/content").cookie(reader))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.markdown").value("FREE_BODY"));
         for (String slug :
@@ -82,7 +92,7 @@ class CatalogIntegrationTests extends IntegrationTestSupport {
             mvc.perform(get("/api/v1/publications/" + slug)).andExpect(status().isNotFound());
         }
         for (int id : new int[] {13, 14, 15, 999}) {
-            mvc.perform(get("/api/v1/publications/" + id + "/content"))
+            mvc.perform(get("/api/v1/publications/" + id + "/content").cookie(reader))
                     .andExpect(status().isNotFound());
             assertThat(mapper.freeContent(id)).isNull();
         }
@@ -111,15 +121,18 @@ class CatalogIntegrationTests extends IntegrationTestSupport {
             assertThat(result.getResponse().getContentAsString())
                     .contains(result.getResponse().getHeader("X-Request-Id"));
         }
-        mvc.perform(get("/api/v1/publications/-1/content")).andExpect(status().isBadRequest());
-        mvc.perform(get("/api/v1/publications/abc/content")).andExpect(status().isBadRequest());
+        mvc.perform(get("/api/v1/publications/-1/content").cookie(reader))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/v1/publications/abc/content").cookie(reader))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     void unpublishingImmediatelyHidesDetailAndBody() throws Exception {
         database.updatePublicationStatus(11, "ARCHIVED");
         mvc.perform(get("/api/v1/publications/free-case")).andExpect(status().isNotFound());
-        mvc.perform(get("/api/v1/publications/11/content")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/publications/11/content").cookie(reader))
+                .andExpect(status().isNotFound());
         mvc.perform(get("/api/v1/publications").param("access", "FREE"))
                 .andExpect(jsonPath("$.data.total").value(0));
     }

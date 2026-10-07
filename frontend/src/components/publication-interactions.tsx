@@ -15,9 +15,11 @@ const BURST_PARTICLES = Array.from({ length: 8 }, (_, index) => index);
 export function PublicationInteractions({
   id,
   initial,
+  prominent = false,
 }: {
   id: string;
   initial?: Interaction;
+  prominent?: boolean;
 }) {
   const { user, hasSession } = useAuthSession();
   if (hasSession && user === undefined)
@@ -27,6 +29,7 @@ export function PublicationInteractions({
       key={`${id}:${user?.id ?? "anon"}`}
       id={id}
       initial={initial}
+      prominent={prominent}
     />
   );
 }
@@ -34,9 +37,11 @@ export function PublicationInteractions({
 function InteractionControls({
   id,
   initial,
+  prominent = false,
 }: {
   id: string;
   initial?: Interaction;
+  prominent?: boolean;
 }) {
   const { user } = useAuthSession();
   // 列表刷新提供新的服务端快照时直接采用它；账号变化则由外层 key 清空状态。
@@ -164,6 +169,33 @@ function InteractionControls({
       );
     } else setError(r.error.msg);
   }
+  if (!user && prominent)
+    return (
+      <div className="reader-interactions">
+        <div className="hub-content-actions" aria-label="文章互动">
+          <Link
+            className="interaction-button"
+            href={`/login?next=${encodeURIComponent(`/publications/${id}`)}`}
+          >
+            <Heart aria-hidden="true" />
+            点赞{" "}
+            <span className="publication-action-number">
+              {value?.likeCount?.toLocaleString() ?? "—"}
+            </span>
+          </Link>
+          <Link
+            className="interaction-button"
+            href={`/login?next=${encodeURIComponent(`/publications/${id}`)}`}
+          >
+            <Bookmark aria-hidden="true" />
+            收藏{" "}
+            <span className="publication-action-number">
+              {value?.bookmarkCount?.toLocaleString() ?? "—"}
+            </span>
+          </Link>
+        </div>
+      </div>
+    );
   if (!user)
     return (
       <Link
@@ -196,7 +228,14 @@ function InteractionControls({
               fill={value?.liked ? "currentColor" : "none"}
             />
           </span>
-          <span className="interaction-label">{value?.likeCount ?? "—"}</span>
+          <span className="interaction-label">
+            {prominent && <span>{value?.liked ? "已点赞" : "点赞"}</span>}
+            <span
+              className={prominent ? "publication-action-number" : undefined}
+            >
+              {value?.likeCount?.toLocaleString() ?? "—"}
+            </span>
+          </span>
           {pending === "like" && (
             <LoaderCircle className="interaction-spinner" aria-hidden="true" />
           )}
@@ -223,6 +262,15 @@ function InteractionControls({
           </span>
           <span className="interaction-label">
             {value?.bookmarked ? "已收藏" : "收藏"}
+            <span
+              className={
+                prominent
+                  ? "publication-action-number"
+                  : "interaction-small-count"
+              }
+            >
+              {value?.bookmarkCount?.toLocaleString() ?? "—"}
+            </span>
           </span>
           {pending === "bookmark" && (
             <LoaderCircle className="interaction-spinner" aria-hidden="true" />

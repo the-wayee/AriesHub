@@ -1,5 +1,6 @@
 import { readApiResponse } from "./api";
 import "server-only";
+import { cookies } from "next/headers";
 import { cache } from "react";
 import type {
   PublicationContent,
@@ -30,10 +31,16 @@ function backendOrigin() {
 async function get<T>(path: string): Promise<ApiResult<T>> {
   const origin = backendOrigin();
   try {
+    const session = (await cookies()).get("arieshub_token")?.value;
     const response = await fetch(`${origin}/api/v1${path}`, {
       cache: "no-store",
       signal: AbortSignal.timeout(6000),
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        ...(session
+          ? { Cookie: `arieshub_token=${encodeURIComponent(session)}` }
+          : {}),
+      },
     });
     const result = await readApiResponse<T>(response);
     if (!result.ok) {

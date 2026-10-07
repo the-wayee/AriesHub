@@ -53,7 +53,7 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
                         .andExpect(jsonPath("$.data.preview.previewMarkdown").value("免费段落"))
                         .andReturn();
         assertThat(visible.getResponse().getContentAsString()).doesNotContain("绝密正文");
-        mvc.perform(get("/api/v1/publications/" + id + "/content"))
+        mvc.perform(get("/api/v1/publications/" + id + "/content").cookie(admin))
                 .andExpect(status().isForbidden());
         mvc.perform(
                         put("/api/v1/admin/publications/" + id)
@@ -162,7 +162,7 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.publication.title").value("修改后的标题"));
         mvc.perform(get("/api/v1/publications/999999999999999999999999999999"))
                 .andExpect(status().isNotFound());
-        mvc.perform(get("/api/v1/publications/" + id + "/content"))
+        mvc.perform(get("/api/v1/publications/" + id + "/content").cookie(admin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.markdown").value("完整正文"));
     }

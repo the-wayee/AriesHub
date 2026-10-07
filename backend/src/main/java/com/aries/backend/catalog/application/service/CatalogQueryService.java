@@ -4,6 +4,8 @@ import static com.aries.backend.catalog.application.exception.CatalogErrorCode.C
 import static com.aries.backend.catalog.application.exception.CatalogErrorCode.PUBLICATION_NOT_FOUND;
 
 import com.aries.backend.catalog.application.port.CatalogReadPort;
+import com.aries.backend.catalog.application.port.PublicationReaderIdentity;
+import com.aries.backend.catalog.application.port.PublicationReaderRepository;
 import com.aries.backend.catalog.application.query.PublicationSearchQuery;
 import com.aries.backend.catalog.application.view.CatalogViews.Category;
 import com.aries.backend.catalog.application.view.CatalogViews.Content;
@@ -30,6 +32,19 @@ import java.util.List;
 public class CatalogQueryService {
     private final PublicationRepository publications;
     private final CatalogReadPort reads;
+    private final PublicationReaderIdentity identity;
+    private final PublicationReaderRepository readers;
+
+    /** 普通正文入口必须登录；付费内容额外验证当前账号既有解锁权益。 */
+    public Content memberContent(long id) {
+        long user = identity.requireUserId();
+        PublicationDetail detail = detail(id);
+        if (!"FREE".equals(detail.publication().accessType()) && !readers.unlocked(user, id))
+            throw new BusinessException(CONTENT_LOCKED);
+        Content result = reads.authorizedContent(id);
+        if (result == null) throw missing();
+        return result;
+    }
 
     /** 跨模块查询可见性时只暴露结果，领域聚合和仓储留在 catalog 内。 */
     public boolean isPubliclyVisibleBySlug(String slug) {

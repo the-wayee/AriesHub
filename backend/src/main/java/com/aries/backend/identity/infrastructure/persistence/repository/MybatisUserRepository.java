@@ -1,19 +1,22 @@
 package com.aries.backend.identity.infrastructure.persistence.repository;
 
-import com.aries.backend.identity.domain.model.UserAccount;
 import com.aries.backend.identity.domain.model.Email;
+import com.aries.backend.identity.domain.model.UserAccount;
 import com.aries.backend.identity.domain.repository.UserRepository;
 import com.aries.backend.identity.infrastructure.persistence.converter.UserConverter;
 import com.aries.backend.identity.infrastructure.persistence.mapper.UserMapper;
 import com.aries.backend.identity.infrastructure.persistence.po.UserPO;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Repository;
 
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /** 用户仓储的 PostgreSQL 实现。 */
@@ -29,19 +32,37 @@ public class MybatisUserRepository implements UserRepository {
 
     @Override
     public Optional<UserAccount> findByEmail(Email email) {
-        return Optional.ofNullable(mapper.selectOne(Wrappers.<UserPO>lambdaQuery()
-                        .eq(UserPO::getEmail, email.value())))
+        return Optional.ofNullable(
+                        mapper.selectOne(
+                                Wrappers.<UserPO>lambdaQuery().eq(UserPO::getEmail, email.value())))
                 .map(UserConverter::toDomain);
     }
 
     @Override
     public Map<Long, String> findNicknamesByIds(Set<Long> ids) {
         if (ids.isEmpty()) return Map.of();
-        return mapper.selectList(Wrappers.<UserPO>lambdaQuery()
-                        .select(UserPO::getId, UserPO::getNickname)
-                        .in(UserPO::getId, ids))
+        return mapper
+                .selectList(
+                        Wrappers.<UserPO>lambdaQuery()
+                                .select(UserPO::getId, UserPO::getNickname)
+                                .in(UserPO::getId, ids))
                 .stream()
                 .collect(Collectors.toMap(UserPO::getId, UserPO::getNickname));
+    }
+
+    @Override
+    public Map<Long, UUID> findAvatarIdsByIds(Set<Long> ids) {
+        if (ids.isEmpty()) return Map.of();
+        return mapper
+                .selectList(
+                        Wrappers.<UserPO>lambdaQuery()
+                                .select(UserPO::getId, UserPO::getAvatarFileId)
+                                .in(UserPO::getId, ids)
+                                .isNotNull(UserPO::getAvatarFileId))
+                .stream()
+                .collect(
+                        Collectors.toMap(
+                                UserPO::getId, row -> UUID.fromString(row.getAvatarFileId())));
     }
 
     @Override
@@ -54,10 +75,18 @@ public class MybatisUserRepository implements UserRepository {
     @Override
     public void updateProfile(UserAccount user) {
         // 显式 set 支持移除头像；只更新资料字段，避免覆盖并发余额与账号状态。
-        mapper.update(null, Wrappers.<UserPO>lambdaUpdate().eq(UserPO::getId, user.getId())
-                .set(UserPO::getNickname, user.getNickname()).set(UserPO::getBio, user.getBio())
-                .set(UserPO::getAvatarFileId, user.getAvatarFileId() == null ? null : user.getAvatarFileId().toString())
-                .setSql("updated_at = now()"));
+        mapper.update(
+                null,
+                Wrappers.<UserPO>lambdaUpdate()
+                        .eq(UserPO::getId, user.getId())
+                        .set(UserPO::getNickname, user.getNickname())
+                        .set(UserPO::getBio, user.getBio())
+                        .set(
+                                UserPO::getAvatarFileId,
+                                user.getAvatarFileId() == null
+                                        ? null
+                                        : user.getAvatarFileId().toString())
+                        .setSql("updated_at = now()"));
     }
 
     @Override

@@ -14,6 +14,7 @@ export function PublicationMedia({
   publicationId,
   signedUrl,
   preview = false,
+  shareToken,
 }: {
   id: string;
   label: string;
@@ -22,6 +23,7 @@ export function PublicationMedia({
   publicationId?: string;
   signedUrl?: string;
   preview?: boolean;
+  shareToken?: string;
 }) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
@@ -35,7 +37,9 @@ export function PublicationMedia({
       void apiRequest<{ url: string }>(
         admin
           ? `/api/v1/admin/media/${id}/url`
-          : `/api/v1/publications/${publicationId}/media/${id}/url`,
+          : shareToken
+            ? `/api/v1/shares/${shareToken}/media/${id}/url`
+            : `/api/v1/publications/${publicationId}/media/${id}/url`,
       ).then((r) => {
         if (!active) return;
         if (r.ok) {
@@ -55,7 +59,7 @@ export function PublicationMedia({
       active = false;
       clearInterval(timer);
     };
-  }, [id, admin, publicationId, retry, kind, signedUrl]);
+  }, [id, admin, publicationId, retry, kind, signedUrl, shareToken]);
   const resolvedUrl = signedUrl && retry === 0 ? signedUrl : url;
   if (error)
     return (

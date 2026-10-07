@@ -1,5 +1,7 @@
 const memberRoutes = [
   "/home",
+  "/discover",
+  "/publications",
   "/community",
   "/my-content",
   "/members",

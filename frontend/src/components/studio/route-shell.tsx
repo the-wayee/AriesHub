@@ -47,6 +47,12 @@ export function RouteShell({
         </main>
       </div>
     );
+  } else if (path.startsWith("/s/")) {
+    content = (
+      <main id="main" className="shared-publication-shell">
+        <PageMotion>{children}</PageMotion>
+      </main>
+    );
   } else if (community) {
     content = <CommunityShell>{children}</CommunityShell>;
   } else {
