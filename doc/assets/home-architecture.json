@@ -1,0 +1,6 @@
+{
+  "asset": "frontend/public/editorial/home-architecture.webp",
+  "tool": "built-in image_gen",
+  "usage": "首页杂志首屏的原创概念建筑背景，不作为文章真实内容",
+  "prompt": "Generate a production website background image ONLY, no text, no UI, no article thumbnails, no cards, no logo, no icons, no buttons. Reference is approved AriesHub website mockup: recreate the photographic architectural background behind welcome title and featured article, removing all foreground website elements. Wide landscape 16:9. Contemporary pale ivory-white travertine sculptural architecture, gracefully curving terraces and large open arch at upper right overlooking calm blue alpine lake and distant mountains, a delicate olive tree at far right edge. Pale stone wall dominates left two-thirds and middle, gentle natural daylight and faint branch shadows, high-end architecture magazine photography, realistic fine stone texture, clean bright low-contrast zones on left and centre suitable for dark website text. Bottom stone terrace. Match approved reference lighting and creamy-white stone/cool silver shadow balance. No dark shadows at central text area, people, furniture, paper grain, sepia, gradients or UI overlays. Output only the coherent architectural scene, edge-to-edge."
+}

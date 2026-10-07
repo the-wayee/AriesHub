@@ -74,15 +74,20 @@ test("discovery form and price filters remain in the URL with genuine empty stat
   await mockMemberSession(page);
   await mockReaderApi(page);
   await page.goto("/discover");
-  await page.getByLabel("内容形式筛选").selectOption("ARTICLE");
+  await expect(page.locator(".app-boot-overlay")).toHaveCount(0);
+  await page.getByRole("combobox", { name: "内容形式筛选" }).click();
+  await page.getByRole("option", { name: "学习文章", exact: true }).click();
   await expect(page).toHaveURL(/type=ARTICLE/);
   await expect(page.locator(".hub-content-card")).toHaveCount(1);
-  await page.getByLabel("阅读方式筛选").selectOption("CREDIT");
+  await page.getByRole("combobox", { name: "阅读方式筛选" }).click();
+  await page.getByRole("option", { name: "积分内容", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "没有找到匹配的内容" }),
   ).toBeVisible();
   await page.reload();
-  await expect(page.getByLabel("阅读方式筛选")).toHaveValue("CREDIT");
+  await expect(
+    page.getByRole("combobox", { name: "阅读方式筛选" }),
+  ).toContainText("积分内容");
 });
 test("a changed body version never restores the old percentage as current", async ({
   page,

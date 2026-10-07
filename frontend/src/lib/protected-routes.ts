@@ -5,7 +5,6 @@ const memberRoutes = [
   "/preview",
   "/community",
   "/my-content",
-  "/members",
   "/account",
   "/learn",
   "/checkout",

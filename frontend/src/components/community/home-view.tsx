@@ -1,5 +1,7 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
+import "@fontsource/noto-serif-sc/500.css";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { useRef, useState } from "react";
 import gsap from "gsap";
@@ -14,7 +16,7 @@ import { PublicationMetrics } from "../publication-metrics";
 import { PublicationInteractions } from "../publication-interactions";
 import { PageSkeleton } from "../page-skeleton";
 import { type MemberHome } from "@/lib/publication-reader";
-import { CommunityPreviewRail, CommunityPulse } from "./community-widgets";
+import { CommunityPreviewRail } from "./community-widgets";
 import { CommunityActivityFeed } from "./community-activity";
 import { Button } from "../ui/button";
 import {
@@ -24,6 +26,28 @@ import {
   PublicationProgressBadge,
 } from "../publication-badges";
 gsap.registerPlugin(useGSAP);
+
+/** 标题使用本地托管字体；导航和正文继续沿用社区的无衬线字体。 */
+function HomeGreeting() {
+  return (
+    <header className="home-explore-heading">
+      <div>
+        <div className="home-editorial-masthead">
+          <h1 aria-label="从一个想法，开始新的实践">
+            从一个想法，
+            <br />
+            开始新的实践
+          </h1>
+          <span className="home-editorial-note" aria-hidden="true">
+            Ideas
+            <br />
+            into practice.
+          </span>
+        </div>
+      </div>
+    </header>
+  );
+}
 
 /** 通栏首页：文章和阅读进度来自真实聚合接口，社区动态使用独立的跨领域接口。 */
 export function HomeView() {
@@ -119,165 +143,159 @@ export function HomeView() {
     : [];
   return (
     <>
-      <header className="home-explore-heading">
-        <div>
-          <h1>今天，继续你的探索</h1>
-          <p>
-            {user?.nickname ? `${user.nickname}，欢迎回来。` : "欢迎回来。"}
-          </p>
-        </div>
-        <nav className="home-topic-nav" aria-label="探索主题">
-          <Link href="/discover" className="home-topic-all">
-            全部内容
-          </Link>
-          {data?.categories.map((c) => (
-            <Link
-              key={c.id}
-              href={`/discover?category=${encodeURIComponent(c.slug)}`}
-            >
-              <i
-                aria-hidden="true"
-                className="category-color-marker"
-                style={{ backgroundColor: c.color }}
-              />
-              {c.name}
-            </Link>
-          ))}
-        </nav>
-      </header>
       {error ? (
-        <div className="hub-empty" role="alert">
-          <h2>首页暂时无法读取</h2>
-          <p>{error}</p>
-          <Button onClick={() => setRetry(retry + 1)}>重新加载</Button>
-        </div>
+        <>
+          <HomeGreeting />
+          <div className="hub-empty" role="alert">
+            <h2>首页暂时无法读取</h2>
+            <p>{error}</p>
+            <Button onClick={() => setRetry(retry + 1)}>重新加载</Button>
+          </div>
+        </>
       ) : !data ? (
-        <PageSkeleton variant="gallery" />
+        <>
+          <HomeGreeting />
+          <PageSkeleton variant="gallery" />
+        </>
       ) : (
         <div className="home-gallery-layout">
           <div className="home-gallery-main">
-            <div className="home-lead-grid">
-              {spotlight ? (
-                <section
-                  className="community-home-spotlight"
-                  aria-label="今日阅读"
-                >
-                  <Link
-                    className="community-spotlight-art"
-                    href={`/publications/${spotlight.publication.id}`}
+            <div className="home-editorial-spread">
+              {/* 背景只是氛围影像，不作为文章封面或数据；布局尺寸由真实内容决定。 */}
+              <Image
+                className="home-editorial-backdrop"
+                src="/editorial/home-architecture.webp"
+                alt=""
+                fill
+                preload
+                sizes="(max-width: 1000px) 100vw, 75vw"
+              />
+              <HomeGreeting />
+              <div className="home-lead-grid">
+                {spotlight ? (
+                  <section
+                    className="community-home-spotlight"
+                    aria-label="今日阅读"
                   >
-                    <PublishedCover
-                      key={spotlight.publication.coverFileId}
-                      item={spotlight}
-                      priority
-                    />
-                    {spotlight.publication.featured && (
-                      <PublicationFeaturedBadge />
-                    )}
-                  </Link>
-                  <div className="community-spotlight-copy">
-                    <h2 className="home-feature-label">
-                      {spotlight.publication.featured
-                        ? "主理人精选"
-                        : "最新内容"}
-                    </h2>
                     <Link
-                      className="home-feature-title"
+                      className="community-spotlight-art"
                       href={`/publications/${spotlight.publication.id}`}
                     >
-                      {spotlight.publication.title}
-                    </Link>
-                    <p>{spotlight.publication.summary}</p>
-                    <div className="home-feature-tags">
-                      <PublicationFormBadge
-                        minimal
-                        type={spotlight.publication.publicationType}
+                      <PublishedCover
+                        key={spotlight.publication.coverFileId}
+                        item={spotlight}
+                        priority
                       />
-                      <PublicationAccessBadge
-                        minimal
-                        access={spotlight.publication.accessType}
-                        credits={spotlight.publication.creditPrice}
+                      {spotlight.publication.featured && (
+                        <PublicationFeaturedBadge />
+                      )}
+                    </Link>
+                    <div className="community-spotlight-copy">
+                      <h2 className="home-feature-label">
+                        {spotlight.publication.featured
+                          ? "主理人精选"
+                          : "最新内容"}
+                      </h2>
+                      <Link
+                        className="home-feature-title"
+                        href={`/publications/${spotlight.publication.id}`}
+                      >
+                        {spotlight.publication.title}
+                      </Link>
+                      <p>{spotlight.publication.summary}</p>
+                      <div className="home-feature-tags">
+                        <PublicationFormBadge
+                          minimal
+                          type={spotlight.publication.publicationType}
+                        />
+                        <PublicationAccessBadge
+                          minimal
+                          access={spotlight.publication.accessType}
+                          credits={spotlight.publication.creditPrice}
+                        />
+                      </div>
+                      <small>
+                        {spotlight.publication.categoryName} ·{" "}
+                        {spotlight.publication.publishedAt.slice(0, 10)}
+                      </small>
+                      <Link
+                        className="hub-primary"
+                        href={`/publications/${spotlight.publication.id}`}
+                      >
+                        阅读文章 <ArrowRight />
+                      </Link>
+                      <PublicationMetrics
+                        id={spotlight.publication.id}
+                        initial={spotlight.interaction}
+                      />
+                      <PublicationInteractions
+                        id={spotlight.publication.id}
+                        initial={spotlight.interaction}
                       />
                     </div>
-                    <small>
-                      {spotlight.publication.categoryName} ·{" "}
-                      {spotlight.publication.publishedAt.slice(0, 10)}
-                    </small>
-                    <Link
-                      className="hub-primary"
-                      href={`/publications/${spotlight.publication.id}`}
-                    >
-                      阅读文章 <ArrowRight />
-                    </Link>
-                    <PublicationMetrics
-                      id={spotlight.publication.id}
-                      initial={spotlight.interaction}
-                    />
-                    <PublicationInteractions
-                      id={spotlight.publication.id}
-                      initial={spotlight.interaction}
-                    />
-                  </div>
-                </section>
-              ) : (
-                <section className="hub-empty">
-                  <h2>还没有已发布内容</h2>
-                  <p>新的实践与文章会出现在这里。</p>
-                </section>
-              )}
-              <div className="home-personal-column">
-                <section className="home-reading-widget" aria-label="个人阅读">
-                  <div className="hub-rail-heading">
-                    <h2>{reading ? "继续阅读" : "开始一次阅读"}</h2>
-                    <Link href="/my-content">
-                      阅读记录 <ArrowRight />
-                    </Link>
-                  </div>
-                  {reading ? (
-                    <>
-                      <Link
-                        className="home-reading-cover"
-                        href={`/publications/${reading.publication.id}${reading.progress?.percent === 100 ? "" : "?resume=1"}`}
-                      >
-                        <PublishedCover
-                          key={reading.publication.coverFileId}
-                          item={reading}
-                        />
+                  </section>
+                ) : (
+                  <section className="hub-empty">
+                    <h2>还没有已发布内容</h2>
+                    <p>新的实践与文章会出现在这里。</p>
+                  </section>
+                )}
+                <div className="home-personal-column">
+                  <section
+                    className="home-reading-widget"
+                    aria-label="个人阅读"
+                  >
+                    <div className="hub-rail-heading">
+                      <h2>{reading ? "继续阅读" : "开始一次阅读"}</h2>
+                      <Link href="/my-content">
+                        阅读记录 <ArrowRight />
                       </Link>
-                      <h3>{reading.publication.title}</h3>
-                      <progress
-                        className="publication-reading-bar"
-                        data-complete={reading.progress?.percent === 100}
-                        value={reading.progress?.percent ?? 0}
-                        max={100}
-                        aria-label="上次阅读进度"
-                      />
-                      <div className="home-reading-footer">
-                        <PublicationProgressBadge
-                          percent={reading.progress?.percent ?? 0}
-                          label="上次读到"
-                        />
+                    </div>
+                    {reading ? (
+                      <>
                         <Link
+                          className="home-reading-cover"
                           href={`/publications/${reading.publication.id}${reading.progress?.percent === 100 ? "" : "?resume=1"}`}
                         >
-                          {reading.progress?.percent === 100
-                            ? "再读一次"
-                            : "继续阅读"}{" "}
-                          <ArrowRight />
+                          <PublishedCover
+                            key={reading.publication.coverFileId}
+                            item={reading}
+                          />
+                        </Link>
+                        <h3>{reading.publication.title}</h3>
+                        <progress
+                          className="publication-reading-bar"
+                          data-complete={reading.progress?.percent === 100}
+                          value={reading.progress?.percent ?? 0}
+                          max={100}
+                          aria-label="上次阅读进度"
+                        />
+                        <div className="home-reading-footer">
+                          <PublicationProgressBadge
+                            percent={reading.progress?.percent ?? 0}
+                            label="上次读到"
+                          />
+                          <Link
+                            href={`/publications/${reading.publication.id}${reading.progress?.percent === 100 ? "" : "?resume=1"}`}
+                          >
+                            {reading.progress?.percent === 100
+                              ? "再读一次"
+                              : "继续阅读"}{" "}
+                            <ArrowRight />
+                          </Link>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="home-reading-empty">
+                        <BookOpen />
+                        <p>读一篇感兴趣的文章，下次从这里接着看。</p>
+                        <Link href="/discover">
+                          发现下一份实践 <ArrowRight />
                         </Link>
                       </div>
-                    </>
-                  ) : (
-                    <div className="home-reading-empty">
-                      <BookOpen />
-                      <p>读一篇感兴趣的文章，下次从这里接着看。</p>
-                      <Link href="/discover">
-                        发现下一份实践 <ArrowRight />
-                      </Link>
-                    </div>
-                  )}
-                </section>
-                <CommunityPulse />
+                    )}
+                  </section>
+                </div>
               </div>
             </div>
             <section
@@ -329,59 +347,61 @@ export function HomeView() {
                 <p className="hub-empty">内容正在整理，稍后再来看看。</p>
               )}
             </section>
-            {data.continueReading.length > 1 && (
-              <section className="home-more-reading">
-                <div className="hub-section-heading">
-                  <h2>你的阅读足迹</h2>
-                  <Link href="/my-content">
-                    全部记录 <ArrowRight />
-                  </Link>
-                </div>
-                <div className="home-content-gallery">
-                  {data.continueReading.slice(1).map((item) => (
-                    <PublishedContentCard
-                      minimal
-                      key={item.publication.id}
-                      item={item}
-                      categoryColor={
-                        data.categories.find(
-                          (category) =>
-                            category.slug === item.publication.categorySlug,
-                        )?.color
-                      }
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
           </div>
           <aside className="home-community-sidebar" aria-label="社区活动与推荐">
             <CommunityActivityFeed />
             <CommunityPreviewRail />
-            <section>
-              <div className="hub-rail-heading">
-                <h2 className="community-title community-title-green">
-                  探索主题
-                </h2>
-                <Link href="/discover">全部主题</Link>
-              </div>
-              {data.categories.map((c) => (
-                <Link
-                  key={c.id}
-                  className="reader-theme-link"
-                  href={`/discover?category=${encodeURIComponent(c.slug)}`}
-                >
-                  <i
-                    aria-hidden="true"
-                    className="category-color-marker"
-                    style={{ backgroundColor: c.color }}
-                  />
-                  {c.name}
-                  <span>{c.publicationCount} 篇</span>
-                </Link>
-              ))}
-            </section>
           </aside>
+          {data.continueReading.length > 1 && (
+            <section className="home-more-reading" aria-label="你的阅读足迹">
+              <div className="home-history-heading">
+                <BookOpen size={20} aria-hidden="true" />
+                <h2>你的阅读足迹</h2>
+                <Link href="/my-content">
+                  全部记录 <ArrowRight size={15} />
+                </Link>
+              </div>
+              {/* 足迹是阅读入口，采用紧凑横排；跨满布局，避免为已结束的侧栏保留空列。 */}
+              <div className="home-history-grid">
+                {data.continueReading.slice(1).map((item) => (
+                  <Link
+                    className="home-history-entry"
+                    key={item.publication.id}
+                    href={`/publications/${item.publication.id}${item.progress?.percent === 100 ? "" : "?resume=1"}`}
+                  >
+                    <div className="home-history-cover">
+                      <PublishedCover item={item} />
+                    </div>
+                    <div className="home-history-copy">
+                      <span className="home-history-category">
+                        {item.publication.categoryName}
+                      </span>
+                      <h3>{item.publication.title}</h3>
+                      <progress
+                        className="publication-reading-bar"
+                        value={item.progress?.percent ?? 0}
+                        max={100}
+                        data-complete={item.progress?.percent === 100}
+                        aria-label={`${item.publication.title}的阅读进度`}
+                      />
+                      <div className="home-history-footer">
+                        <PublicationProgressBadge
+                          percent={item.progress?.percent ?? 0}
+                          label="上次读到"
+                        />
+                        <span className="home-history-open">
+                          {item.progress?.percent === 100
+                            ? "再读一次"
+                            : "接着读"}
+                          <ArrowRight size={15} aria-hidden="true" />
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
         </div>
       )}
     </>

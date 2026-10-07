@@ -1,4 +1,5 @@
 import { PublicationOutline } from "./publication-outline";
+import { PublicationBackLink } from "./publication-back-link";
 import { PublicationComments } from "./publication-comments";
 import { PublicationAttachments } from "./publication-attachments";
 import { ReadingProgressTracker } from "./reading-progress";
@@ -32,9 +33,7 @@ export function PublicationDetailView({
   const locked = article.accessType === "CREDIT" && !content && !contentError;
   return (
     <article className="hub-article-detail published-article">
-      <Link className="hub-back" href="/discover">
-        ← 返回探索
-      </Link>
+      <PublicationBackLink />
       <header className="hub-detail-heading">
         <p className="hub-kicker">
           {article.categoryName} /{" "}

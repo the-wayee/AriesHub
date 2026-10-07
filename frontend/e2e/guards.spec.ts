@@ -9,7 +9,6 @@ test("guest requests are redirected before member HTML is rendered", async ({
     "/home",
     "/community",
     "/my-content",
-    "/members",
     "/account",
     "/learn/1",
     "/checkout/1",

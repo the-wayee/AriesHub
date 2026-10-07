@@ -596,9 +596,6 @@
   .hub-header-actions .signed-in-nav {
     display: flex;
   }
-  .profile-shell .hub-header {
-    height: 128px;
-  }
   .profile-heading {
     margin-bottom: 26px;
   }

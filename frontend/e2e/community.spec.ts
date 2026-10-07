@@ -9,12 +9,12 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => localStorage.clear());
 });
 
-test("member home combines real articles with labelled community previews", async ({
+test("member home combines real articles with community activity", async ({
   page,
 }) => {
   await page.goto("/home");
   await expect(
-    page.getByRole("heading", { name: "今天，继续你的探索" }),
+    page.getByRole("heading", { name: "从一个想法，开始新的实践" }),
   ).toBeVisible();
   await expect(page.getByRole("heading", { name: "主理人精选" })).toBeVisible();
   await expect(
@@ -25,7 +25,8 @@ test("member home combines real articles with labelled community previews", asyn
   ).toHaveCount(0);
   await expect(page.getByText("Aries 刚发布了一篇文章")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "社区的此刻" })).toBeVisible();
-  await expect(page.getByText("动态示例", { exact: true })).toBeVisible();
+  // 动态已使用真实接口；尚未接入的讨论推荐保留示例标记。
+  await expect(page.getByText("动态示例", { exact: true })).toHaveCount(0);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -37,7 +38,7 @@ test("community widget filters and answer preview remain distinct from publicati
   page,
 }, testInfo) => {
   await page.goto("/home");
-  await expect(page.getByRole("heading", { name: "遇见同路人" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "遇见同路人" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "大家在聊" })).toBeVisible();
   await page.getByRole("button", { name: "评论与回复", exact: true }).click();
   await expect(page.locator(".community-activity-list article")).toHaveCount(2);

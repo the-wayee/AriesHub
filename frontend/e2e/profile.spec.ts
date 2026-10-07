@@ -52,8 +52,9 @@ test("profile saves nickname and signature, updates badge, and survives reload",
   await page.emulateMedia({ reducedMotion: "reduce" });
   await memberSession(page);
   await page.goto("/account");
+  await expect(page.locator(".app-boot-overlay")).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "社区导航" })).toHaveCount(
-    0,
+    1,
   );
   await expect(
     page.getByRole("heading", { name: "林小雨", exact: true }),
@@ -105,6 +106,7 @@ test("avatar uploads before profile save and can be removed", async ({
     });
   });
   await page.goto("/account");
+  await expect(page.locator(".app-boot-overlay")).toHaveCount(0);
   await page.getByLabel("选择头像图片").setInputFiles({
     name: "avatar.png",
     mimeType: "image/png",
@@ -136,6 +138,7 @@ test("upload failures preserve edits and invalid file types are rejected", async
     }),
   );
   await page.goto("/account");
+  await expect(page.locator(".app-boot-overlay")).toHaveCount(0);
   await page.getByLabel("选择头像图片").setInputFiles({
     name: "avatar.svg",
     mimeType: "image/svg+xml",
@@ -205,6 +208,7 @@ test("account service errors show retry instead of treating member as logged out
     }),
   );
   await page.goto("/account");
+  await expect(page.locator(".app-boot-overlay")).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: "暂时无法验证登录状态" }),
   ).toBeVisible();

@@ -39,7 +39,6 @@ export function RouteShell({
     "/checkout",
     "/community",
     "/my-content",
-    "/members",
     "/account",
   ].some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
   let content: ReactNode;

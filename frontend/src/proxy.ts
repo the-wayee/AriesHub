@@ -24,7 +24,6 @@ export const config = {
     "/preview/:path*",
     "/community/:path*",
     "/my-content/:path*",
-    "/members/:path*",
     "/account/:path*",
     "/learn/:path*",
     "/checkout/:path*",

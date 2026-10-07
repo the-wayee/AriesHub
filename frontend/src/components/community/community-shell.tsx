@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  Asterisk,
-  Bell,
-  Bookmark,
-  Compass,
-  MessageCircle,
-  Search,
-  Plus,
-} from "lucide-react";
+import { Asterisk, Bell, Search, Plus } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { type ReactNode } from "react";
@@ -17,20 +9,27 @@ import { AuthNav } from "@/components/auth-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuthSession } from "@/components/auth-session";
+import {
+  rememberPublicationEntry,
+  usePublicationReturn,
+} from "@/lib/publication-navigation";
 
 const navigation = [
-  { href: "/home", label: "首页", icon: Compass },
-  { href: "/discover", label: "探索", icon: Search },
-  { href: "/community", label: "讨论", icon: MessageCircle },
-  { href: "/my-content", label: "我的空间", icon: Bookmark },
+  { href: "/home", label: "首页" },
+  { href: "/discover", label: "探索" },
+  { href: "/community", label: "讨论" },
+  { href: "/my-content", label: "我的空间" },
 ];
 
 export function CommunityShell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const { user } = useAuthSession();
   const home = path === "/home";
+  const returnTarget = usePublicationReturn();
 
   const selected = (href: string) => {
+    if (/^\/publications\/[1-9]\d*$/.test(path))
+      return href === returnTarget.section;
     if (href === "/home") return path === "/home";
     if (href === "/discover")
       return ["/discover", "/publications", "/learn", "/checkout"].some(
@@ -41,7 +40,8 @@ export function CommunityShell({ children }: { children: ReactNode }) {
 
   return (
     <div
-      className={`cosmos-site community-hub${home ? " community-home-shell" : ""}${path === "/account" ? " profile-shell" : ""}`}
+      onClickCapture={rememberPublicationEntry}
+      className={`cosmos-site community-hub${home ? " community-home-shell" : ""}${path === "/discover" ? " community-discover-shell" : ""}${path === "/account" ? " profile-shell" : ""}`}
     >
       <a className="skip-link" href="#main">
         跳到主要内容
@@ -51,19 +51,17 @@ export function CommunityShell({ children }: { children: ReactNode }) {
           <Asterisk aria-hidden="true" />
           AriesHub
         </Link>
-        {home && (
-          <nav className="home-header-nav" aria-label="社区导航">
-            {navigation.map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                aria-current={selected(href) ? "page" : undefined}
-              >
-                {label}
-              </Link>
-            ))}
-          </nav>
-        )}
+        <nav className="home-header-nav" aria-label="社区导航">
+          {navigation.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              aria-current={selected(href) ? "page" : undefined}
+            >
+              {label}
+            </Link>
+          ))}
+        </nav>
         <form action="/discover" className="hub-island" role="search">
           <span className="hub-live-dot" aria-hidden="true" />
           <Input
@@ -77,39 +75,21 @@ export function CommunityShell({ children }: { children: ReactNode }) {
           </Button>
         </form>
         <div className="hub-header-actions">
-          {home && (
-            <Link
-              className="home-create-link"
-              href={
-                user?.role === "ADMIN"
-                  ? "/admin/publications/new"
-                  : "/community"
-              }
-            >
-              <Plus aria-hidden="true" />
-              {user?.role === "ADMIN" ? "创建内容" : "参与讨论"}
-            </Link>
-          )}
+          <Link
+            className="home-create-link"
+            href={
+              user?.role === "ADMIN" ? "/admin/publications/new" : "/community"
+            }
+          >
+            <Plus aria-hidden="true" />
+            {user?.role === "ADMIN" ? "创建内容" : "参与讨论"}
+          </Link>
           <Button variant="ghost" size="icon" aria-label="通知预览" disabled>
             <Bell />
           </Button>
           <AuthNav />
         </div>
       </header>
-      {path !== "/account" && !home && (
-        <nav className="hub-nav" aria-label="社区导航">
-          {navigation.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              aria-current={selected(href) ? "page" : undefined}
-            >
-              <Icon aria-hidden="true" />
-              {label}
-            </Link>
-          ))}
-        </nav>
-      )}
       <main id="main" className="hub-main">
         <PageMotion>{children}</PageMotion>
       </main>

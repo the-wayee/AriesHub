@@ -54,7 +54,6 @@ test("concept routes render on desktop and mobile", async ({ page }) => {
     "/home",
     "/discover",
     "/community",
-    "/members",
     "/my-content",
     "/studio",
   ]) {

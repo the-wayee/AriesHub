@@ -183,9 +183,6 @@ export function DiscussionView({ about }: { about?: string }) {
           <Link href={`/preview/publications/${conceptPublications[0].id}`}>
             先看一篇实战案例 <ArrowRight />
           </Link>
-          <Link href="/members">
-            认识同路人 <ArrowRight />
-          </Link>
         </aside>
       </div>
     </>
