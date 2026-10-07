@@ -9,6 +9,8 @@ import {
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import ImageExtension from "@tiptap/extension-image";
+import { TableKit } from "@tiptap/extension-table";
+import { TaskList, TaskItem } from "@tiptap/extension-list";
 import { Markdown as MarkdownExtension } from "@tiptap/markdown";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -93,6 +95,10 @@ export function RichEditor({
         link: { openOnClick: false, protocols: ["media"] },
       }),
       ContentImage,
+      // 与阅读器的 GFM 能力一致，避免打开、修改稿件时丢失表格与任务状态。
+      TableKit,
+      TaskList,
+      TaskItem.configure({ nested: true }),
       MarkdownExtension,
     ],
     content: value,

@@ -1,90 +1,100 @@
 "use client";
-
-import { Bookmark, ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { conceptPublications } from "@/lib/concept-publications";
-import { ContentCard } from "./content-card";
-import { useCommunityState } from "./local-state";
-
+import { Button } from "../ui/button";
+import { useReaderResource } from "../use-reader-resource";
+import { PublishedContentCard } from "../published-content-card";
+import { PageSkeleton } from "../page-skeleton";
+import type { ReaderPage } from "@/lib/publication-reader";
+/** 我的空间读取当前会话，不从本地原型迁移无法验证的收藏与历史。 */
 export function LibraryView() {
-  const { state } = useCommunityState();
-  const [tab, setTab] = useState<"saved" | "history" | "liked">("saved");
-  const items = conceptPublications.filter((item) =>
-    tab === "saved"
-      ? state.saved.includes(item.slug)
-      : tab === "liked"
-        ? state.liked.includes(item.slug)
-        : state.history[item.slug] !== undefined,
+  const [tab, setTab] = useState("BOOKMARK");
+  const [page, setPage] = useState(1);
+  const [retry, setRetry] = useState(0);
+  useEffect(() => {
+    const refresh = () => setRetry((n) => n + 1);
+    window.addEventListener("arieshub:publication", refresh);
+    return () => window.removeEventListener("arieshub:publication", refresh);
+  }, []);
+  const { data, error } = useReaderResource<ReaderPage>(
+    `/api/v1/users/me/library?kind=${tab}&page=${page}&size=9`,
+    retry,
   );
   return (
     <>
-      <header className="hub-page-heading hub-enter">
+      <header className="hub-page-heading">
         <p className="hub-kicker">YOUR SPACE</p>
         <h1>
           留住灵感，
           <br />
           <span>继续探索。</span>
         </h1>
-        <p>收藏过的内容，走到一半的思路，都在这里。</p>
+        <p>收藏、点赞和阅读记录随账号保存。</p>
       </header>
       <div className="hub-filterbar">
         <div className="hub-pills">
-          {(
-            [
-              ["saved", "我的收藏", state.saved.length],
-              ["history", "阅读记录", Object.keys(state.history).length],
-              ["liked", "我的点赞", state.liked.length],
-            ] as const
-          ).map(([id, label, count]) => (
+          {[
+            ["BOOKMARK", "我的收藏"],
+            ["HISTORY", "阅读记录"],
+            ["LIKE", "我的点赞"],
+          ].map(([id, label]) => (
             <Button
               key={id}
               variant="ghost"
               aria-pressed={tab === id}
-              onClick={() => setTab(id)}
+              onClick={() => {
+                setTab(id);
+                setPage(1);
+              }}
             >
               {label}
-              <small>{count}</small>
             </Button>
           ))}
         </div>
+        <Button variant="ghost" onClick={() => setRetry(retry + 1)}>
+          刷新
+        </Button>
       </div>
-      {items.length ? (
-        <div className="hub-discover-grid">
-          {items.map((item) => (
-            <div key={item.slug}>
-              <ContentCard
-                item={item}
-                index={conceptPublications.indexOf(item)}
-              />
-              {tab === "history" && (
-                <Link
-                  className="hub-inline-link"
-                  href={`/learn/${item.slug}?chapter=${state.history[item.slug]}`}
-                >
-                  继续第 {state.history[item.slug] + 1} 节 <ArrowRight />
-                </Link>
-              )}
-            </div>
-          ))}
+      {error ? (
+        <div className="hub-empty" role="alert">
+          <p>{error}</p>
+          <Button onClick={() => setRetry(retry + 1)}>重试</Button>
         </div>
+      ) : !data ? (
+        <PageSkeleton variant="gallery" />
+      ) : data.items.length ? (
+        <>
+          <div className="hub-discover-grid">
+            {data.items.map((p) => (
+              <PublishedContentCard key={p.publication.id} item={p} />
+            ))}
+          </div>
+          <div className="reader-pagination">
+            <Button disabled={page === 1} onClick={() => setPage(page - 1)}>
+              上一页
+            </Button>
+            <span>
+              第 {page} 页 · 共 {data.total} 篇
+            </span>
+            <Button
+              disabled={page >= data.totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              下一页
+            </Button>
+          </div>
+        </>
       ) : (
         <div className="hub-empty">
-          <Bookmark />
           <h2>
-            {tab === "history"
-              ? "下一次探索，从这里开始"
-              : "给喜欢的内容，留一个位置"}
+            {tab === "HISTORY" ? "还没有阅读记录" : "给喜欢的内容，留一个位置"}
           </h2>
           <p>
-            {tab === "history"
-              ? "打开一篇内容开始阅读，这里会记住你的章节。"
-              : "在内容卡片上点一下收藏，慢慢建立自己的灵感空间。"}
+            {tab === "HISTORY"
+              ? "打开免费完整正文开始阅读，位置会随账号保存。"
+              : "在内容卡片上收藏或点赞，建立自己的内容空间。"}
           </p>
-          <Link href="/discover">
-            去发现 <ArrowRight />
-          </Link>
+          <Link href="/discover">去发现 →</Link>
         </div>
       )}
     </>

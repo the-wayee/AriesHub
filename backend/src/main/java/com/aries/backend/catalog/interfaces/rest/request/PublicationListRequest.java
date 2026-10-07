@@ -1,6 +1,7 @@
 package com.aries.backend.catalog.interfaces.rest.request;
 
 import com.aries.backend.catalog.application.query.PublicationSearchQuery;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
@@ -13,9 +14,12 @@ public record PublicationListRequest(
         @Size(max = 120) String q,
         @Pattern(regexp = "[a-z0-9-]{0,80}") String category,
         @Pattern(regexp = "CASE_STUDY|ARTICLE|COURSE|^$") String type,
-        @Pattern(regexp = "FREE|CREDIT|^$") String access) {
+        @Pattern(regexp = "FREE|CREDIT|^$") String access,
+        @Pattern(regexp = "LATEST|FEATURED") String sort,
+        Boolean featured) {
 
     public PublicationListRequest {
+        sort = sort == null ? "FEATURED" : sort;
         page = page == null ? 1 : page;
         size = size == null ? 9 : size;
         q = q == null ? "" : q.trim();
@@ -26,6 +30,6 @@ public record PublicationListRequest(
 
     /** HTTP 参数校验结束后，转换成不依赖 Web 框架的应用查询对象。 */
     public PublicationSearchQuery toQuery() {
-        return new PublicationSearchQuery(page, size, q, category, type, access);
+        return new PublicationSearchQuery(page, size, q, category, type, access, sort, featured);
     }
 }

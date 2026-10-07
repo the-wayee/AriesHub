@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -27,7 +28,7 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
                 "previewMarkdown":"预览","fullMarkdown":"完整正文","requirements":"",
                 "deliverables":"","version":"1.0"}
                 """;
-        var first =
+        MvcResult first =
                 mvc.perform(
                                 post("/api/v1/admin/publications")
                                         .cookie(admin)
@@ -35,7 +36,7 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
                                         .content(body))
                         .andExpect(status().isCreated())
                         .andReturn();
-        var second =
+        MvcResult second =
                 mvc.perform(
                                 post("/api/v1/admin/publications")
                                         .cookie(admin)
@@ -97,7 +98,7 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(2)));
 
-        var created =
+        MvcResult created =
                 mvc.perform(
                                 post("/api/v1/admin/publications")
                                         .cookie(admin)

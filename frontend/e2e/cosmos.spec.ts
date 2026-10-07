@@ -1,6 +1,8 @@
+import { mockReaderApi } from "./reader-api";
 import { fulfillResult } from "./api-result";
 import { test, expect } from "@playwright/test";
 test("landing discovery, carousel and local assets", async ({ page }) => {
+  await mockReaderApi(page);
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
     "与同路人一起",
@@ -10,9 +12,9 @@ test("landing discovery, carousel and local assets", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(page.getByText("选择你的下一站")).toHaveCount(0);
   await page.getByRole("button", { name: "下一个实践方向" }).click();
-  await expect(
-    page.getByRole("button", { name: "内容创作", exact: true }),
-  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".reader-landing-gallery h2").first()).toHaveText(
+    "AI 演示实践",
+  );
   // Offscreen lazy images need not be decoded; verify every asset and visible icons.
   const sources = await page
     .locator(".brand-tile img")

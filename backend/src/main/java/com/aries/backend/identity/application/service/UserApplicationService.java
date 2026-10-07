@@ -44,7 +44,8 @@ public class UserApplicationService {
             throw new BusinessException(INVALID_AVATAR);
         storage.checkUploadRate(userId);
         try {
-            var stream = new PushbackInputStream(content, FileSignatures.HEADER_BYTES);
+            PushbackInputStream stream =
+                    new PushbackInputStream(content, FileSignatures.HEADER_BYTES);
             byte[] header = stream.readNBytes(FileSignatures.HEADER_BYTES);
             if (!FileSignatures.matchesImage(type, header))
                 throw new BusinessException(INVALID_AVATAR);
@@ -56,7 +57,7 @@ public class UserApplicationService {
     }
 
     private void verifyOwnership(UUID fileId, long userId) {
-        var file = storage.metadata(fileId);
+        UserAvatarStorage.File file = storage.metadata(fileId);
         if (file.ownerId() != userId
                 || !UserAvatarStorage.AVATAR_PURPOSE.equals(file.purpose())
                 || !TYPES.contains(file.contentType()))

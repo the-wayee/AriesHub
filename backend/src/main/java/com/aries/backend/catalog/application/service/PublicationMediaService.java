@@ -10,6 +10,7 @@ import com.aries.backend.catalog.application.command.SavePublicationCommand;
 import com.aries.backend.catalog.application.port.PublicationAssetRepository;
 import com.aries.backend.catalog.application.port.PublicationMediaPort;
 import com.aries.backend.catalog.application.port.PublicationUploadProgress;
+import com.aries.backend.catalog.domain.model.Publication;
 import com.aries.backend.catalog.domain.model.PublicationMediaKind;
 import com.aries.backend.catalog.domain.repository.PublicationRepository;
 import com.aries.backend.shared.application.exception.BusinessException;
@@ -30,6 +31,7 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** 内容素材用例：负责上传策略、文章绑定与公开/付费授权，文件工具只负责存取。 */
@@ -78,7 +80,8 @@ public class PublicationMediaService {
         storage.checkRate(userId);
         if (uploadId != null) progress.begin(userId, uploadId, size);
         try {
-            var content = new PushbackInputStream(source, FileSignatures.HEADER_BYTES);
+            PushbackInputStream content =
+                    new PushbackInputStream(source, FileSignatures.HEADER_BYTES);
             byte[] header = content.readNBytes(FileSignatures.HEADER_BYTES);
             // 附件通过扩展名白名单和 attachment 下载处置控制；不会作为可执行内容内联。
             boolean valid =
@@ -88,7 +91,7 @@ public class PublicationMediaService {
                                     && FileSignatures.matchesVideo(type, header));
             if (!valid) throw new BusinessException(INVALID_MEDIA);
             content.unread(header);
-            var asset =
+            PublicationMediaPort.Asset asset =
                     uploadId == null
                             ? storage.upload(
                                     userId, mediaKind.name(), filename, type, size, content)
@@ -101,7 +104,7 @@ public class PublicationMediaService {
                                     content,
                                     bytes -> progress.confirmed(userId, uploadId, bytes, size));
             assets.save(asset);
-            var url = storage.url(asset);
+            PublicationMediaPort.SignedUrl url = storage.url(asset);
             if (uploadId != null) progress.completed(userId, uploadId, size);
             return new Uploaded(
                     asset.id(),
@@ -139,7 +142,8 @@ public class PublicationMediaService {
     public void validateReferences(long publicationId, SavePublicationCommand command) {
         long userId = storage.currentUserId();
         for (String id : referencedIds(command)) {
-            var asset = assets.find(id).orElseThrow(() -> new BusinessException(MEDIA_NOT_FOUND));
+            PublicationMediaPort.Asset asset =
+                    assets.find(id).orElseThrow(() -> new BusinessException(MEDIA_NOT_FOUND));
             if (asset.ownerId() != userId && !assets.bound(publicationId, id))
                 throw new BusinessException(MEDIA_NOT_FOUND);
             if (id.equals(command.coverFileId()) && !parseKind(asset.kind()).isImage())
@@ -159,7 +163,7 @@ public class PublicationMediaService {
     /** 签名签发前检查文章状态和绑定；仅封面、公开预览及免费正文允许匿名读取。 */
     @Transactional(readOnly = true)
     public PublicationMediaPort.SignedUrl publicUrl(long publicationId, String id) {
-        var publication =
+        Publication publication =
                 publications
                         .findById(publicationId)
                         .orElseThrow(() -> new BusinessException(PUBLICATION_NOT_FOUND));
@@ -201,13 +205,13 @@ public class PublicationMediaService {
     }
 
     private Set<String> referencedIds(SavePublicationCommand command) {
-        var result = references(command.fullMarkdown());
+        Set<String> result = references(command.fullMarkdown());
         result.addAll(publicIds(command));
         return result;
     }
 
     private Set<String> publicIds(SavePublicationCommand command) {
-        var result = references(command.previewMarkdown());
+        Set<String> result = references(command.previewMarkdown());
         if (command.coverFileId() != null) result.add(command.coverFileId());
         return result;
     }
@@ -215,7 +219,7 @@ public class PublicationMediaService {
     private Set<String> references(String markdown) {
         Set<String> result = new LinkedHashSet<>();
         if (markdown != null) {
-            var matcher = MEDIA_REFERENCE.matcher(markdown);
+            Matcher matcher = MEDIA_REFERENCE.matcher(markdown);
             while (matcher.find()) result.add(matcher.group(1));
         }
         return result;

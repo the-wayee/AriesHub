@@ -14,6 +14,7 @@
         <if test="query.category != ''">AND cat.slug = #{query.category}</if>
         <if test="query.type != ''">AND p.publication_type = #{query.type}</if>
         <if test="query.access != ''">AND p.access_type = #{query.access}</if>
+        <if test="query.featured != null">AND p.featured = #{query.featured}</if>
         <if test="query.q != ''">
             AND (p.title ILIKE #{query.keyword} ESCAPE '!' OR p.summary ILIKE #{query.keyword} ESCAPE '!')
         </if>
@@ -28,7 +29,7 @@
         SELECT <include refid="publicColumns"/>
         FROM publications p JOIN categories cat ON cat.id = p.category_id
         WHERE cat.is_deleted = false AND <include refid="filters"/>
-        ORDER BY p.featured DESC, p.published_at DESC, p.id DESC LIMIT #{query.size} OFFSET #{query.offset}
+        ORDER BY <if test="query.sort == 'FEATURED'">p.featured DESC,</if> p.published_at DESC, p.id DESC LIMIT #{query.size} OFFSET #{query.offset}
     </select>
     <select id="count" resultType="long">
         SELECT count(*) FROM publications p JOIN categories cat ON cat.id = p.category_id

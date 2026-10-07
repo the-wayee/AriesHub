@@ -4,24 +4,29 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import software.amazon.awssdk.auth.credentials.*;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.S3Configuration;
+import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 
 class S3ObjectStorageTest {
     @Test
     void multipartProgressCountsOnlyAcknowledgedPartsAndCompletesInOrder() {
-        var client = mock(S3Client.class);
-        var storage = new S3ObjectStorage(client, mock(S3Presigner.class), "test-bucket");
+        S3Client client = mock(S3Client.class);
+        S3ObjectStorage storage =
+                new S3ObjectStorage(client, mock(S3Presigner.class), "test-bucket");
         int partBytes = 5 * 1024 * 1024;
         byte[] bytes = new byte[partBytes + 123];
-        var progress = new java.util.ArrayList<Long>();
+        List<Long> progress = new java.util.ArrayList<Long>();
         when(client.createMultipartUpload(
                         any(
                                 software.amazon.awssdk.services.s3.model
@@ -36,7 +41,7 @@ class S3ObjectStorageTest {
                         any(software.amazon.awssdk.core.sync.RequestBody.class)))
                 .thenAnswer(
                         call -> {
-                            var request =
+                            UploadPartRequest request =
                                     (software.amazon.awssdk.services.s3.model.UploadPartRequest)
                                             call.getArgument(0);
                             // 下一片尚未得到 OSS 响应时，不得提前增加进度。
@@ -55,7 +60,7 @@ class S3ObjectStorageTest {
                 progress::add);
         assertThat(progress)
                 .containsExactly(0L, (long) partBytes, (long) partBytes, (long) bytes.length);
-        var complete =
+        ArgumentCaptor<CompleteMultipartUploadRequest> complete =
                 org.mockito.ArgumentCaptor.forClass(
                         software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest
                                 .class);
@@ -72,8 +77,9 @@ class S3ObjectStorageTest {
 
     @Test
     void failedPartDoesNotAdvanceProgressAndAbortsOssMultipart() {
-        var client = mock(S3Client.class);
-        var storage = new S3ObjectStorage(client, mock(S3Presigner.class), "test-bucket");
+        S3Client client = mock(S3Client.class);
+        S3ObjectStorage storage =
+                new S3ObjectStorage(client, mock(S3Presigner.class), "test-bucket");
         when(client.createMultipartUpload(
                         any(
                                 software.amazon.awssdk.services.s3.model
@@ -89,7 +95,7 @@ class S3ObjectStorageTest {
                 .thenThrow(
                         software.amazon.awssdk.core.exception.SdkClientException.create(
                                 "test failure"));
-        var progress = new java.util.ArrayList<Long>();
+        List<Long> progress = new java.util.ArrayList<Long>();
         byte[] bytes = new byte[6 * 1024 * 1024];
         assertThatThrownBy(
                         () ->
@@ -116,7 +122,7 @@ class S3ObjectStorageTest {
 
     @Test
     void ossDownloadUsesVirtualHostAndV4Signature() {
-        try (var presigner =
+        try (S3Presigner presigner =
                 S3Presigner.builder()
                         .endpointOverride(URI.create("https://s3.oss-cn-hangzhou.aliyuncs.com"))
                         .region(Region.AWS_GLOBAL)
@@ -129,7 +135,8 @@ class S3ObjectStorageTest {
                                         .chunkedEncodingEnabled(false)
                                         .build())
                         .build()) {
-            var storage = new S3ObjectStorage(mock(S3Client.class), presigner, "arieshub-test");
+            S3ObjectStorage storage =
+                    new S3ObjectStorage(mock(S3Client.class), presigner, "arieshub-test");
             URI url =
                     URI.create(
                             storage.downloadUrl(
@@ -153,7 +160,7 @@ class S3ObjectStorageTest {
 
     @Test
     void enabledConfigurationRequiresCredentialsAndPropertiesRedactSecrets() {
-        var config =
+        S3StorageProperties config =
                 new S3StorageProperties(
                         true,
                         URI.create("https://s3.oss-cn-hangzhou.aliyuncs.com"),

@@ -76,6 +76,11 @@ public class FileStorageService {
         return files.findById(id).orElseThrow(() -> new BusinessException(FILE_NOT_FOUND));
     }
 
+    /** 批量元数据只读工具，调用业务必须先完成用途与公开性校验。 */
+    public java.util.List<StoredFile> metadata(java.util.List<UUID> ids) {
+        return files.findByIds(ids);
+    }
+
     /** 仅生成签名；调用方必须先授权。 */
     public Download inlineUrl(StoredFile file) {
         return new Download(

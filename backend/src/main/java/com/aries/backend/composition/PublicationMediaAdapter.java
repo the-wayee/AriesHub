@@ -48,7 +48,7 @@ public class PublicationMediaAdapter implements PublicationMediaPort {
             long size,
             InputStream content,
             java.util.function.LongConsumer confirmedBytes) {
-        var file =
+        StoredFile file =
                 files.upload(
                         userId,
                         StoredFile.Purpose.ATTACHMENT,
@@ -61,8 +61,8 @@ public class PublicationMediaAdapter implements PublicationMediaPort {
     }
 
     public SignedUrl url(Asset asset) {
-        var file = files.metadata(UUID.fromString(asset.id()));
-        var signed =
+        StoredFile file = files.metadata(UUID.fromString(asset.id()));
+        FileStorageService.Download signed =
                 PublicationMediaKind.ATTACHMENT.name().equals(asset.kind())
                         ? files.downloadUrl(file)
                         : files.inlineUrl(file);

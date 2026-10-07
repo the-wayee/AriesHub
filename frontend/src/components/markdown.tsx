@@ -1,6 +1,8 @@
 "use client";
 import ReactMarkdown, { defaultUrlTransform } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { PublicationMedia } from "./publication-media";
+/** 正文支持表格与任务清单；仍禁用原始 HTML，素材经业务接口读取。 */
 export function Markdown({
   children,
   admin = false,
@@ -14,6 +16,7 @@ export function Markdown({
     <div className="prose">
       <ReactMarkdown
         skipHtml
+        remarkPlugins={[remarkGfm]}
         urlTransform={(url) =>
           url.startsWith("media:") ? url : defaultUrlTransform(url)
         }

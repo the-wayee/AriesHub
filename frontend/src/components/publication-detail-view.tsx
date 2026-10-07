@@ -1,3 +1,5 @@
+import { ReadingProgressTracker } from "./reading-progress";
+import { PublicationInteractions } from "./publication-interactions";
 import Link from "next/link";
 import { Markdown } from "./markdown";
 import { PublicationMedia } from "./publication-media";
@@ -45,6 +47,7 @@ export function PublicationDetailView({
           </span>
           <span>版本 {preview.version}</span>
         </div>
+        <PublicationInteractions id={article.id} />
       </header>
       {article.coverFileId && (
         <div className="published-cover">
@@ -61,7 +64,9 @@ export function PublicationDetailView({
           aria-label={content ? "完整正文" : "公开预览"}
         >
           {content ? (
-            <Markdown publicationId={article.id}>{content.markdown}</Markdown>
+            <ReadingProgressTracker id={article.id} version={content.version}>
+              <Markdown publicationId={article.id}>{content.markdown}</Markdown>
+            </ReadingProgressTracker>
           ) : (
             <>
               <h2>公开预览</h2>

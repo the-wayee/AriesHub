@@ -1,218 +1,263 @@
 "use client";
-
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Check, Send, Sparkles } from "lucide-react";
+import { ArrowRight, BookOpen } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { conceptPublications } from "@/lib/concept-publications";
-import { ContentCard } from "./content-card";
-import { useCommunityState, type LocalTopic } from "./local-state";
-
-const seedTopic: LocalTopic = {
-  id: "preview-first-version",
-  tag: "围绕实战案例",
-  title: "第一版应该保留哪些功能？",
-  body: "怎样才能既完整，又不过度设计？",
-  replies: [
-    "陈默：先保留一条能走通的主路径。",
-    "Aries：把暂时不会改变结果的功能先放下。",
-  ],
-};
-
+import { useAuthSession } from "../auth-session";
+import { useReaderResource } from "../use-reader-resource";
+import {
+  PublishedContentCard,
+  PublishedCover,
+} from "../published-content-card";
+import { PublicationInteractions } from "../publication-interactions";
+import { PageSkeleton } from "../page-skeleton";
+import { CONTENT_FORM_LABELS, type MemberHome } from "@/lib/publication-reader";
+import {
+  CommunityActivityFeed,
+  CommunityPreviewRail,
+  CommunityPulse,
+} from "./community-widgets";
+import { Button } from "../ui/button";
+/** 通栏首页：文章和阅读进度来自真实聚合接口，社区示例独立标识。 */
 export function HomeView() {
-  const { state, reply } = useCommunityState();
-  const [message, setMessage] = useState("");
-  const topic =
-    state.topics.find((item) => item.id === seedTopic.id) || seedTopic;
-  const featured = conceptPublications[0];
-  const chapter = state.history[featured.slug] ?? 1;
-
-  function sendReply() {
-    const value = message.trim();
-    if (!value) return;
-    reply(topic, `我：${value}`);
-    setMessage("");
-  }
-
+  const { user } = useAuthSession();
+  const [retry, setRetry] = useState(0);
+  const [selection, setSelection] = useState<"featured" | "latest">("featured");
+  const { data, error } = useReaderResource<MemberHome>(
+    user ? "/api/v1/home" : null,
+    retry,
+  );
+  const spotlight = data?.featured[0] ?? data?.latest[0];
+  const reading = data?.continueReading[0];
+  // 按文章 ID 去重，避免精选与最新发布中的同一内容重复占位。
+  const gallery = data
+    ? Array.from(
+        new Map(
+          (selection === "featured"
+            ? [...data.featured, ...data.latest]
+            : [...data.latest, ...data.featured]
+          ).map((item) => [item.publication.id, item]),
+        ).values(),
+      )
+    : [];
   return (
     <>
-      <header className="hub-home-heading hub-enter">
-        <p className="hub-kicker">MEMBER HOME</p>
-        <h1>晚上好，欢迎回来。</h1>
-        <p>有人分享了新的实践，也有人正在等待你的想法。</p>
-      </header>
-      <section
-        className="hub-activity-strip hub-enter"
-        aria-label="社区动态预览"
-      >
-        <Link href="/members">
-          <span className="hub-avatar-stack" aria-hidden="true">
-            <i>林</i>
-            <i>周</i>
-            <i>陈</i>
-          </span>
-          <strong>看看今天来过的成员</strong>
-          <ArrowRight />
-        </Link>
-        <Link href={`/publications/${conceptPublications[1].slug}`}>
-          <span className="hub-activity-icon">
-            <Sparkles />
-          </span>
-          <strong>Aries 刚发布了一篇文章</strong>
-          <ArrowRight />
-        </Link>
-        <Link href="/community">
-          <span className="hub-activity-icon">聊</span>
-          <strong>收藏的内容有新讨论</strong>
-          <ArrowRight />
-        </Link>
-      </section>
-      <div className="hub-home-grid">
-        <div className="hub-home-feed">
-          <section className="hub-resume-card hub-enter">
-            <div className="hub-resume-art">
-              <Image
-                src={featured.image}
-                alt={featured.title}
-                width={900}
-                height={560}
-                priority
-                unoptimized
-              />
-              <span>继续阅读</span>
-            </div>
-            <div className="hub-resume-copy">
-              <div className="hub-resume-status">
-                <Check /> 已加入我的内容
-              </div>
-              <span className="hub-type">实战案例</span>
-              <h2>{featured.title}</h2>
-              <p>
-                读到 {String(chapter + 1).padStart(2, "0")} ·{" "}
-                {featured.chapters[chapter]?.title}
-              </p>
-              <div className="hub-progress">
-                <span
-                  style={{
-                    width: `${((chapter + 1) / featured.chapters.length) * 100}%`,
-                  }}
-                />
-              </div>
-              <Link
-                className="hub-primary"
-                href={`/learn/${featured.slug}?chapter=${chapter}`}
-              >
-                继续阅读 <ArrowRight />
-              </Link>
-            </div>
-          </section>
-          <div className="hub-section-heading">
-            <div>
-              <p className="hub-kicker">CURATED FOR YOU</p>
-              <h2>为你推荐</h2>
-            </div>
-            <Link href="/discover">
-              查看全部 <ArrowRight />
-            </Link>
-          </div>
-          <div className="hub-recommend-grid">
-            {conceptPublications.slice(1, 3).map((item, index) => (
-              <ContentCard item={item} index={index + 1} key={item.slug} />
-            ))}
-          </div>
-          <div className="hub-section-heading hub-latest-heading">
-            <div>
-              <p className="hub-kicker">NEW THIS WEEK</p>
-              <h2>最新发布</h2>
-            </div>
-          </div>
-          <ContentCard item={conceptPublications[3]} index={3} compact />
+      <header className="home-explore-heading">
+        <div>
+          <h1>今天，继续你的探索</h1>
+          <p>
+            {user?.nickname ? `${user.nickname}，欢迎回来。` : "欢迎回来。"}
+          </p>
         </div>
-        <aside className="hub-community-rail hub-enter">
-          <section className="hub-people-now">
-            <div className="hub-rail-heading">
-              <h2>社区正在发生</h2>
-              <Link href="/members">看看大家</Link>
-            </div>
-            <div className="hub-presence" aria-label="成员场景预览">
-              <i>
-                林<span />
-              </i>
-              <i>
-                周<span />
-              </i>
-              <i>
-                陈<span />
-              </i>
-              <i>
-                宋<span />
-              </i>
-            </div>
-          </section>
-          <section className="hub-thread-preview">
-            <small>讨论示例 · {topic.tag}</small>
-            <h3>{topic.title}</h3>
-            <p>{topic.body}</p>
-            <div className="hub-thread-replies">
-              {topic.replies.slice(-3).map((text) => (
-                <p key={text}>{text}</p>
-              ))}
-            </div>
-            <div className="hub-reply-box">
-              <Input
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") sendReply();
-                }}
-                placeholder="写下你的想法…"
-                aria-label="回复讨论"
-                maxLength={240}
-              />
-              <Button
-                size="icon"
-                onClick={sendReply}
-                disabled={!message.trim()}
-                aria-label="发送回复"
-              >
-                <Send />
-              </Button>
-            </div>
-          </section>
-          <section className="hub-practicing">
-            <h3>正在实践</h3>
-            <p>
-              <i>林</i>
-              <span>
-                <strong>林小雨</strong> 正在复现部署步骤
-              </span>
-            </p>
-            <p>
-              <i>许</i>
-              <span>
-                <strong>许航</strong> 收藏了检查清单
-              </span>
-            </p>
-            <p>
-              <i>宋</i>
-              <span>
-                <strong>宋言</strong> 分享了自己的工作流
-              </span>
-            </p>
-            <small>社区场景预览</small>
-          </section>
-          <Link href="/community" className="hub-share-invite">
-            <span>芽</span>
-            <div>
-              <h3>你也做成了什么？</h3>
-              <p>分享一次尝试，让下一位成员少走一点弯路。</p>
-              <strong>发起讨论</strong>
-            </div>
+        <nav className="home-topic-nav" aria-label="探索主题">
+          <Link href="/discover" className="home-topic-all">
+            全部内容
           </Link>
-        </aside>
-      </div>
+          {data?.categories.map((c) => (
+            <Link
+              key={c.id}
+              href={`/discover?category=${encodeURIComponent(c.slug)}`}
+            >
+              {c.name}
+            </Link>
+          ))}
+        </nav>
+      </header>
+      {error ? (
+        <div className="hub-empty" role="alert">
+          <h2>首页暂时无法读取</h2>
+          <p>{error}</p>
+          <Button onClick={() => setRetry(retry + 1)}>重新加载</Button>
+        </div>
+      ) : !data ? (
+        <PageSkeleton variant="gallery" />
+      ) : (
+        <div className="home-gallery-layout">
+          <div className="home-gallery-main">
+            <div className="home-lead-grid">
+              {spotlight ? (
+                <section
+                  className="community-home-spotlight"
+                  aria-label="今日阅读"
+                >
+                  <Link
+                    className="community-spotlight-art"
+                    href={`/publications/${spotlight.publication.id}`}
+                  >
+                    <PublishedCover
+                      key={spotlight.publication.coverFileId}
+                      item={spotlight}
+                      priority
+                    />
+                  </Link>
+                  <div className="community-spotlight-copy">
+                    <h2 className="home-feature-label">主理人精选</h2>
+                    <Link
+                      className="home-feature-title"
+                      href={`/publications/${spotlight.publication.id}`}
+                    >
+                      {spotlight.publication.title}
+                    </Link>
+                    <p>{spotlight.publication.summary}</p>
+                    <div className="home-feature-tags">
+                      <span>
+                        {
+                          CONTENT_FORM_LABELS[
+                            spotlight.publication.publicationType
+                          ]
+                        }
+                      </span>
+                      <span>
+                        {spotlight.publication.accessType === "FREE"
+                          ? "免费阅读"
+                          : `${spotlight.publication.creditPrice} 积分`}
+                      </span>
+                    </div>
+                    <small>
+                      {spotlight.publication.categoryName} ·{" "}
+                      {spotlight.publication.publishedAt.slice(0, 10)}
+                    </small>
+                    <Link
+                      className="hub-primary"
+                      href={`/publications/${spotlight.publication.id}`}
+                    >
+                      阅读文章 <ArrowRight />
+                    </Link>
+                    <PublicationInteractions
+                      id={spotlight.publication.id}
+                      initial={spotlight.interaction}
+                    />
+                  </div>
+                </section>
+              ) : (
+                <section className="hub-empty">
+                  <h2>还没有已发布内容</h2>
+                  <p>新的实践与文章会出现在这里。</p>
+                </section>
+              )}
+              <div className="home-personal-column">
+                <section className="home-reading-widget" aria-label="个人阅读">
+                  <div className="hub-rail-heading">
+                    <h2>{reading ? "继续阅读" : "开始一次阅读"}</h2>
+                    <Link href="/my-content">
+                      阅读记录 <ArrowRight />
+                    </Link>
+                  </div>
+                  {reading ? (
+                    <>
+                      <Link
+                        className="home-reading-cover"
+                        href={`/publications/${reading.publication.id}?resume=1`}
+                      >
+                        <PublishedCover
+                          key={reading.publication.coverFileId}
+                          item={reading}
+                        />
+                      </Link>
+                      <h3>{reading.publication.title}</h3>
+                      <progress
+                        value={reading.progress?.percent ?? 0}
+                        max={100}
+                        aria-label="上次阅读进度"
+                      />
+                      <div className="home-reading-footer">
+                        <span>上次读到 {reading.progress?.percent ?? 0}%</span>
+                        <Link
+                          href={`/publications/${reading.publication.id}?resume=1`}
+                        >
+                          继续阅读 <ArrowRight />
+                        </Link>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="home-reading-empty">
+                      <BookOpen />
+                      <p>读一篇感兴趣的文章，下次从这里接着看。</p>
+                      <Link href="/discover">
+                        发现下一份实践 <ArrowRight />
+                      </Link>
+                    </div>
+                  )}
+                </section>
+                <CommunityPulse latest={data.latest[0]} />
+              </div>
+            </div>
+            <section className="home-practice-gallery" aria-label="文章画廊">
+              <div className="hub-section-heading">
+                <h2 className="community-title community-title-blue">
+                  值得收藏的实践
+                </h2>
+                <div className="home-gallery-tabs" aria-label="文章排序">
+                  <Button
+                    variant="ghost"
+                    aria-pressed={selection === "featured"}
+                    onClick={() => setSelection("featured")}
+                  >
+                    精选优先
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    aria-pressed={selection === "latest"}
+                    onClick={() => setSelection("latest")}
+                  >
+                    最新发布
+                  </Button>
+                </div>
+                <Link href="/discover">
+                  查看全部 <ArrowRight />
+                </Link>
+              </div>
+              <div className="home-content-gallery">
+                {gallery.map((item) => (
+                  <PublishedContentCard key={item.publication.id} item={item} />
+                ))}
+              </div>
+              {!gallery.length && (
+                <p className="hub-empty">内容正在整理，稍后再来看看。</p>
+              )}
+            </section>
+            {data.continueReading.length > 1 && (
+              <section className="home-more-reading">
+                <div className="hub-section-heading">
+                  <h2>你的阅读足迹</h2>
+                  <Link href="/my-content">
+                    全部记录 <ArrowRight />
+                  </Link>
+                </div>
+                <div className="home-content-gallery">
+                  {data.continueReading.slice(1).map((item) => (
+                    <PublishedContentCard
+                      key={item.publication.id}
+                      item={item}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+          <aside className="home-community-sidebar" aria-label="社区活动与推荐">
+            <CommunityActivityFeed />
+            <CommunityPreviewRail />
+            <section>
+              <div className="hub-rail-heading">
+                <h2 className="community-title community-title-green">
+                  探索主题
+                </h2>
+                <Link href="/discover">全部主题</Link>
+              </div>
+              {data.categories.map((c) => (
+                <Link
+                  key={c.id}
+                  className="reader-theme-link"
+                  href={`/discover?category=${encodeURIComponent(c.slug)}`}
+                >
+                  {c.name}
+                  <span>{c.publicationCount} 篇</span>
+                </Link>
+              ))}
+            </section>
+          </aside>
+        </div>
+      )}
     </>
   );
 }

@@ -14,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -65,7 +66,7 @@ class AdminOperationsIntegrationTests extends IntegrationTestSupport {
         register("alpha@example.com", "member1234", "AlphaDev");
         register("special@example.com", "member1234", "AI_%!作者");
         Cookie admin = register("admin@example.com", "admin1234", "管理员");
-        var first =
+        String first =
                 mvc.perform(get("/api/v1/admin/users").cookie(admin).param("size", "1"))
                         .andExpect(status().isOk())
                         .andExpect(jsonPath("$.data.total").value(3))
@@ -74,7 +75,7 @@ class AdminOperationsIntegrationTests extends IntegrationTestSupport {
                         .andReturn()
                         .getResponse()
                         .getContentAsString();
-        var second =
+        String second =
                 mvc.perform(
                                 get("/api/v1/admin/users")
                                         .cookie(admin)
@@ -178,7 +179,7 @@ class AdminOperationsIntegrationTests extends IntegrationTestSupport {
         byte[] png = {(byte) 137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0};
         String cover = upload(admin, "COVER", "cover.png", "image/png", png);
         String body = upload(admin, "IMAGE", "body.png", "image/png", png);
-        var created =
+        MvcResult created =
                 mvc.perform(
                                 post("/api/v1/admin/publications")
                                         .cookie(admin)

@@ -597,6 +597,128 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/publications/cards": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Published cards with batch signed covers and account state; no private body */
+    get: operations["getPublicationCards"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/home": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Current account home: featured 4, latest 6, free reading history 3 */
+    get: operations["getMemberHome"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/users/me/library": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Current account library; hidden/deleted content omitted; HISTORY includes free content only */
+    get: operations["getReaderLibrary"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/publications/{id}/interaction": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Public like count and current account flags; anonymous flags false */
+    get: operations["getPublicationInteraction"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/publications/{id}/bookmark": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Idempotently enable bookmark */
+    put: operations["setBookmark"];
+    post?: never;
+    /** Idempotently remove bookmark */
+    delete: operations["removeBookmark"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/publications/{id}/like": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    /** Idempotently enable like */
+    put: operations["setLike"];
+    post?: never;
+    /** Idempotently remove like */
+    delete: operations["removeLike"];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/publications/{id}/reading-progress": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Current account free-body reading position; data null when never read */
+    get: operations["getReadingProgress"];
+    /** Save actual free-body version and heading anchor; older position may decrease on reread */
+    put: operations["saveReadingProgress"];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1033,6 +1155,46 @@ export interface components {
       loaded: number;
       /** Format: int64 */
       total: number;
+    };
+    PublicationInteraction: {
+      publicationId: string;
+      likeCount: number;
+      liked: boolean;
+      bookmarked: boolean;
+    };
+    ReadingProgress: {
+      publicationId: string;
+      version: string;
+      position: string;
+      percent: number;
+      /** Format: date-time */
+      updatedAt: string;
+    };
+    ReadingProgressRequest: {
+      version: string;
+      position: string;
+      percent: number;
+    };
+    PublicationCard: {
+      publication: components["schemas"]["PublicationSummary"];
+      cover: components["schemas"]["FileDownload"] | null;
+      interaction: components["schemas"]["PublicationInteraction"];
+      progress: components["schemas"]["ReadingProgress"] | null;
+    };
+    PublicationCardPage: {
+      items: components["schemas"]["PublicationCard"][];
+      page: number;
+      size: number;
+      /** Format: int64 */
+      total: number;
+      /** Format: int64 */
+      totalPages: number;
+    };
+    MemberHome: {
+      categories: components["schemas"]["Category"][];
+      featured: components["schemas"]["PublicationCard"][];
+      latest: components["schemas"]["PublicationCard"][];
+      continueReading: components["schemas"]["PublicationCard"][];
     };
   };
   responses: {
@@ -1890,6 +2052,8 @@ export interface operations {
         category?: string;
         access?: "" | "FREE" | "CREDIT";
         type?: "" | "CASE_STUDY" | "ARTICLE" | "COURSE";
+        sort?: "FEATURED" | "LATEST";
+        featured?: boolean;
       };
       header?: never;
       path?: never;
@@ -3183,6 +3347,724 @@ export interface operations {
       };
       401: components["responses"]["Forbidden"];
       403: components["responses"]["Forbidden"];
+    };
+  };
+  getPublicationCards: {
+    parameters: {
+      query?: {
+        page?: number;
+        size?: number;
+        q?: string;
+        category?: string;
+        access?: "" | "FREE" | "CREDIT";
+        type?: "" | "CASE_STUDY" | "ARTICLE" | "COURSE";
+        sort?: "FEATURED" | "LATEST";
+        featured?: boolean;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationCardPage"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Invalid filter */
+      400: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Unexpected error */
+      500: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Service unavailable */
+      503: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getMemberHome: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["MemberHome"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Authentication required */
+      401: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Account unavailable */
+      403: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getReaderLibrary: {
+    parameters: {
+      query?: {
+        kind?: "BOOKMARK" | "LIKE" | "HISTORY";
+        page?: number;
+        size?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationCardPage"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Invalid pagination or kind */
+      400: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Authentication required */
+      401: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Account unavailable */
+      403: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getPublicationInteraction: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationInteraction"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Publication unavailable */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  setBookmark: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationInteraction"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Authentication required */
+      401: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Account unavailable */
+      403: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Publication unavailable */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  removeBookmark: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationInteraction"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Authentication required */
+      401: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Account unavailable */
+      403: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Publication unavailable */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  setLike: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationInteraction"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Authentication required */
+      401: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Account unavailable */
+      403: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Publication unavailable */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  removeLike: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PublicationInteraction"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Authentication required */
+      401: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Account unavailable */
+      403: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Publication unavailable */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getReadingProgress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["ReadingProgress"] | null;
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Authentication required */
+      401: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Paid body locked or account unavailable */
+      403: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Publication unavailable */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  saveReadingProgress: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        id: number;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReadingProgressRequest"];
+      };
+    };
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["ReadingProgress"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Invalid progress */
+      400: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Authentication required */
+      401: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Paid body locked or account unavailable */
+      403: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description Publication unavailable */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+      /** @description READING_VERSION_CHANGED; reload current body before saving */
+      409: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
     };
   };
 }

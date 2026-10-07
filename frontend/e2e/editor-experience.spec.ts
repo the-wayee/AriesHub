@@ -24,7 +24,7 @@ const draft = {
   createdAt: "2026-10-01T10:00:00Z",
   updatedAt: "2026-10-01T10:00:00Z",
 };
-async function editor(page: Page) {
+async function editor(page: Page, fullMarkdown = draft.fullMarkdown) {
   await mockMemberSession(page, "ADMIN");
   const saved: Record<string, unknown>[] = [];
   await page.route("**/api/v1/admin/**", async (route) => {
@@ -34,10 +34,42 @@ async function editor(page: Page) {
       });
     if (route.request().method() === "PUT")
       saved.push(route.request().postDataJSON());
-    return fulfillResult(route, { json: draft });
+    return fulfillResult(route, { json: { ...draft, fullMarkdown } });
   });
   return saved;
 }
+
+test("article tables and task lists render safely in the reading preview", async ({
+  page,
+}) => {
+  const saved = await editor(
+    page,
+    "## 检查表\n\n| 场景 | 结果 |\n| --- | --- |\n| 密码错误 | 保留邮箱并允许重试 |\n\n- [x] 正常路径\n- [ ] 失败重试\n\n<script>alert('unsafe')</script>",
+  );
+  await page.goto("/admin/publications/41");
+  await page.getByRole("button", { name: "阅读预览", exact: true }).click();
+  await expect(
+    page.getByRole("cell", { name: "保留邮箱并允许重试" }),
+  ).toBeVisible();
+  await expect(page.locator(".prose input[type=checkbox]")).toHaveCount(2);
+  await expect(
+    page.locator(".prose input[type=checkbox]").first(),
+  ).toBeDisabled();
+  await expect(page.locator(".prose script")).toHaveCount(0);
+  await page.getByRole("button", { name: "继续编辑", exact: true }).click();
+  await page.getByRole("button", { name: "保存草稿", exact: true }).click();
+  await expect.poll(() => saved.length).toBeGreaterThan(0);
+  const body = String(saved.at(-1)!.fullMarkdown);
+  expect(body).toContain("保留邮箱并允许重试");
+  expect(body).toMatch(/\|\s*场景\s*\|/);
+  expect(body).toContain("- [x] 正常路径");
+  expect(body).toContain("- [ ] 失败重试");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
 
 // 用原生 ProgressEvent 精确控制慢速上传阶段；实际 XHR 网络上传另由素材交互回归覆盖。
 async function controlledUploads(page: Page) {

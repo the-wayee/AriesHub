@@ -121,3 +121,15 @@ com.aries.backend
 ## 对象存储
 
 `storage` 通过 `ObjectStorage` 应用端口隔离 S3 SDK。`FileStorageService` 是文件读写、元数据和签名工具，不读取会话、不校验头像或附件业务规则。`identity/UserApplicationService` 负责头像格式、大小、文件头、限流、绑定及展示授权，经 `UserAvatarStorage` 与 composition 桥接；附件和视频以后由所属业务模块提供独立用例与上传入口。业务字段保存文件 ID；通用私有下载由 `FileDownloadService` 校验所有者。配置与接口说明见 [对象存储](OBJECT_STORAGE.md)。
+
+## 成员内容关系与首页聚合（2026-10-07）
+
+V12 新增 `publication_reactions` 与 `publication_reading_progress`。收藏和文章点赞通过唯一的 `(user_id, publication_id, kind)` 关系建模，取消时物理删除；阅读位置以 `(user_id, publication_id)` 唯一，保存正文版本、标题锚点、百分比和最后更新时间。它们独立于评论点赞、积分解锁和课程课时进度。
+
+`PublicationReaderService` 校验当前账号、文章可见性和免费正文授权，写入前在事务中锁定文章行；关系 CRUD 使用 MyBatis-Plus，复杂卡片统计与个人分页由 XML 只读投影完成。文章行锁是首版明确的并发边界，热门文章大量写入时应评估按账号/文章更细粒度的串行化，而非无限增加接口并发。
+
+`PublicationCardService` 批量读取互动、阅读位置与封面元数据。身份和存储分别通过 `PublicationReaderIdentity`、`PublicationCoverPort` 端口，由 composition 适配，catalog 不导入 identity/storage。FileStorageService 只提供通用批量元数据和签名方法。列表不返回全文；封面签名失败降级后，前端可通过已有受控单素材接口重试。
+
+首页 Mock 社区活动属于前端展示层，没有虚构服务器事件或数据库成员记录；真实活动聚合应在发布/讨论事件及可见性规则明确后实现。所有新增 JSON 接口返回 Result，OpenAPI 为生成前端类型的唯一契约。
+
+`PublicationReaderViews.PublicationCardView` 是文章卡片的只读返回 DTO，组合 `PublicationSummary`、封面签名、互动状态和阅读位置，不是持久化实体或新的业务领域。业务文件通过显式导入引用它，不能导入 JDK 智能卡包的 `javax.smartcardio.Card`。Java 局部变量均使用显式类型，具体约定见 `backend/AGENTS.md`。

@@ -1,70 +1,88 @@
 package com.aries.backend;
 
-import jakarta.servlet.http.Cookie;
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import jakarta.servlet.http.Cookie;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
+
+import java.time.OffsetDateTime;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(TestEmailConfiguration.class)
 class DiscussionIntegrationTests extends IntegrationTestSupport {
-    private static final String TARGET = "/api/v1/discussions/comments"
-            + "?targetType=PUBLICATION&targetKey=free-case";
+    private static final String TARGET =
+            "/api/v1/discussions/comments" + "?targetType=PUBLICATION&targetKey=free-case";
 
-    @Test void commentsArePubliclyReadableButWritingRequiresLogin() throws Exception {
+    @Test
+    void commentsArePubliclyReadableButWritingRequiresLogin() throws Exception {
         mvc.perform(get(TARGET))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items", hasSize(0)))
                 .andExpect(jsonPath("$.data.total").value(0));
 
-        mvc.perform(post("/api/v1/discussions/comments")
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"这是一条评论"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"这是一条评论"}
+                                        """))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("COMMENT_LOGIN_REQUIRED"));
     }
 
     /** 回复是单层的：回复一条回复仍然落在同一根评论下，深度保持 1。 */
-    @Test void repliesAreFlatUnderTheirRootComment() throws Exception {
+    @Test
+    void repliesAreFlatUnderTheirRootComment() throws Exception {
         Cookie member = register("discussion@example.com", "discussion123", "讨论成员");
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"根评论"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"根评论"}
+                                        """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.depth").value(0))
                 .andExpect(jsonPath("$.data.authorName").value("讨论成员"))
                 .andExpect(jsonPath("$.data.canDelete").value(true));
 
         Long rootId = database.commentIdByBody("根评论");
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case",
-                                 "parentId":%d,"body":"回复根评论"}
-                                """.formatted(rootId)))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case",
+                                         "parentId":%d,"body":"回复根评论"}
+                                        """
+                                                .formatted(rootId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.depth").value(1))
                 .andExpect(jsonPath("$.data.parentId").value(rootId.toString()));
 
         Long replyId = database.commentIdByBody("回复根评论");
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case",
-                                 "parentId":%d,"body":"回复那条回复"}
-                                """.formatted(replyId)))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case",
+                                         "parentId":%d,"body":"回复那条回复"}
+                                        """
+                                                .formatted(replyId)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.depth").value(1))
                 .andExpect(jsonPath("$.data.parentId").value(replyId.toString()))
@@ -78,11 +96,14 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
         mvc.perform(get("/api/v1/discussions/comments/" + rootId + "/replies"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(2))
-                .andExpect(jsonPath("$.data.items[*].depth", org.hamcrest.Matchers.everyItem(
-                        org.hamcrest.Matchers.is(1))));
+                .andExpect(
+                        jsonPath(
+                                "$.data.items[*].depth",
+                                org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(1))));
     }
 
-    @Test void rootCommentsArePaginatedAndSortable() throws Exception {
+    @Test
+    void rootCommentsArePaginatedAndSortable() throws Exception {
         Cookie member = register("paging@example.com", "paging1234", "分页成员");
         long authorId = database.userIdByEmail("paging@example.com");
         database.insertThread("PUBLICATION", "free-case", "OPEN");
@@ -124,7 +145,8 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.total").value(30));
     }
 
-    @Test void rootCommentsCarryReplyCountAndPreview() throws Exception {
+    @Test
+    void rootCommentsCarryReplyCountAndPreview() throws Exception {
         Cookie member = register("preview@example.com", "preview123", "预览成员");
         long authorId = database.userIdByEmail("preview@example.com");
         database.insertThread("PUBLICATION", "free-case", "OPEN");
@@ -150,13 +172,17 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.items[1].previewReplies", hasSize(0)));
     }
 
-    @Test void likesToggleIdempotentlyAndUpdateTheCount() throws Exception {
+    @Test
+    void likesToggleIdempotentlyAndUpdateTheCount() throws Exception {
         Cookie member = register("likes@example.com", "likes1234", "点赞成员");
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"值得点赞"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"值得点赞"}
+                                        """))
                 .andExpect(status().isCreated());
         Long commentId = database.commentIdByBody("值得点赞");
 
@@ -188,13 +214,17 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.items[0].comment.likedByMe").value(true));
     }
 
-    @Test void guestsSeeLikesButCannotLike() throws Exception {
+    @Test
+    void guestsSeeLikesButCannotLike() throws Exception {
         Cookie member = register("guest-like@example.com", "guest1234", "点赞者");
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"公开可见"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"公开可见"}
+                                        """))
                 .andExpect(status().isCreated());
         Long commentId = database.commentIdByBody("公开可见");
         mvc.perform(post("/api/v1/discussions/comments/" + commentId + "/like").cookie(member))
@@ -210,24 +240,32 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
     }
 
     /** 作者只能删自己的；删除根评论后其下回复保留，避免别人的发言被一并抹掉。 */
-    @Test void authorsDeleteTheirOwnCommentsAndRepliesSurvive() throws Exception {
+    @Test
+    void authorsDeleteTheirOwnCommentsAndRepliesSurvive() throws Exception {
         Cookie author = register("author@example.com", "author1234", "作者");
         Cookie other = register("other@example.com", "other1234", "其他人");
 
-        mvc.perform(post("/api/v1/discussions/comments").cookie(author)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"会被删除"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(author)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"会被删除"}
+                                        """))
                 .andExpect(status().isCreated());
         Long rootId = database.commentIdByBody("会被删除");
 
-        mvc.perform(post("/api/v1/discussions/comments").cookie(other)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case",
-                                 "parentId":%d,"body":"别人的回复"}
-                                """.formatted(rootId)))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(other)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case",
+                                         "parentId":%d,"body":"别人的回复"}
+                                        """
+                                                .formatted(rootId)))
                 .andExpect(status().isCreated());
 
         // 别人的评论删不掉。
@@ -250,20 +288,26 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.items[0].previewReplies[0].body").value("别人的回复"));
     }
 
-    @Test void adminsHideCommentsAndLockThreads() throws Exception {
+    @Test
+    void adminsHideCommentsAndLockThreads() throws Exception {
         Cookie member = register("ordinary@example.com", "ordinary123", "普通成员");
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"待治理评论"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"待治理评论"}
+                                        """))
                 .andExpect(status().isCreated());
         Long commentId = database.commentIdByBody("待治理评论");
 
         // 匿名 401 / 普通成员 403 / 管理员放行。
         mvc.perform(post("/api/v1/admin/discussions/comments/" + commentId + "/hide"))
                 .andExpect(status().isUnauthorized());
-        mvc.perform(post("/api/v1/admin/discussions/comments/" + commentId + "/hide").cookie(member))
+        mvc.perform(
+                        post("/api/v1/admin/discussions/comments/" + commentId + "/hide")
+                                .cookie(member))
                 .andExpect(status().isForbidden());
 
         Cookie admin = register("admin@example.com", "admin1234", "管理员");
@@ -276,34 +320,44 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(0));
 
-        mvc.perform(post("/api/v1/admin/discussions/threads/lock").cookie(admin)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/admin/discussions/threads/lock")
+                                .cookie(admin)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case"}
+                                        """))
                 .andExpect(status().isOk());
         assertThat(database.threadStatus(database.threadId("PUBLICATION", "free-case")))
                 .isEqualTo("LOCKED");
 
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"锁帖后的评论"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"锁帖后的评论"}
+                                        """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("DISCUSSION_THREAD_CLOSED"));
     }
 
-    @Test void adminsCanLockATargetBeforeItsFirstComment() throws Exception {
+    @Test
+    void adminsCanLockATargetBeforeItsFirstComment() throws Exception {
         Cookie admin = register("admin@example.com", "admin1234", "管理员");
         assertThat(database.threadId("PUBLICATION", "free-case")).isNull();
 
         for (int attempt = 0; attempt < 2; attempt++) {
-            mvc.perform(post("/api/v1/admin/discussions/threads/lock").cookie(admin)
-                            .contentType("application/json")
-                            .content("""
-                                    {"targetType":"PUBLICATION","targetKey":"free-case"}
-                                    """))
+            mvc.perform(
+                            post("/api/v1/admin/discussions/threads/lock")
+                                    .cookie(admin)
+                                    .contentType("application/json")
+                                    .content(
+                                            """
+                                            {"targetType":"PUBLICATION","targetKey":"free-case"}
+                                            """))
                     .andExpect(status().isOk());
         }
         assertThat(database.threadStatus(database.threadId("PUBLICATION", "free-case")))
@@ -311,60 +365,81 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
         mvc.perform(get(TARGET))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.total").value(0));
-        mvc.perform(post("/api/v1/discussions/comments").cookie(admin)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"首次评论"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(admin)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"首次评论"}
+                                        """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("DISCUSSION_THREAD_CLOSED"));
     }
 
-    @Test void orphanTargetsAndCrossThreadRepliesAreRejected() throws Exception {
+    @Test
+    void orphanTargetsAndCrossThreadRepliesAreRejected() throws Exception {
         Cookie member = register("boundaries@example.com", "discussion123", "边界成员");
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"missing","body":"孤儿评论"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"missing","body":"孤儿评论"}
+                                        """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("DISCUSSION_TARGET_NOT_FOUND"));
 
         // 未注册的目标类型同样被拒绝，而不是落进某个解析器的默认分支。
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"UNKNOWN","targetKey":"whatever","body":"未知目标"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"UNKNOWN","targetKey":"whatever","body":"未知目标"}
+                                        """))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("DISCUSSION_TARGET_NOT_FOUND"));
 
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"属于 A"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"属于 A"}
+                                        """))
                 .andExpect(status().isCreated());
         Long rootId = database.commentIdByBody("属于 A");
 
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"credit-publication",
-                                 "parentId":%d,"body":"错误跨树"}
-                                """.formatted(rootId)))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"credit-publication",
+                                         "parentId":%d,"body":"错误跨树"}
+                                        """
+                                                .formatted(rootId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
     }
 
     /** 内容下架或退回草稿后，按原 slug 不能再读出评论，也不能按根评论 id 读出回复。 */
-    @Test void commentsOfUnpublishedTargetsAreNotReadable() throws Exception {
+    @Test
+    void commentsOfUnpublishedTargetsAreNotReadable() throws Exception {
         Cookie member = register("unpublished@example.com", "unpub1234", "下架测试");
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"下架前的评论"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"下架前的评论"}
+                                        """))
                 .andExpect(status().isCreated());
         Long rootId = database.commentIdByBody("下架前的评论");
         mvc.perform(get("/api/v1/discussions/comments/" + rootId + "/replies"))
@@ -388,27 +463,36 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
         // 草稿内容同理：即使库里已有线程和评论，也读不到。
         long authorId = database.userIdByEmail("unpublished@example.com");
         database.insertThread("PUBLICATION", "draft-case", "OPEN");
-        database.insertRootComment(database.threadId("PUBLICATION", "draft-case"), authorId, "草稿下的评论", 0);
+        database.insertRootComment(
+                database.threadId("PUBLICATION", "draft-case"), authorId, "草稿下的评论", 0);
         mvc.perform(get("/api/v1/discussions/comments?targetType=PUBLICATION&targetKey=draft-case"))
                 .andExpect(status().isNotFound());
     }
 
     /** 被隐藏的根评论，其下回复也不能按 id 单独读出。 */
-    @Test void repliesOfHiddenRootsAreNotReadable() throws Exception {
+    @Test
+    void repliesOfHiddenRootsAreNotReadable() throws Exception {
         Cookie member = register("hidden-root@example.com", "hidden1234", "隐藏测试");
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"将被隐藏的根评论"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"将被隐藏的根评论"}
+                                        """))
                 .andExpect(status().isCreated());
         Long rootId = database.commentIdByBody("将被隐藏的根评论");
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case",
-                                 "parentId":%d,"body":"它下面的回复"}
-                                """.formatted(rootId)))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case",
+                                         "parentId":%d,"body":"它下面的回复"}
+                                        """
+                                                .formatted(rootId)))
                 .andExpect(status().isCreated());
 
         Cookie admin = register("admin@example.com", "admin1234", "管理员");
@@ -431,7 +515,8 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
         assertThat(database.activeLikes(replyId)).isZero();
     }
 
-    @Test void likesRespectThreadVisibilityButRemainAvailableInLockedThreads() throws Exception {
+    @Test
+    void likesRespectThreadVisibilityButRemainAvailableInLockedThreads() throws Exception {
         Cookie member = register("thread-likes@example.com", "thread1234", "线程点赞成员");
         long authorId = database.userIdByEmail("thread-likes@example.com");
         database.insertThread("PUBLICATION", "free-case", "LOCKED");
@@ -454,66 +539,85 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
     }
 
     /** 回复已删除的评论是状态冲突，不是正文有问题。 */
-    @Test void replyingToADeletedCommentIsNotReplyable() throws Exception {
+    @Test
+    void replyingToADeletedCommentIsNotReplyable() throws Exception {
         Cookie member = register("not-replyable@example.com", "reply1234", "回复测试");
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"马上删除"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"马上删除"}
+                                        """))
                 .andExpect(status().isCreated());
         Long rootId = database.commentIdByBody("马上删除");
         mvc.perform(delete("/api/v1/discussions/comments/" + rootId).cookie(member))
                 .andExpect(status().isOk());
 
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case",
-                                 "parentId":%d,"body":"正文本身没问题"}
-                                """.formatted(rootId)))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case",
+                                         "parentId":%d,"body":"正文本身没问题"}
+                                        """
+                                                .formatted(rootId)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("COMMENT_NOT_REPLYABLE"));
     }
 
     /** 领域规则的拒绝是 4xx，不能落到全局兜底变成 500。 */
-    @Test void invalidCommentBodiesReturnBadRequest() throws Exception {
+    @Test
+    void invalidCommentBodiesReturnBadRequest() throws Exception {
         Cookie member = register("invalid@example.com", "invalid123", "校验成员");
 
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"   "}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"   "}
+                                        """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
 
-        mvc.perform(post("/api/v1/discussions/comments").cookie(member)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case",
-                                 "body":"%s"}
-                                """.formatted("字".repeat(4001))))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(member)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case",
+                                         "body":"%s"}
+                                        """
+                                                .formatted("字".repeat(4001))))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
     }
 
     /**
-     * 回归：审核动作用 {@code update(null, wrapper)} 实现，而 MyBatis-Plus 的 updateFill
-     * 只在传入实体时生效——wrapper-only 更新不会自动刷新 updated_at。
-     * 仓储必须显式写入它，否则审计时间停在创建时刻，「最近被处理的评论」这类查询会失真。
+     * 回归：审核动作用 {@code update(null, wrapper)} 实现，而 MyBatis-Plus 的 updateFill 只在传入实体时生效——wrapper-only
+     * 更新不会自动刷新 updated_at。 仓储必须显式写入它，否则审计时间停在创建时刻，「最近被处理的评论」这类查询会失真。
      */
-    @Test void moderationActionsRefreshUpdatedAt() throws Exception {
+    @Test
+    void moderationActionsRefreshUpdatedAt() throws Exception {
         Cookie author = register("audit@example.com", "audit1234", "审计成员");
-        mvc.perform(post("/api/v1/discussions/comments").cookie(author)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case","body":"审计评论"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/discussions/comments")
+                                .cookie(author)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"审计评论"}
+                                        """))
                 .andExpect(status().isCreated());
         Long commentId = database.commentIdByBody("审计评论");
-        var commentBefore = database.commentUpdatedAt(commentId);
-        var threadBefore = database.threadUpdatedAt("PUBLICATION", "free-case");
+        OffsetDateTime commentBefore = database.commentUpdatedAt(commentId);
+        OffsetDateTime threadBefore = database.threadUpdatedAt("PUBLICATION", "free-case");
         Thread.sleep(20);
 
         mvc.perform(delete("/api/v1/discussions/comments/" + commentId).cookie(author))
@@ -521,16 +625,20 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
         assertThat(database.commentUpdatedAt(commentId)).isAfter(commentBefore);
 
         Cookie admin = register("admin@example.com", "admin1234", "管理员");
-        mvc.perform(post("/api/v1/admin/discussions/threads/lock").cookie(admin)
-                        .contentType("application/json")
-                        .content("""
-                                {"targetType":"PUBLICATION","targetKey":"free-case"}
-                                """))
+        mvc.perform(
+                        post("/api/v1/admin/discussions/threads/lock")
+                                .cookie(admin)
+                                .contentType("application/json")
+                                .content(
+                                        """
+                                        {"targetType":"PUBLICATION","targetKey":"free-case"}
+                                        """))
                 .andExpect(status().isOk());
         assertThat(database.threadUpdatedAt("PUBLICATION", "free-case")).isAfter(threadBefore);
     }
 
-    @Test void creditLedgerConstraintsProtectBalanceAndIdempotency() {
+    @Test
+    void creditLedgerConstraintsProtectBalanceAndIdempotency() {
         database.insertCreditUser();
         database.insertCreditLedger();
 

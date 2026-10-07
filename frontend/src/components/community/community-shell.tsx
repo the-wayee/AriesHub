@@ -7,6 +7,7 @@ import {
   Compass,
   MessageCircle,
   Search,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,6 +16,7 @@ import { PageMotion } from "@/components/page-motion";
 import { AuthNav } from "@/components/auth-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuthSession } from "@/components/auth-session";
 
 const navigation = [
   { href: "/home", label: "首页", icon: Compass },
@@ -25,6 +27,8 @@ const navigation = [
 
 export function CommunityShell({ children }: { children: ReactNode }) {
   const path = usePathname();
+  const { user } = useAuthSession();
+  const home = path === "/home";
 
   const selected = (href: string) => {
     if (href === "/home") return path === "/home";
@@ -37,7 +41,7 @@ export function CommunityShell({ children }: { children: ReactNode }) {
 
   return (
     <div
-      className={`cosmos-site community-hub${path === "/account" ? " profile-shell" : ""}`}
+      className={`cosmos-site community-hub${home ? " community-home-shell" : ""}${path === "/account" ? " profile-shell" : ""}`}
     >
       <a className="skip-link" href="#main">
         跳到主要内容
@@ -47,26 +51,52 @@ export function CommunityShell({ children }: { children: ReactNode }) {
           <Asterisk aria-hidden="true" />
           AriesHub
         </Link>
+        {home && (
+          <nav className="home-header-nav" aria-label="社区导航">
+            {navigation.map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                aria-current={selected(href) ? "page" : undefined}
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        )}
         <form action="/discover" className="hub-island" role="search">
           <span className="hub-live-dot" aria-hidden="true" />
           <Input
             aria-label="搜索内容"
             name="q"
             maxLength={120}
-            placeholder="今天，社区里发生了什么？"
+            placeholder="搜索文章、案例和课程"
           />
           <Button variant="ghost" size="icon" type="submit" aria-label="搜索">
             <Search />
           </Button>
         </form>
         <div className="hub-header-actions">
+          {home && (
+            <Link
+              className="home-create-link"
+              href={
+                user?.role === "ADMIN"
+                  ? "/admin/publications/new"
+                  : "/community"
+              }
+            >
+              <Plus aria-hidden="true" />
+              {user?.role === "ADMIN" ? "创建内容" : "参与讨论"}
+            </Link>
+          )}
           <Button variant="ghost" size="icon" aria-label="通知预览" disabled>
             <Bell />
           </Button>
           <AuthNav />
         </div>
       </header>
-      {path !== "/account" && (
+      {path !== "/account" && !home && (
         <nav className="hub-nav" aria-label="社区导航">
           {navigation.map(({ href, label, icon: Icon }) => (
             <Link
@@ -88,9 +118,10 @@ export function CommunityShell({ children }: { children: ReactNode }) {
         <span>一起探索，保持好奇。</span>
         {path !== "/account" && (
           <small>
-            {/^\/publications\/[1-9]\d*$/.test(path)
-              ? "互动仅保存在当前浏览器"
-              : "社区预览 · 互动仅保存在当前浏览器"}
+            {["/home", "/discover", "/my-content"].includes(path) ||
+            /^\/publications\/[1-9]\d*$/.test(path)
+              ? "收藏、点赞与阅读记录随账号保存"
+              : "讨论及旧版阅读器仍为社区预览"}
           </small>
         )}
       </footer>

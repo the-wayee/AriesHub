@@ -3,6 +3,7 @@ package com.aries.backend.identity.application.service;
 import static com.aries.backend.identity.application.exception.IdentityErrorCode.*;
 
 import com.aries.backend.identity.application.port.AdminUserPort;
+import com.aries.backend.identity.application.port.AdminUserPort.User;
 import com.aries.backend.identity.application.port.SessionManager;
 import com.aries.backend.identity.domain.model.UserAccount;
 import com.aries.backend.shared.application.exception.BusinessException;
@@ -36,7 +37,7 @@ public class AdminUserService {
     /** 状态落库后注销成员的全部登录态；管理员不可通过该入口被停用。 */
     @Transactional
     public AdminUserPort.User changeStatus(long id, String status) {
-        var current = users.find(id);
+        User current = users.find(id);
         if (current == null) throw new BusinessException(ADMIN_USER_NOT_FOUND);
         if (UserAccount.Role.ADMIN.name().equals(current.role()))
             throw new BusinessException(ADMIN_USER_PROTECTED);

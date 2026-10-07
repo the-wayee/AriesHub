@@ -1,24 +1,29 @@
 package com.aries.backend.identity.application.service;
 
+import static com.aries.backend.identity.application.exception.IdentityErrorCode.*;
+
 import com.aries.backend.identity.application.port.EmailCodeSender;
 import com.aries.backend.identity.application.port.VerificationCodeStore;
 import com.aries.backend.identity.application.port.VerificationPolicy;
-import com.aries.backend.identity.domain.model.VerificationPurpose;
 import com.aries.backend.identity.domain.model.Email;
+import com.aries.backend.identity.domain.model.UserAccount;
+import com.aries.backend.identity.domain.model.VerificationPurpose;
 import com.aries.backend.identity.domain.repository.UserRepository;
 import com.aries.backend.shared.application.exception.BusinessException;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.slf4j.MDC;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.security.SecureRandom;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static com.aries.backend.identity.application.exception.IdentityErrorCode.*;
 
 /** 发送与消费邮箱验证码；明文只在生成到交给 Resend 的短暂调用链中存在。 */
 @Service
@@ -38,18 +43,25 @@ public class EmailVerificationService {
     public DispatchResult dispatch(String email, VerificationPurpose purpose) {
         Email normalizedEmail = EmailInput.parse(email);
         trafficGuard.checkCodeEmail(normalizedEmail);
-        var existing = users.findByEmail(normalizedEmail);
+        Optional<UserAccount> existing = users.findByEmail(normalizedEmail);
         if (purpose == VerificationPurpose.REGISTER && existing.isPresent()) {
             throw new BusinessException(EMAIL_ALREADY_REGISTERED);
         }
         String code = "%06d".formatted(random.nextInt(1_000_000));
         String codeHash = passwordEncoder.encode(code);
-        if (!store.issue(normalizedEmail.value(), purpose, codeHash,
-                properties.ttl(), properties.resendCooldown())) {
+        if (!store.issue(
+                normalizedEmail.value(),
+                purpose,
+                codeHash,
+                properties.ttl(),
+                properties.resendCooldown())) {
             throw new BusinessException(VERIFICATION_CODE_TOO_FREQUENT);
         }
         try {
-            sender.send(normalizedEmail.value(), code, purpose,
+            sender.send(
+                    normalizedEmail.value(),
+                    code,
+                    purpose,
                     "arieshub-code/" + purpose.name().toLowerCase() + "/" + UUID.randomUUID());
         } catch (RuntimeException error) {
             store.rollbackIssue(normalizedEmail.value(), purpose);
@@ -60,8 +72,9 @@ public class EmailVerificationService {
     }
 
     public void verify(Email email, VerificationPurpose purpose, String code) {
-        VerificationCodeStore.StoredCode stored = store.find(email.value(), purpose)
-                .orElseThrow(() -> new BusinessException(VERIFICATION_CODE_EXPIRED));
+        VerificationCodeStore.StoredCode stored =
+                store.find(email.value(), purpose)
+                        .orElseThrow(() -> new BusinessException(VERIFICATION_CODE_EXPIRED));
         long attempts = store.incrementAttempts(email.value(), purpose);
         if (attempts > properties.maxAttempts()) {
             store.deleteCode(email.value(), purpose);
@@ -77,18 +90,24 @@ public class EmailVerificationService {
     }
 
     private DispatchResult result() {
-        return new DispatchResult(properties.ttl().toSeconds(), properties.resendCooldown().toSeconds());
+        return new DispatchResult(
+                properties.ttl().toSeconds(), properties.resendCooldown().toSeconds());
     }
 
     private void logDeliveryFailure(RuntimeException error) {
         if (error instanceof RestClientResponseException response) {
-            var matcher = PROVIDER_ERROR_NAME.matcher(response.getResponseBodyAsString());
+            Matcher matcher = PROVIDER_ERROR_NAME.matcher(response.getResponseBodyAsString());
             String providerError = matcher.find() ? matcher.group(1) : "unknown";
-            log.warn("验证码邮件投递失败，traceId={}，providerStatus={}，providerError={}",
-                    MDC.get("traceId"), response.getStatusCode().value(), providerError);
+            log.warn(
+                    "验证码邮件投递失败，traceId={}，providerStatus={}，providerError={}",
+                    MDC.get("traceId"),
+                    response.getStatusCode().value(),
+                    providerError);
         } else {
-            log.warn("验证码邮件投递失败，traceId={}，cause={}",
-                    MDC.get("traceId"), error.getClass().getSimpleName());
+            log.warn(
+                    "验证码邮件投递失败，traceId={}，cause={}",
+                    MDC.get("traceId"),
+                    error.getClass().getSimpleName());
         }
     }
 

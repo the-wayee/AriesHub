@@ -1,15 +1,19 @@
 package com.aries.backend.catalog.infrastructure.persistence.repository;
 
-import com.aries.backend.catalog.application.port.*;
-import com.aries.backend.catalog.infrastructure.persistence.mapper.*;
-import com.aries.backend.catalog.infrastructure.persistence.po.*;
+import com.aries.backend.catalog.application.port.PublicationAssetRepository;
+import com.aries.backend.catalog.application.port.PublicationMediaPort;
+import com.aries.backend.catalog.infrastructure.persistence.mapper.PublicationAssetMapper;
+import com.aries.backend.catalog.infrastructure.persistence.mapper.PublicationMediaBindingMapper;
+import com.aries.backend.catalog.infrastructure.persistence.po.PublicationAssetPO;
+import com.aries.backend.catalog.infrastructure.persistence.po.PublicationMediaBindingPO;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Repository;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
 
 /** 素材元数据及绑定使用 BaseMapper；完整替换在内容编辑事务内执行。 */
 @Repository
@@ -19,7 +23,7 @@ public class MybatisPublicationAssetRepository implements PublicationAssetReposi
     private final PublicationMediaBindingMapper bindings;
 
     public void save(PublicationMediaPort.Asset asset) {
-        var po = new PublicationAssetPO();
+        PublicationAssetPO po = new PublicationAssetPO();
         po.setId(asset.id());
         po.setOwnerId(asset.ownerId());
         po.setKind(asset.kind());
@@ -65,7 +69,7 @@ public class MybatisPublicationAssetRepository implements PublicationAssetReposi
                 Wrappers.<PublicationMediaBindingPO>lambdaQuery()
                         .eq(PublicationMediaBindingPO::getPublicationId, publicationId));
         for (String id : all) {
-            var po = new PublicationMediaBindingPO();
+            PublicationMediaBindingPO po = new PublicationMediaBindingPO();
             po.setPublicationId(publicationId);
             po.setFileId(id);
             po.setPubliclyVisible(publicIds.contains(id));

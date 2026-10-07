@@ -1,38 +1,38 @@
+import { mockReaderApi } from "./reader-api";
 import { expect, test } from "@playwright/test";
 import { mockMemberSession } from "./member-session";
 test.beforeEach(async ({ page }) => {
   await mockMemberSession(page);
+  await mockReaderApi(page);
 });
 
-test("landing page leads through the publication preview to the checkout prototype", async ({
+test("landing real publication cards lead to numeric detail paths", async ({
   page,
+  request,
 }) => {
+  const detail = await (await request.get("/api/v1/publications/4")).json();
   const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /探索 AI/ })).toBeVisible();
-  await page.getByRole("link", { name: "探索这篇内容" }).first().click();
-  await expect(page).toHaveURL(/\/publications\/website-from-zero$/);
-  await expect(
-    page.getByRole("heading", { name: "从零做一个可上线的网站", level: 1 }),
-  ).toBeVisible();
-  await page.getByRole("link", { name: "查看积分解锁信息" }).click();
-  await expect(
-    page.getByRole("heading", { name: /为下一次实践/ }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "积分解锁准备中" }),
-  ).toBeDisabled();
+  await page
+    .locator(".reader-landing-gallery")
+    .getByRole("heading", { name: "AI 需求实践", exact: true })
+    .click();
+  await expect(page).toHaveURL(/\/publications\/4$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(
+    detail.data.publication.title,
+  );
   expect(errors).toEqual([]);
 });
 
-test("category and search filters work without the backend", async ({
+test("category and search filters use the server card contract", async ({
   page,
 }) => {
   await page.goto("/discover");
   await expect(page.locator(".hub-content-card")).toHaveCount(4);
-  await page.getByRole("button", { name: "自动化", exact: true }).click();
-  await expect(page.locator(".hub-content-card")).toHaveCount(1);
+  await page.getByRole("button", { name: "日常自动化", exact: true }).click();
+  await expect(page.locator(".hub-content-card")).toHaveCount(2);
   await page.goto("/discover?q=工作流");
   await expect(page.locator(".hub-content-card")).toHaveCount(1);
   await page.goto("/publications?q=不存在的案例");

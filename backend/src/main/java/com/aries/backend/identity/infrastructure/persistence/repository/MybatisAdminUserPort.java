@@ -22,7 +22,7 @@ public class MybatisAdminUserPort implements AdminUserPort {
 
     @Override
     public List<User> list(String query, String status, int limit, int offset) {
-        var page = new Page<UserPO>(offset / limit + 1L, limit, false);
+        Page<UserPO> page = new Page<UserPO>(offset / limit + 1L, limit, false);
         return users
                 .selectPage(
                         page,
@@ -41,7 +41,7 @@ public class MybatisAdminUserPort implements AdminUserPort {
 
     @Override
     public User find(long id) {
-        var row =
+        UserPO row =
                 users.selectOne(
                         visibleColumns(Wrappers.<UserPO>lambdaQuery()).eq(UserPO::getId, id));
         return row == null ? null : toView(row);
@@ -74,7 +74,7 @@ public class MybatisAdminUserPort implements AdminUserPort {
     }
 
     private LambdaQueryWrapper<UserPO> query(String query, String status) {
-        var wrapper = Wrappers.<UserPO>lambdaQuery();
+        LambdaQueryWrapper<UserPO> wrapper = Wrappers.<UserPO>lambdaQuery();
         if (!query.isEmpty()) {
             // Lambda like 无法表达 PostgreSQL 的大小写不敏感搜索；固定表达式使用参数绑定。
             // 用户输入的 !、% 和 _ 是普通字符，不允许扩大查询范围。

@@ -1,28 +1,31 @@
+import { mockReaderApi } from "./reader-api";
 import { expect, test } from "@playwright/test";
 import { mockMemberSession } from "./member-session";
 
 test.beforeEach(async ({ page }) => {
   await mockMemberSession(page);
+  await mockReaderApi(page);
   await page.goto("/");
   await page.evaluate(() => localStorage.clear());
 });
 
-test("member home combines content and visible community activity", async ({
+test("member home combines real articles with labelled community previews", async ({
   page,
 }) => {
   await page.goto("/home");
   await expect(
-    page.getByRole("heading", { name: "晚上好，欢迎回来。" }),
+    page.getByRole("heading", { name: "今天，继续你的探索" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "主理人精选" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "最新发布", exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "社区正在发生" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("heading", { name: "第一版应该保留哪些功能？" }),
-  ).toBeVisible();
-  await page.getByLabel("回复讨论").fill("先完成一条可验证的主路径。");
-  await page.getByRole("button", { name: "发送回复" }).click();
-  await expect(page.getByText("我：先完成一条可验证的主路径。")).toBeVisible();
+    page.getByRole("heading", { name: "继续阅读", exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByText("Aries 刚发布了一篇文章")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "社区的此刻" })).toBeVisible();
+  await expect(page.getByText("动态示例", { exact: true })).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -30,25 +33,69 @@ test("member home combines content and visible community activity", async ({
   ).toBe(true);
 });
 
-test("save and like actions persist in my space", async ({ page }) => {
+test("community widget filters and answer preview remain distinct from publication", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/home");
+  await expect(page.getByRole("heading", { name: "遇见同路人" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "大家在聊" })).toBeVisible();
+  await page.getByRole("button", { name: "评论与回复", exact: true }).click();
+  await expect(page.locator(".community-activity-list article")).toHaveCount(2);
+  await page.getByRole("button", { name: "新文章", exact: true }).click();
+  await expect(page.locator(".community-activity-list article")).toHaveCount(1);
+  await page
+    .getByLabel("预览你的回答")
+    .fill("我把每周的资料整理做成了一个脚本。");
+  await page.getByRole("button", { name: "预览回答", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "仅在当前页面展示，尚未发布",
+  );
+  await page.getByRole("button", { name: "全部动态", exact: true }).click();
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: testInfo.outputPath("member-home.png"),
+    fullPage: true,
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+test("server bookmarks and likes persist across reload and can be removed", async ({
+  page,
+}) => {
   await page.goto("/discover");
-  await page
-    .getByRole("button", { name: /收藏：从零做一个可上线的网站/ })
-    .click();
-  await page
-    .getByRole("button", { name: /点赞：从零做一个可上线的网站/ })
-    .click();
+  const first = page.locator(".hub-content-card").first();
+  await first.getByRole("button", { name: "收藏文章", exact: true }).click();
+  await expect(
+    first.getByRole("button", { name: "取消文章收藏", exact: true }),
+  ).toBeVisible();
+  await first.getByRole("button", { name: "点赞文章", exact: true }).click();
+  await expect(
+    first.getByRole("button", { name: "取消文章点赞", exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page
+      .locator(".hub-content-card")
+      .first()
+      .getByRole("button", { name: "取消文章收藏", exact: true }),
+  ).toBeVisible();
   await page.goto("/my-content");
   await expect(
-    page.getByRole("heading", { name: "从零做一个可上线的网站" }),
+    page.getByRole("heading", { name: "AI 需求实践", exact: true }),
   ).toBeVisible();
-  await page.getByRole("button", { name: /我的点赞/ }).click();
+  await page.getByRole("button", { name: "取消文章收藏", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "从零做一个可上线的网站" }),
+    page.getByRole("heading", { name: "给喜欢的内容，留一个位置" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "我的点赞", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "AI 需求实践", exact: true }),
   ).toBeVisible();
 });
-
-test("reader remembers the selected chapter and keeps paid chapters locked", async ({
+test("prototype chapter choices are not imported as real reading history", async ({
   page,
 }) => {
   await page.goto("/learn/website-from-zero");
@@ -57,8 +104,10 @@ test("reader remembers the selected chapter and keeps paid chapters locked", asy
     page.getByRole("heading", { name: "这一节属于完整内容" }),
   ).toBeVisible();
   await page.goto("/my-content");
-  await page.getByRole("button", { name: /阅读记录/ }).click();
-  await expect(page.getByText("继续第 3 节")).toBeVisible();
+  await page.getByRole("button", { name: "阅读记录", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "还没有阅读记录" }),
+  ).toBeVisible();
 });
 
 test("a local discussion can be created without implying server publication", async ({

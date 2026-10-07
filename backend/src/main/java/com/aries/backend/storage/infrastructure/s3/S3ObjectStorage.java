@@ -12,13 +12,24 @@ import org.springframework.http.ContentDisposition;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.*;
+import software.amazon.awssdk.services.s3.model.AbortMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.CompletedMultipartUpload;
+import software.amazon.awssdk.services.s3.model.CompletedPart;
+import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartRequest;
+import software.amazon.awssdk.services.s3.model.UploadPartResponse;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -124,7 +135,7 @@ public class S3ObjectStorage implements ObjectStorage {
                                             .contentType(type)
                                             .build())
                             .uploadId();
-            var parts = new java.util.ArrayList<CompletedPart>();
+            List<CompletedPart> parts = new ArrayList<>();
             long confirmed = 0;
             while (confirmed < size) {
                 // 最多缓存一个 5 MiB 分片，失败时 SDK 可安全重试同一份字节。
@@ -133,7 +144,7 @@ public class S3ObjectStorage implements ObjectStorage {
                 if (bytes.length != Math.min(PART_BYTES, size - confirmed))
                     throw new java.io.IOException("Upload stream ended early");
                 int number = parts.size() + 1;
-                var response =
+                UploadPartResponse response =
                         client.uploadPart(
                                 UploadPartRequest.builder()
                                         .bucket(bucket)

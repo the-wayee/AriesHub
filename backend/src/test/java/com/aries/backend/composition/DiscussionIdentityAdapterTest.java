@@ -35,22 +35,24 @@ class DiscussionIdentityAdapterTest {
 
     @Test
     void anonymousVisitorsHaveNoUserId() {
-        var adapter = new DiscussionIdentityAdapter(new FakeSessions(Optional.empty(), null), null);
+        DiscussionIdentityAdapter adapter =
+                new DiscussionIdentityAdapter(new FakeSessions(Optional.empty(), null), null);
         assertThat(adapter.currentUserId()).isNull();
         assertThat(adapter.currentUserIsAdmin()).isFalse();
     }
 
     @Test
     void loggedInUsersKeepTheirId() {
-        var adapter = new DiscussionIdentityAdapter(new FakeSessions(Optional.of(7L), null), null);
+        DiscussionIdentityAdapter adapter =
+                new DiscussionIdentityAdapter(new FakeSessions(Optional.of(7L), null), null);
         assertThat(adapter.currentUserId()).isEqualTo(7L);
     }
 
     /** 会话存储故障必须向上抛出，不能被伪装成「未登录」。 */
     @Test
     void sessionStoreFailuresAreNotTreatedAsAnonymous() {
-        var outage = new IllegalStateException("Redis 不可用");
-        var adapter =
+        IllegalStateException outage = new IllegalStateException("Redis 不可用");
+        DiscussionIdentityAdapter adapter =
                 new DiscussionIdentityAdapter(new FakeSessions(Optional.empty(), outage), null);
         assertThatThrownBy(adapter::currentUserId).isSameAs(outage);
     }

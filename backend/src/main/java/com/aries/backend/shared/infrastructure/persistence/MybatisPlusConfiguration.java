@@ -12,8 +12,8 @@ import org.springframework.context.annotation.Configuration;
 public class MybatisPlusConfiguration {
     @Bean
     MybatisPlusInterceptor mybatisPlusInterceptor() {
-        var interceptor = new MybatisPlusInterceptor();
-        var pagination = new PaginationInnerInterceptor(DbType.POSTGRE_SQL);
+        MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        PaginationInnerInterceptor pagination = new PaginationInnerInterceptor(DbType.POSTGRE_SQL);
         pagination.setMaxLimit(100L);
         // 不把越界页重置为第一页，保持接口分页语义；后续其他插件应放在分页插件之前。
         pagination.setOverflow(false);
