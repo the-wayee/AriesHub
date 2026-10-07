@@ -6,8 +6,6 @@ import java.time.OffsetDateTime;
 public final class AdminCatalogViews {
     private AdminCatalogViews() {}
 
-    public record CategoryOption(String id, String slug, String name) {}
-
     public record AdminPublicationSummary(
             String id,
             String slug,

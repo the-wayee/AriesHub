@@ -58,9 +58,27 @@ function homeFixture(): MemberHome {
   };
   return {
     categories: [
-      { id: "1", name: "AI 编程", slug: "coding", publicationCount: 4 },
-      { id: "2", name: "AI 影像", slug: "image", publicationCount: 2 },
-      { id: "3", name: "工作流", slug: "workflow", publicationCount: 2 },
+      {
+        id: "1",
+        name: "AI 编程",
+        slug: "coding",
+        color: "#4967A9",
+        publicationCount: 4,
+      },
+      {
+        id: "2",
+        name: "AI 影像",
+        slug: "image",
+        color: "#4967A9",
+        publicationCount: 2,
+      },
+      {
+        id: "3",
+        name: "工作流",
+        slug: "workflow",
+        color: "#4967A9",
+        publicationCount: 2,
+      },
     ],
     featured: [cards[2], cards[0], cards[1]],
     latest: cards,

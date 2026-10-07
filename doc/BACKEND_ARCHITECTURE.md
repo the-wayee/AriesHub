@@ -133,3 +133,7 @@ V12 新增 `publication_reactions` 与 `publication_reading_progress`。收藏�
 首页 Mock 社区活动属于前端展示层，没有虚构服务器事件或数据库成员记录；真实活动聚合应在发布/讨论事件及可见性规则明确后实现。所有新增 JSON 接口返回 Result，OpenAPI 为生成前端类型的唯一契约。
 
 `PublicationReaderViews.PublicationCardView` 是文章卡片的只读返回 DTO，组合 `PublicationSummary`、封面签名、互动状态和阅读位置，不是持久化实体或新的业务领域。业务文件通过显式导入引用它，不能导入 JDK 智能卡包的 `javax.smartcardio.Card`。Java 局部变量均使用显式类型，具体约定见 `backend/AGENTS.md`。
+
+分类管理的读取和创建统一归属 `AdminCategoryController`，由 `AdminCategoryService` 编排独立的 `CategoryReadPort` / `CategoryWritePort`。分类返回模型使用 `CategoryViews`，不再混入文章后台 DTO。文章用例通过分类读取端口校验引用，不承担分类创建职责。
+
+跨领域 review 已收紧两处桥接：评论身份适配器通过 `IdentityDirectoryService` 查询角色和批量昵称；评论目标适配器通过 `CatalogQueryService` 查询公开可见性。领域仓储留在所属模块，`ArchitectureTest` 新增 composition 不直接依赖领域仓储的规则。素材适配器保留在 composition，以调用存储应用服务并转换文件模型；不把头像或文章规则放入通用存储服务。

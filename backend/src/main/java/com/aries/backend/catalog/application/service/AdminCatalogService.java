@@ -1,12 +1,14 @@
 package com.aries.backend.catalog.application.service;
 
-import static com.aries.backend.catalog.application.exception.CatalogErrorCode.*;
+import static com.aries.backend.catalog.application.exception.CatalogErrorCode.ADMIN_PUBLICATION_NOT_FOUND;
+import static com.aries.backend.catalog.application.exception.CatalogErrorCode.CATEGORY_NOT_FOUND;
+import static com.aries.backend.catalog.application.exception.CatalogErrorCode.PUBLICATION_CONTENT_REQUIRED;
 
 import com.aries.backend.catalog.application.command.SavePublicationCommand;
 import com.aries.backend.catalog.application.port.AdminCatalogReadPort;
+import com.aries.backend.catalog.application.port.CategoryWritePort;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetail;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationSummary;
-import com.aries.backend.catalog.application.view.AdminCatalogViews.CategoryOption;
 import com.aries.backend.catalog.domain.model.Publication;
 import com.aries.backend.catalog.domain.repository.PublicationRepository;
 import com.aries.backend.shared.application.exception.BusinessException;
@@ -26,13 +28,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminCatalogService {
     private final AdminCatalogReadPort catalog;
+    private final CategoryWritePort categories;
     private final PublicationRepository publications;
     private final PublicationMediaService media;
-
-    @Transactional(readOnly = true)
-    public List<CategoryOption> categories() {
-        return catalog.categories();
-    }
 
     @Transactional(readOnly = true)
     public List<AdminPublicationSummary> publications() {
@@ -94,9 +92,8 @@ public class AdminCatalogService {
     }
 
     private void validateCategory(long categoryId) {
-        boolean exists =
-                catalog.categories().stream()
-                        .anyMatch(category -> Long.parseLong(category.id()) == categoryId);
+        // 与分类删除串行：持锁直到文章事务提交，防止引用逻辑删除的分类。
+        boolean exists = categories.lockExists(categoryId);
         if (!exists) throw new BusinessException(CATEGORY_NOT_FOUND);
     }
 }

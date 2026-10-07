@@ -7,7 +7,8 @@ import java.util.List;
 public final class CatalogViews {
     private CatalogViews() {}
 
-    public record Category(String id, String slug, String name, long publicationCount) {}
+    public record Category(
+            String id, String slug, String name, String color, long publicationCount) {}
 
     // 此投影用于公开接口，禁止追加私有正文和对象存储 key。
     public record PublicationSummary(

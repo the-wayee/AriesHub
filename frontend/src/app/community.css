@@ -2569,8 +2569,16 @@
   font-size: 12px;
   transition: background 0.2s;
 }
-.home-topic-nav a:hover {
+/* 分类胶囊独立定义交互颜色，避免继承全局导航的浅色 hover 文本。 */
+.home-topic-nav a:hover,
+.home-topic-nav a:focus-visible {
   background: #e1e5fa;
+  color: #273b60;
+  text-decoration: none;
+}
+.home-topic-nav a:focus-visible {
+  outline: 2px solid #4967a9;
+  outline-offset: 3px;
 }
 .home-topic-nav .home-topic-all {
   background: #3159df;
@@ -3126,6 +3134,12 @@
 }
 .community-home-shell .home-topic-nav .home-topic-all {
   background: #273b60;
+  color: #fff;
+}
+.community-home-shell .home-topic-nav .home-topic-all:hover,
+.community-home-shell .home-topic-nav .home-topic-all:focus-visible {
+  background: #354e78;
+  color: #fff;
 }
 .community-home-shell .home-header-nav a[aria-current],
 .community-home-shell .home-gallery-tabs button[aria-pressed="true"] {

@@ -158,6 +158,18 @@ class ArchitectureTest {
     }
 
     @Test
+    void compositionDoesNotBypassApplicationServicesForDomainRepositories() {
+        noClasses()
+                .that()
+                .resideInAPackage("..composition..")
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage("..domain.repository..")
+                .because("跨模块适配只编排应用层能力，领域仓储由所属模块自行访问")
+                .check(code);
+    }
+
+    @Test
     void jsonControllersReturnResultDirectly() {
         methods()
                 .that()

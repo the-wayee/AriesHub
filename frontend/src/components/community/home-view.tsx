@@ -62,6 +62,11 @@ export function HomeView() {
               key={c.id}
               href={`/discover?category=${encodeURIComponent(c.slug)}`}
             >
+              <i
+                aria-hidden="true"
+                className="category-color-marker"
+                style={{ backgroundColor: c.color }}
+              />
               {c.name}
             </Link>
           ))}
@@ -258,6 +263,11 @@ export function HomeView() {
                   className="reader-theme-link"
                   href={`/discover?category=${encodeURIComponent(c.slug)}`}
                 >
+                  <i
+                    aria-hidden="true"
+                    className="category-color-marker"
+                    style={{ backgroundColor: c.color }}
+                  />
                   {c.name}
                   <span>{c.publicationCount} 篇</span>
                 </Link>

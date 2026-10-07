@@ -20,7 +20,7 @@
         </if>
     </sql>
     <select id="categories" resultType="com.aries.backend.catalog.application.view.CatalogViews$Category">
-        SELECT cat.id::text AS id, cat.slug, cat.name, count(p.id) AS publication_count
+        SELECT cat.id::text AS id, cat.slug, cat.name, cat.color, count(p.id) AS publication_count
         FROM categories cat LEFT JOIN publications p ON p.category_id = cat.id AND <include refid="visible"/>
         WHERE cat.is_deleted = false
         GROUP BY cat.id ORDER BY cat.sort_order, cat.id

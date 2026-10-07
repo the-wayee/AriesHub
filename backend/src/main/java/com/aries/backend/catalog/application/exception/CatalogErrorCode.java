@@ -9,6 +9,10 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum CatalogErrorCode implements ErrorCode {
+    ADMIN_CATEGORY_NOT_FOUND("分类不存在或已删除", Kind.NOT_FOUND),
+    CATEGORY_IN_USE("该分类仍有关联内容，请先将内容移至其他分类再删除", Kind.CONFLICT),
+    CATEGORY_ORDER_CHANGED("分类列表已变化，请刷新后重新排序", Kind.CONFLICT),
+    CATEGORY_NAME_CONFLICT("分类名称已存在，请使用其他名称", Kind.CONFLICT),
     UPLOAD_TASK_UNAVAILABLE("上传任务已取消、过期或重复，请重新上传", Kind.CONFLICT),
     READING_VERSION_CHANGED("正文已更新，请重新加载后继续阅读", Kind.CONFLICT),
     INVALID_MEDIA("素材格式或大小不符合要求", Kind.BAD_REQUEST),

@@ -1,10 +1,16 @@
 package com.aries.backend.catalog.application.service;
 
-import static com.aries.backend.catalog.application.exception.CatalogErrorCode.*;
-import static com.aries.backend.catalog.application.view.CatalogViews.*;
+import static com.aries.backend.catalog.application.exception.CatalogErrorCode.CONTENT_LOCKED;
+import static com.aries.backend.catalog.application.exception.CatalogErrorCode.PUBLICATION_NOT_FOUND;
 
 import com.aries.backend.catalog.application.port.CatalogReadPort;
 import com.aries.backend.catalog.application.query.PublicationSearchQuery;
+import com.aries.backend.catalog.application.view.CatalogViews.Category;
+import com.aries.backend.catalog.application.view.CatalogViews.Content;
+import com.aries.backend.catalog.application.view.CatalogViews.Page;
+import com.aries.backend.catalog.application.view.CatalogViews.Preview;
+import com.aries.backend.catalog.application.view.CatalogViews.PublicationDetail;
+import com.aries.backend.catalog.application.view.CatalogViews.PublicationSummary;
 import com.aries.backend.catalog.domain.model.Publication;
 import com.aries.backend.catalog.domain.repository.PublicationRepository;
 import com.aries.backend.shared.application.exception.BusinessException;
@@ -24,6 +30,11 @@ import java.util.List;
 public class CatalogQueryService {
     private final PublicationRepository publications;
     private final CatalogReadPort reads;
+
+    /** 跨模块查询可见性时只暴露结果，领域聚合和仓储留在 catalog 内。 */
+    public boolean isPubliclyVisibleBySlug(String slug) {
+        return publications.findBySlug(slug).filter(Publication::isPubliclyVisible).isPresent();
+    }
 
     public List<Category> categories() {
         return reads.categories();

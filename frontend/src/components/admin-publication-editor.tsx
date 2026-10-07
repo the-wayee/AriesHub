@@ -1,4 +1,5 @@
 "use client";
+import { CategoryCreateFields } from "./admin-category-manager";
 import Link from "next/link";
 import { Dialog } from "@base-ui/react/dialog";
 import { useRouter } from "next/navigation";
@@ -588,7 +589,16 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
               </small>
             </label>
             <label className="writer-setting">
-              所属主题
+              所属主题{" "}
+              <i
+                aria-hidden="true"
+                className="category-color-marker"
+                style={{
+                  backgroundColor: categories.find(
+                    (category) => category.id === draft.categoryId,
+                  )?.color,
+                }}
+              />
               <select
                 aria-label="所属主题"
                 name="categoryId"
@@ -597,7 +607,7 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                 required
               >
                 <option value="" disabled>
-                  选择主题
+                  选择分类
                 </option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
@@ -610,6 +620,22 @@ export function AdminPublicationEditor({ id }: { id?: string }) {
                 演示。与内容形式、免费或积分阅读无关。
               </small>
             </label>
+            <details className="writer-category-create">
+              <summary>没有合适的分类？创建分类</summary>
+              <CategoryCreateFields
+                onCreated={(category) => {
+                  setCategories((previous) => [...(previous ?? []), category]);
+                  field("categoryId", category.id);
+                }}
+              />
+              <Link
+                href="/admin/categories"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                管理全部分类 ↗
+              </Link>
+            </details>
             <div className="writer-setting">
               <span>文章封面</span>
               {draft.coverFileId ? (

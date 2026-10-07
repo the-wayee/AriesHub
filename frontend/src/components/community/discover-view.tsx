@@ -81,6 +81,11 @@ export function DiscoverView({
               aria-pressed={category === c.slug}
               onClick={() => filter("category", c.slug)}
             >
+              <i
+                aria-hidden="true"
+                className="category-color-marker"
+                style={{ backgroundColor: c.color }}
+              />
               {c.name}
             </Button>
           ))}

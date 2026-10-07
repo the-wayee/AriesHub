@@ -14,12 +14,14 @@ import {
   Menu,
   X,
   Sparkles,
+  Tags,
 } from "lucide-react";
 import { AuthNav } from "./auth-nav";
 import { PageMotion } from "./page-motion";
 const links = [
   { href: "/admin", label: "工作台", icon: LayoutDashboard },
   { href: "/admin/publications", label: "内容管理", icon: FileText },
+  { href: "/admin/categories", label: "分类管理", icon: Tags },
   { href: "/admin/users", label: "成员管理", icon: Users },
   { href: "/admin/comments", label: "评论与审核", icon: MessageSquare },
   { href: "/admin/analytics", label: "数据分析", icon: BarChart3 },
