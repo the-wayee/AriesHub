@@ -47,7 +47,7 @@ test("community widget filters and answer preview remain distinct from publicati
     .getByLabel("预览你的回答")
     .fill("我把每周的资料整理做成了一个脚本。");
   await page.getByRole("button", { name: "预览回答", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText(
+  await expect(page.locator(".community-own-preview")).toContainText(
     "仅在当前页面展示，尚未发布",
   );
   await page.getByRole("button", { name: "全部动态", exact: true }).click();

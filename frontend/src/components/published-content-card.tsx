@@ -4,10 +4,12 @@ import Image from "next/image";
 import { useState } from "react";
 import { PublicationInteractions } from "./publication-interactions";
 import { PublicationMedia } from "./publication-media";
+import type { PublicationCardData } from "@/lib/publication-reader";
 import {
-  CONTENT_FORM_LABELS,
-  type PublicationCardData,
-} from "@/lib/publication-reader";
+  PublicationAccessBadge,
+  PublicationFormBadge,
+  PublicationProgressBadge,
+} from "./publication-badges";
 /** 使用实际内容形式与 ID，列表已携带签名，失效时才请求单素材续签。 */
 export function PublishedContentCard({
   item,
@@ -24,7 +26,7 @@ export function PublishedContentCard({
     >
       <Link className="hub-content-image" href={`/publications/${p.id}`}>
         <PublishedCover key={p.coverFileId} item={item} />
-        <span>{CONTENT_FORM_LABELS[p.publicationType]}</span>
+        <PublicationFormBadge type={p.publicationType} />
       </Link>
       <div className="hub-content-copy">
         <Link href={`/publications/${p.id}`}>
@@ -34,20 +36,24 @@ export function PublishedContentCard({
         <div className="hub-content-meta">
           <div>
             <span>{p.categoryName}</span>
-            <small>
-              {p.accessType === "FREE"
-                ? "免费阅读"
-                : `${p.creditPrice} 积分 · 免费预览`}
-            </small>
+            <PublicationAccessBadge
+              access={p.accessType}
+              credits={p.creditPrice}
+            />
           </div>
           <time dateTime={p.publishedAt}>{p.publishedAt.slice(0, 10)}</time>
         </div>
         {item.progress && (
           <Link
-            className="hub-inline-link"
-            href={`/publications/${p.id}?resume=1`}
+            className="publication-resume-link"
+            href={`/publications/${p.id}${item.progress.percent === 100 ? "" : "?resume=1"}`}
+            aria-label={
+              item.progress.percent === 100
+                ? `再读一次 · ${p.title}`
+                : undefined
+            }
           >
-            继续阅读 · 上次读到 {item.progress.percent}%
+            <PublicationProgressBadge percent={item.progress.percent} />
           </Link>
         )}
         <PublicationInteractions id={p.id} initial={item.interaction} />

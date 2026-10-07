@@ -109,3 +109,77 @@ test("a changed body version never restores the old percentage as current", asyn
   ).toBeVisible();
   expect(await page.evaluate(() => scrollY)).toBeLessThan(200);
 });
+
+for (const reducedMotion of ["no-preference", "reduce"] as const) {
+  test(`interaction feedback confirms saves and respects ${reducedMotion}`, async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion });
+    await mockMemberSession(page);
+    await mockReaderApi(page);
+    let requests = 0;
+    let release: (() => void) | undefined;
+    await page.route("**/api/v1/publications/4/like", async (route) => {
+      requests += 1;
+      if (requests === 1)
+        await new Promise<void>((resolve) => {
+          release = resolve;
+        });
+      const liked = route.request().method() === "PUT";
+      await fulfillResult(route, {
+        json: {
+          publicationId: "4",
+          liked,
+          likeCount: liked ? 1 : 0,
+          bookmarked: false,
+        },
+      });
+    });
+    await page.goto("/discover");
+    const card = page.locator(".hub-content-card").first();
+    const like = card.getByRole("button", { name: "点赞文章", exact: true });
+    await like.click();
+    await expect(like).toHaveAttribute("aria-busy", "true");
+    await expect(like).toBeDisabled();
+    await expect(like).toHaveAttribute("aria-pressed", "false");
+    await expect.poll(() => requests).toBe(1);
+    release!();
+    const selected = card.getByRole("button", {
+      name: "取消文章点赞",
+      exact: true,
+    });
+    await expect(selected).toHaveAttribute("aria-pressed", "true");
+    await expect(selected.locator(".interaction-label")).toHaveText("1");
+    await expect(card.getByRole("status")).toHaveText("已点赞");
+    if (reducedMotion === "reduce") {
+      expect(
+        await selected
+          .locator(".interaction-symbol")
+          .evaluate((node) => getComputedStyle(node).transform),
+      ).toBe("none");
+    } else {
+      await expect
+        .poll(() =>
+          selected
+            .locator(".interaction-ring")
+            .evaluate((node) => Number(getComputedStyle(node).opacity)),
+        )
+        .toBeGreaterThan(0);
+    }
+    await expect
+      .poll(() =>
+        selected
+          .locator(".interaction-ring")
+          .evaluate((node) => Number(getComputedStyle(node).opacity)),
+      )
+      .toBe(0);
+    await selected.click();
+    await expect(like).toHaveAttribute("aria-pressed", "false");
+    await expect(like.locator(".interaction-label")).toHaveText("0");
+    await card.getByRole("button", { name: "收藏文章", exact: true }).click();
+    await expect(
+      card.getByRole("button", { name: "取消文章收藏", exact: true }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(card.getByRole("status")).toHaveText("已收藏");
+  });
+}

@@ -3,16 +3,14 @@ import { PublicationInteractions } from "./publication-interactions";
 import Link from "next/link";
 import { Markdown } from "./markdown";
 import { PublicationMedia } from "./publication-media";
+import {
+  PublicationAccessBadge,
+  PublicationFormBadge,
+} from "./publication-badges";
 import type {
   PublicationDetail,
   PublicationContent,
 } from "@/lib/catalog-types";
-
-const CONTENT_FORMS: Record<string, string> = {
-  CASE_STUDY: "实战案例",
-  ARTICLE: "学习文章",
-  COURSE: "课程",
-};
 
 /** 真实发布内容按 ID 展示；私有正文只使用后端授权后返回的数据。 */
 export function PublicationDetailView({
@@ -32,7 +30,8 @@ export function PublicationDetailView({
       </Link>
       <header className="hub-detail-heading">
         <p className="hub-kicker">
-          {article.categoryName} / {CONTENT_FORMS[article.publicationType]}
+          {article.categoryName} /{" "}
+          <PublicationFormBadge type={article.publicationType} />
         </p>
         <h1>{article.title}</h1>
         <p>{article.summary}</p>
@@ -40,11 +39,10 @@ export function PublicationDetailView({
           <span>
             {new Date(article.publishedAt).toLocaleDateString("zh-CN")}
           </span>
-          <span>
-            {article.accessType === "FREE"
-              ? "免费阅读"
-              : `${article.creditPrice} 积分 · 免费预览`}
-          </span>
+          <PublicationAccessBadge
+            access={article.accessType}
+            credits={article.creditPrice}
+          />
           <span>版本 {preview.version}</span>
         </div>
         <PublicationInteractions id={article.id} />

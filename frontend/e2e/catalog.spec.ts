@@ -6,24 +6,18 @@ test.beforeEach(async ({ page }) => {
   await mockReaderApi(page);
 });
 
-test("landing real publication cards lead to numeric detail paths", async ({
+test("landing uses static examples and opens their labeled previews", async ({
   page,
-  request,
 }) => {
-  const detail = await (await request.get("/api/v1/publications/4")).json();
-  const errors: string[] = [];
-  page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: /探索 AI/ })).toBeVisible();
   await page
     .locator(".reader-landing-gallery")
-    .getByRole("heading", { name: "AI 需求实践", exact: true })
+    .getByRole("heading", { name: "从零做一个可上线的网站", exact: true })
     .click();
-  await expect(page).toHaveURL(/\/publications\/4$/);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    detail.data.publication.title,
-  );
-  expect(errors).toEqual([]);
+  await expect(page).toHaveURL(/\/publications\/website-from-zero$/);
+  await expect(
+    page.getByText("界面预览 · 示例文章", { exact: true }),
+  ).toBeVisible();
 });
 
 test("category and search filters use the server card contract", async ({

@@ -10,13 +10,18 @@ import {
 } from "../published-content-card";
 import { PublicationInteractions } from "../publication-interactions";
 import { PageSkeleton } from "../page-skeleton";
-import { CONTENT_FORM_LABELS, type MemberHome } from "@/lib/publication-reader";
+import { type MemberHome } from "@/lib/publication-reader";
 import {
   CommunityActivityFeed,
   CommunityPreviewRail,
   CommunityPulse,
 } from "./community-widgets";
 import { Button } from "../ui/button";
+import {
+  PublicationFormBadge,
+  PublicationAccessBadge,
+  PublicationProgressBadge,
+} from "../publication-badges";
 /** 通栏首页：文章和阅读进度来自真实聚合接口，社区示例独立标识。 */
 export function HomeView() {
   const { user } = useAuthSession();
@@ -99,18 +104,13 @@ export function HomeView() {
                     </Link>
                     <p>{spotlight.publication.summary}</p>
                     <div className="home-feature-tags">
-                      <span>
-                        {
-                          CONTENT_FORM_LABELS[
-                            spotlight.publication.publicationType
-                          ]
-                        }
-                      </span>
-                      <span>
-                        {spotlight.publication.accessType === "FREE"
-                          ? "免费阅读"
-                          : `${spotlight.publication.creditPrice} 积分`}
-                      </span>
+                      <PublicationFormBadge
+                        type={spotlight.publication.publicationType}
+                      />
+                      <PublicationAccessBadge
+                        access={spotlight.publication.accessType}
+                        credits={spotlight.publication.creditPrice}
+                      />
                     </div>
                     <small>
                       {spotlight.publication.categoryName} ·{" "}
@@ -146,7 +146,7 @@ export function HomeView() {
                     <>
                       <Link
                         className="home-reading-cover"
-                        href={`/publications/${reading.publication.id}?resume=1`}
+                        href={`/publications/${reading.publication.id}${reading.progress?.percent === 100 ? "" : "?resume=1"}`}
                       >
                         <PublishedCover
                           key={reading.publication.coverFileId}
@@ -155,16 +155,24 @@ export function HomeView() {
                       </Link>
                       <h3>{reading.publication.title}</h3>
                       <progress
+                        className="publication-reading-bar"
+                        data-complete={reading.progress?.percent === 100}
                         value={reading.progress?.percent ?? 0}
                         max={100}
                         aria-label="上次阅读进度"
                       />
                       <div className="home-reading-footer">
-                        <span>上次读到 {reading.progress?.percent ?? 0}%</span>
+                        <PublicationProgressBadge
+                          percent={reading.progress?.percent ?? 0}
+                          label="上次读到"
+                        />
                         <Link
-                          href={`/publications/${reading.publication.id}?resume=1`}
+                          href={`/publications/${reading.publication.id}${reading.progress?.percent === 100 ? "" : "?resume=1"}`}
                         >
-                          继续阅读 <ArrowRight />
+                          {reading.progress?.percent === 100
+                            ? "再读一次"
+                            : "继续阅读"}{" "}
+                          <ArrowRight />
                         </Link>
                       </div>
                     </>

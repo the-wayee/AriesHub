@@ -129,3 +129,52 @@ test("full-width home preserves reading, unique articles and responsive composit
     });
   }
 });
+
+test("reading and access badges share semantic styles including completed articles", async ({
+  page,
+}, info) => {
+  await mockMemberSession(page);
+  const data = homeFixture();
+  data.continueReading[0].progress!.percent = 100;
+  data.latest[4].progress = data.continueReading[0].progress;
+  await page.route("**/api/v1/home", (route) =>
+    fulfillResult(route, { json: data }),
+  );
+  await page.route("**/editorial-preview/*.png", (route) =>
+    route.fulfill({
+      contentType: "image/png",
+      path: resolve(
+        "../backend/scripts/editorial-covers",
+        new URL(route.request().url()).pathname.split("/").at(-1)!,
+      ),
+    }),
+  );
+  await page.goto("/home");
+  const widget = page.getByLabel("个人阅读", { exact: true });
+  await expect(widget.locator('[data-tone="complete"]')).toHaveText(
+    "已读完100%",
+  );
+  await expect(widget.getByRole("link", { name: "再读一次" })).toBeVisible();
+  await expect(widget.getByRole("progressbar")).toHaveAttribute("value", "100");
+  await expect(
+    page.locator('.home-practice-gallery [data-tone="free"]').first(),
+  ).toContainText("免费阅读");
+  await expect(
+    page.locator('.home-practice-gallery [data-tone="credit"]').first(),
+  ).toContainText("积分");
+  await expect(
+    page.locator('.home-practice-gallery [data-tone="preview"]').first(),
+  ).toContainText("免费预览");
+  await expect(
+    page.locator('.home-practice-gallery [data-tone="complete"]'),
+  ).toHaveText("已读完100%");
+  await page.screenshot({
+    path: info.outputPath("semantic-reading-badges.png"),
+    fullPage: true,
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});

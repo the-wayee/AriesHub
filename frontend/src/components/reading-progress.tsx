@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { apiRequest } from "@/lib/api";
 import { useAuthSession } from "./auth-session";
 import { Button } from "./ui/button";
+import { PublicationProgressBadge } from "./publication-badges";
 import type { ReadingProgress } from "@/lib/publication-reader";
 
 /** 标题文本生成稳定锚点；插入新段落不改变已有标题的位置键。 */
@@ -169,9 +170,14 @@ export function ReadingProgressTracker({
       <div className="reader-resume">
         {user && previous && (
           <Button variant="ghost" onClick={() => restore.current()}>
-            {previous.version === version
-              ? `继续上次位置 · ${previous.percent}%`
-              : "从新版开始阅读"}
+            {previous.version === version ? (
+              <PublicationProgressBadge
+                percent={previous.percent}
+                label="继续上次位置 ·"
+              />
+            ) : (
+              "从新版开始阅读"
+            )}
           </Button>
         )}
         {user && (

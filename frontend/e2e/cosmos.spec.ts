@@ -1,8 +1,15 @@
-import { mockReaderApi } from "./reader-api";
 import { fulfillResult } from "./api-result";
 import { test, expect } from "@playwright/test";
-test("landing discovery, carousel and local assets", async ({ page }) => {
-  await mockReaderApi(page);
+test("landing discovery, carousel and local assets", async ({ page }, info) => {
+  const contentRequests: string[] = [];
+  page.on("request", (request) => {
+    if (
+      /\/api\/v1\/(publications|home|admin|users\/me\/library)/.test(
+        request.url(),
+      )
+    )
+      contentRequests.push(request.url());
+  });
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toContainText(
     "与同路人一起",
@@ -12,9 +19,28 @@ test("landing discovery, carousel and local assets", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(page.getByText("选择你的下一站")).toHaveCount(0);
   await page.getByRole("button", { name: "下一个实践方向" }).click();
-  await expect(page.locator(".reader-landing-gallery h2").first()).toHaveText(
-    "AI 演示实践",
+  await expect(page.locator(".reader-landing-gallery h3").first()).toHaveText(
+    "用 AI 做一套高质感演示文稿",
   );
+  const label = page
+    .locator(".reader-landing-gallery .landing-preview-label")
+    .first();
+  await expect(label).toHaveText("实践示例");
+  expect(
+    await label.evaluate((node) => node.getBoundingClientRect().height),
+  ).toBeLessThan(40);
+  await expect(
+    page
+      .locator(".reader-landing-gallery")
+      .getByRole("button", { name: /收藏|点赞/ }),
+  ).toHaveCount(0);
+  await expect(page.getByText(/继续阅读 · 上次读到/)).toHaveCount(0);
+  await page.locator("#explore").scrollIntoViewIfNeeded();
+  await page.screenshot({
+    path: info.outputPath("static-landing-gallery.png"),
+    fullPage: false,
+  });
+  expect(contentRequests).toEqual([]);
   // Offscreen lazy images need not be decoded; verify every asset and visible icons.
   const sources = await page
     .locator(".brand-tile img")

@@ -16,10 +16,10 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BrandOrbit } from "./brand-orbit";
-import { PublishedContentCard } from "../published-content-card";
-import { useReaderResource } from "../use-reader-resource";
-import { PageSkeleton } from "../page-skeleton";
-import type { ReaderPage } from "@/lib/publication-reader";
+import {
+  conceptPublications,
+  type ConceptPublication,
+} from "@/lib/concept-publications";
 import { useAuthSession } from "@/components/auth-session";
 gsap.registerPlugin(ScrollTrigger);
 
@@ -31,10 +31,7 @@ export function Landing() {
   const [muted, setMuted] = useState(true);
   const [videoError, setVideoError] = useState(false);
   const [active, setActive] = useState(0);
-  const publications = useReaderResource<ReaderPage>(
-    "/api/v1/publications/cards?size=4&sort=FEATURED",
-  );
-  const cards = publications.data?.items ?? [];
+  const cards = conceptPublications;
   useEffect(() => {
     const media = gsap.matchMedia();
     media.add(
@@ -172,52 +169,34 @@ export function Landing() {
       <section id="explore" className="gallery-section explore-section">
         <p className="section-kicker">从工具开始，走向自己的作品</p>
         <h2>从好奇，到亲手实践。</h2>
-        {publications.error ? (
-          <div className="hub-empty" role="alert">
-            <p>内容暂时无法读取，请稍后刷新。</p>
-            <Link href="/discover">前往探索</Link>
-          </div>
-        ) : !publications.data ? (
-          <PageSkeleton variant="gallery" />
-        ) : cards.length > 0 ? (
-          <>
-            <div className="reader-landing-gallery">
-              <PublishedContentCard
-                key={cards[active % cards.length].publication.id}
-                item={cards[active % cards.length]}
-              />
-              {cards.length > 1 && (
-                <PublishedContentCard
-                  key={cards[(active + 1) % cards.length].publication.id}
-                  item={cards[(active + 1) % cards.length]}
-                />
-              )}
-            </div>
-            <div className="carousel-controls">
-              <Button
-                variant="ghost"
-                aria-label="上一个实践方向"
-                onClick={() =>
-                  setActive((active + cards.length - 1) % cards.length)
-                }
-              >
-                <ArrowLeft />
-              </Button>
-              <span>
-                {(active % cards.length) + 1} / {cards.length}
-              </span>
-              <Button
-                variant="ghost"
-                aria-label="下一个实践方向"
-                onClick={() => setActive((active + 1) % cards.length)}
-              >
-                <ArrowRight />
-              </Button>
-            </div>
-          </>
-        ) : (
-          <p>内容正在整理，新的实践将在这里发布。</p>
-        )}
+        <div className="reader-landing-gallery">
+          <LandingPreviewCard key={cards[active].slug} item={cards[active]} />
+          <LandingPreviewCard
+            key={cards[(active + 1) % cards.length].slug}
+            item={cards[(active + 1) % cards.length]}
+          />
+        </div>
+        <div className="carousel-controls">
+          <Button
+            variant="ghost"
+            aria-label="上一个实践方向"
+            onClick={() =>
+              setActive((active + cards.length - 1) % cards.length)
+            }
+          >
+            <ArrowLeft />
+          </Button>
+          <span>
+            {active + 1} / {cards.length}
+          </span>
+          <Button
+            variant="ghost"
+            aria-label="下一个实践方向"
+            onClick={() => setActive((active + 1) % cards.length)}
+          >
+            <ArrowRight />
+          </Button>
+        </div>
       </section>
       <section id="stories" className="gallery-section stories-section">
         <p className="section-kicker">来自主理人的深度分享</p>
@@ -228,10 +207,10 @@ export function Landing() {
         </h2>
         <div className="story-grid">
           {cards.slice(0, 2).map((item) => (
-            <PublishedContentCard key={item.publication.id} item={item} />
+            <LandingPreviewCard key={item.slug} item={item} />
           ))}
         </div>
-        <p className="quiet-note">内容预览 · 部分深度内容需付费解锁</p>
+        <p className="quiet-note">内容示例 · 部分深度内容需付费解锁</p>
       </section>
       <section id="community" className="gallery-section community-section">
         <p className="section-kicker">COMMUNITY, NOT ALONE</p>
@@ -314,5 +293,38 @@ export function Landing() {
         </div>
       </footer>
     </div>
+  );
+}
+
+/** 落地页只展示固定示例，不读取内容、素材签名和成员互动接口。 */
+function LandingPreviewCard({ item }: { item: ConceptPublication }) {
+  return (
+    <article className="landing-preview-card">
+      <Link
+        className="landing-preview-cover"
+        href={`/publications/${item.slug}`}
+      >
+        <Image
+          src={item.image}
+          alt={item.title}
+          width={720}
+          height={480}
+          sizes="(max-width:760px) 100vw,50vw"
+        />
+        <span className="landing-preview-label">实践示例</span>
+      </Link>
+      <div className="landing-preview-copy">
+        <Link href={`/publications/${item.slug}`}>
+          <h3>{item.shortTitle}</h3>
+        </Link>
+        <p>{item.summary}</p>
+        <div className="landing-preview-meta">
+          <span>{item.category}</span>
+          <Link href={`/publications/${item.slug}`}>
+            查看示例 <ArrowUpRight size={14} />
+          </Link>
+        </div>
+      </div>
+    </article>
   );
 }
