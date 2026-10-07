@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/** 仅签名查询用例已筛选公开的封面；一次获取元数据，签名不需要向 OSS 发起上传/下载。 */
+/** 仅签名查询用例已确认访问权限的封面；一次获取元数据，签名不需要向 OSS 发起上传/下载。 */
 @Component
 @RequiredArgsConstructor
 public class PublicationCoverAdapter implements PublicationCoverPort {

@@ -937,6 +937,12 @@ export interface components {
       coverFileId: string | null;
       /** @default false */
       featured: boolean;
+      cover?: {
+        url: string;
+        /** Format: date-time */
+        expiresAt: string;
+      } | null;
+      categoryColor?: string;
     };
     AdminPublicationDetail: {
       id: string;

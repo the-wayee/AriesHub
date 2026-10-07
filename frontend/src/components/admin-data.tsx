@@ -13,7 +13,15 @@ import {
 import { adminRequest } from "@/lib/admin";
 import type { Overview } from "@/lib/operations";
 import { PageSkeleton } from "./page-skeleton";
+/** 图例、柱形与提示共享同一组指标，避免颜色和数据含义不一致。 */
+const ACTIVITY_METRICS = [
+  { key: "registrations", label: "新成员", unit: "人", tone: "blue" },
+  { key: "publications", label: "新发布", unit: "篇", tone: "green" },
+  { key: "comments", label: "新评论", unit: "条", tone: "purple" },
+] as const;
+
 export function AdminData({ analytics = false }: { analytics?: boolean }) {
+  const [activeDay, setActiveDay] = useState<string | null>(null);
   const [data, setData] = useState<Overview>();
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
@@ -30,6 +38,12 @@ export function AdminData({ analytics = false }: { analytics?: boolean }) {
       active = false;
     };
   }, [attempt]);
+  const chartMax = Math.max(
+    1,
+    ...(data?.days.flatMap((day) =>
+      ACTIVITY_METRICS.map((metric) => day[metric.key]),
+    ) ?? []),
+  );
   return (
     <div className="ops-page">
       <div className="ops-page-heading">
@@ -72,30 +86,52 @@ export function AdminData({ analytics = false }: { analytics?: boolean }) {
                 value: data.summary.members,
                 detail: `近 7 天新增 ${data.summary.newMembers} 人`,
                 icon: Users,
+                tone: "blue",
+                unit: "人",
               },
               {
                 label: "已发布内容",
                 value: data.summary.published,
                 detail: `${data.summary.drafts} 篇草稿待整理`,
                 icon: BookOpen,
+                tone: "green",
+                unit: "篇",
               },
               {
                 label: "社区评论",
                 value: data.summary.comments,
                 detail: "处于公开状态的评论与回复",
                 icon: MessageSquare,
+                tone: "purple",
+                unit: "条",
               },
               {
                 label: "内容解锁",
                 value: data.summary.unlocks,
                 detail: `累计消耗 ${data.summary.creditsSpent.toLocaleString()} 积分`,
                 icon: Coins,
+                tone: "amber",
+                unit: "次",
               },
             ].map((x) => (
-              <article key={x.label} className="ops-stat">
+              <article key={x.label} className="ops-stat" data-tone={x.tone}>
                 <div>
                   <span>{x.label}</span>
-                  <x.icon size={18} />
+                  <button
+                    type="button"
+                    className="ops-metric-icon"
+                    aria-label={`${x.label}指标说明`}
+                    aria-describedby={`metric-${x.tone}`}
+                  >
+                    <x.icon size={18} />
+                  </button>
+                  <span
+                    role="tooltip"
+                    id={`metric-${x.tone}`}
+                    className="ops-metric-tooltip"
+                  >
+                    {x.label}：{x.value.toLocaleString()} {x.unit}。{x.detail}
+                  </span>
                 </div>
                 <strong>{x.value.toLocaleString()}</strong>
                 <small>{x.detail}</small>
@@ -112,40 +148,81 @@ export function AdminData({ analytics = false }: { analytics?: boolean }) {
                 <span className="ops-pill">最近 7 天</span>
               </header>
               <div className="chart-legend">
-                <span>
-                  <i />
-                  新成员
-                </span>
-                <span>
-                  <i />
-                  新发布
-                </span>
-                <span>
-                  <i />
-                  新评论
-                </span>
+                {ACTIVITY_METRICS.map((metric) => (
+                  <span key={metric.key} data-tone={metric.tone}>
+                    <i />
+                    {metric.label}
+                  </span>
+                ))}
               </div>
               <div
                 className="activity-chart"
-                role="img"
+                role="group"
                 aria-label="近七天新成员、发布和评论数量"
+                onMouseLeave={() => setActiveDay(null)}
               >
-                {data.days.map((d) => (
-                  <div className="chart-day" key={d.date}>
-                    <div className="chart-bars">
-                      {[d.registrations, d.publications, d.comments].map(
-                        (v, i) => (
-                          <div
-                            key={i}
+                {data.days.map((day, index) => (
+                  <div
+                    className="chart-day"
+                    key={day.date}
+                    data-active={activeDay === day.date}
+                    data-tooltip-align={
+                      index < 2
+                        ? "left"
+                        : index >= data.days.length - 2
+                          ? "right"
+                          : "center"
+                    }
+                    onMouseEnter={() => setActiveDay(day.date)}
+                  >
+                    <button
+                      type="button"
+                      className="chart-day-trigger"
+                      aria-label={`${day.date}，${ACTIVITY_METRICS.map((metric) => `${metric.label} ${day[metric.key]} ${metric.unit}`).join("，")}`}
+                      aria-describedby={
+                        activeDay === day.date
+                          ? `activity-${day.date}`
+                          : undefined
+                      }
+                      onFocus={() => setActiveDay(day.date)}
+                      onBlur={() => setActiveDay(null)}
+                      onClick={() => setActiveDay(day.date)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Escape") setActiveDay(null);
+                      }}
+                    >
+                      <span className="chart-bars" aria-hidden="true">
+                        {ACTIVITY_METRICS.map((metric) => (
+                          <span
+                            key={metric.key}
+                            data-tone={metric.tone}
                             style={{
-                              height: `${v === 0 ? 2 : Math.max(6, (v / Math.max(1, ...data.days.flatMap((x) => [x.registrations, x.publications, x.comments]))) * 160)}px`,
+                              height: `${day[metric.key] === 0 ? 2 : Math.max(6, (day[metric.key] / chartMax) * 160)}px`,
                             }}
-                            title={`${d.date} · ${["新成员", "新发布", "新评论"][i]} ${v}`}
                           />
-                        ),
-                      )}
-                    </div>
-                    <small>{d.date.slice(5).replace("-", "/")}</small>
+                        ))}
+                      </span>
+                      <small>{day.date.slice(5).replace("-", "/")}</small>
+                    </button>
+                    {activeDay === day.date && (
+                      <div
+                        className="activity-tooltip"
+                        id={`activity-${day.date}`}
+                        role="tooltip"
+                      >
+                        <strong>{day.date}</strong>
+                        {ACTIVITY_METRICS.map((metric) => (
+                          <div key={metric.key} data-tone={metric.tone}>
+                            <i />
+                            <span>{metric.label}</span>
+                            <b>
+                              {day[metric.key].toLocaleString()}
+                              <small>{metric.unit}</small>
+                            </b>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

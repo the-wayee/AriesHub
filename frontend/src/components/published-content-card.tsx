@@ -14,9 +14,13 @@ import {
 export function PublishedContentCard({
   item,
   compact = false,
+  minimal = false,
+  categoryColor,
 }: {
   item: PublicationCardData;
   compact?: boolean;
+  minimal?: boolean;
+  categoryColor?: string;
 }) {
   const { publication: p } = item;
   return (
@@ -26,17 +30,40 @@ export function PublishedContentCard({
     >
       <Link className="hub-content-image" href={`/publications/${p.id}`}>
         <PublishedCover key={p.coverFileId} item={item} />
-        <PublicationFormBadge type={p.publicationType} />
+        {!minimal && <PublicationFormBadge type={p.publicationType} />}
       </Link>
       <div className="hub-content-copy">
+        {minimal && (
+          <div className="home-card-type">
+            <PublicationFormBadge type={p.publicationType} minimal />
+          </div>
+        )}
         <Link href={`/publications/${p.id}`}>
           <h2>{p.title}</h2>
         </Link>
         <p>{p.summary}</p>
         <div className="hub-content-meta">
           <div>
-            <span>{p.categoryName}</span>
+            <span
+              className="publication-category-name"
+              style={
+                minimal && categoryColor
+                  ? {
+                      color: `color-mix(in srgb, ${categoryColor} 65%, #27313d)`,
+                    }
+                  : undefined
+              }
+            >
+              {minimal && categoryColor && (
+                <i
+                  aria-hidden="true"
+                  style={{ backgroundColor: categoryColor }}
+                />
+              )}
+              {p.categoryName}
+            </span>
             <PublicationAccessBadge
+              minimal={minimal}
               access={p.accessType}
               credits={p.creditPrice}
             />

@@ -4,7 +4,16 @@ import { PublicationMedia } from "./publication-media";
 import Link from "next/link";
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search, Plus, FileText, ArrowUpRight, Star } from "lucide-react";
+import {
+  Search,
+  Plus,
+  FileText,
+  ArrowUpRight,
+  Star,
+  BookOpen,
+  Layers,
+  GraduationCap,
+} from "lucide-react";
 import { adminRequest, type AdminPublicationSummary } from "@/lib/admin";
 const states: Record<string, string> = {
   DRAFT: "草稿",
@@ -16,6 +25,25 @@ const types: Record<string, string> = {
   ARTICLE: "学习文章",
   COURSE: "课程",
 };
+/** 类型保留线性图标，状态由色点表达，避免每个字段都变成带框标签。 */
+const typeIcons = {
+  CASE_STUDY: Layers,
+  ARTICLE: BookOpen,
+  COURSE: GraduationCap,
+};
+function ContentType({
+  type,
+}: {
+  type: AdminPublicationSummary["publicationType"];
+}) {
+  const Icon = typeIcons[type];
+  return (
+    <span className="ops-content-type">
+      <Icon size={15} aria-hidden="true" />
+      {types[type]}
+    </span>
+  );
+}
 export function AdminPublicationList() {
   return (
     <Suspense fallback={<PageSkeleton variant="table" label="正在读取内容" />}>
@@ -168,9 +196,11 @@ function ContentList() {
                   <td>
                     <div className="ops-publication-cell">
                       <span className="ops-content-icon">
-                        {x.coverFileId ? (
+                        {x.coverFileId && x.cover?.url ? (
                           <PublicationMedia
                             id={x.coverFileId}
+                            signedUrl={x.cover.url}
+                            preview
                             admin
                             label={`${x.title}封面`}
                           />
@@ -188,20 +218,33 @@ function ContentList() {
                     </div>
                   </td>
                   <td>
-                    {types[x.publicationType]}
-                    <small>{x.categoryName}</small>
+                    <ContentType type={x.publicationType} />
+                    <small className="ops-category-label">
+                      <i
+                        aria-hidden="true"
+                        style={{
+                          backgroundColor: x.categoryColor ?? "#4967a9",
+                        }}
+                      />
+                      {x.categoryName}
+                    </small>
                   </td>
                   <td>
                     {x.accessType === "FREE" ? (
-                      <span className="ops-status">免费</span>
+                      <span className="ops-access-free">免费</span>
                     ) : (
-                      <span>{x.creditPrice} 积分</span>
+                      <span className="ops-access-credit">
+                        <b>{x.creditPrice.toLocaleString()}</b>
+                        <span>积分</span>
+                      </span>
                     )}
                   </td>
                   <td>
                     <span
-                      className={`ops-status ops-status-${x.status.toLowerCase()}`}
+                      className="ops-publication-status"
+                      data-status={x.status}
                     >
+                      <i aria-hidden="true" />
                       {states[x.status]}
                     </span>
                   </td>

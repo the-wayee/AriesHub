@@ -3565,3 +3565,81 @@
   align-items: center;
   flex-wrap: wrap;
 }
+
+/* 首页元信息以图标和文字呈现，封面保持完整；仅导航筛选保留可点击的胶囊形态。 */
+.community-home-shell .publication-badge[data-tone],
+.community-home-shell .home-feature-tags .publication-badge[data-tone] {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 11px;
+  font-weight: 450;
+  letter-spacing: 0;
+}
+/* 色彩由业务语义决定，覆盖旧卡片对所有 span 统一设蓝色的规则。 */
+.community-home-shell .publication-badge[data-tone],
+.community-home-shell .home-feature-tags .publication-badge[data-tone] {
+  color: var(--badge-ink);
+}
+.community-home-shell .publication-badge[data-tone="case_study"] {
+  --badge-ink: #a25c36;
+}
+.community-home-shell .publication-badge[data-tone="article"] {
+  --badge-ink: #327c83;
+}
+.community-home-shell .publication-badge[data-tone="course"] {
+  --badge-ink: #7a56a3;
+}
+.community-home-shell .publication-category-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.community-home-shell .publication-category-name i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.community-home-shell .hub-content-meta > div {
+  column-gap: 12px;
+}
+.community-home-shell .home-card-type {
+  margin: 13px 0 7px;
+}
+.community-home-shell .home-feature-tags {
+  gap: 16px;
+}
+.community-home-shell .home-feature-label {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+.community-home-shell .home-feature-label::before {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 1px;
+  margin-right: 8px;
+  vertical-align: middle;
+  background: #7285a2;
+}
+.community-home-shell .publication-progress-badge strong {
+  border: 0;
+  padding-left: 3px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.community-home-shell
+  .publication-resume-link:hover
+  .publication-progress-badge {
+  color: #284b83;
+}
+.community-home-shell .publication-badge[data-tone="credit"] strong {
+  font-size: 13px;
+  font-weight: 600;
+}

@@ -182,7 +182,7 @@ test("reading and access badges share semantic styles including completed articl
   ).toContainText("积分");
   await expect(
     page.locator('.home-practice-gallery [data-tone="preview"]').first(),
-  ).toContainText("免费预览");
+  ).toHaveCount(0);
   await expect(
     page.locator('.home-practice-gallery [data-tone="complete"]'),
   ).toHaveText("已读完100%");

@@ -1,11 +1,32 @@
-import { BookOpen, CheckCircle2, Coins, Eye, Sparkles } from "lucide-react";
+import {
+  BookOpen,
+  CheckCircle2,
+  Coins,
+  Eye,
+  Sparkles,
+  Layers,
+  GraduationCap,
+} from "lucide-react";
 import type { AccessType, PublicationType } from "@/lib/catalog-types";
 import { CONTENT_FORM_LABELS } from "@/lib/publication-reader";
 
 /** 固定业务状态统一使用语义色，文字与图标同时表达含义，不只依靠颜色。 */
-export function PublicationFormBadge({ type }: { type: PublicationType }) {
+export function PublicationFormBadge({
+  type,
+  minimal = false,
+}: {
+  type: PublicationType;
+  minimal?: boolean;
+}) {
+  const Icon =
+    type === "COURSE"
+      ? GraduationCap
+      : type === "CASE_STUDY"
+        ? Layers
+        : BookOpen;
   return (
     <span className="publication-badge" data-tone={type.toLowerCase()}>
+      {minimal && <Icon aria-hidden="true" />}
       {CONTENT_FORM_LABELS[type]}
     </span>
   );
@@ -14,25 +35,29 @@ export function PublicationFormBadge({ type }: { type: PublicationType }) {
 export function PublicationAccessBadge({
   access,
   credits,
+  minimal = false,
 }: {
   access: AccessType;
   credits: number;
+  minimal?: boolean;
 }) {
   return access === "FREE" ? (
     <span className="publication-badge" data-tone="free">
-      <Sparkles aria-hidden="true" />
+      {!minimal && <Sparkles aria-hidden="true" />}
       免费阅读
     </span>
   ) : (
     <span className="publication-access-badges">
       <span className="publication-badge" data-tone="credit">
-        <Coins aria-hidden="true" />
+        {!minimal && <Coins aria-hidden="true" />}
         <strong>{credits}</strong> 积分
       </span>
-      <span className="publication-badge" data-tone="preview">
-        <Eye aria-hidden="true" />
-        免费预览
-      </span>
+      {!minimal && (
+        <span className="publication-badge" data-tone="preview">
+          <Eye aria-hidden="true" />
+          免费预览
+        </span>
+      )}
     </span>
   );
 }

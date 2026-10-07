@@ -296,3 +296,72 @@ test("writer uploads cover and embeds image video and attachment without storing
     fullPage: true,
   });
 });
+
+test("publication covers do not poll signed URLs and can be retried manually", async ({
+  page,
+}) => {
+  await mockMemberSession(page, "ADMIN");
+  await page.clock.install();
+  let reads = 0;
+  let broken = true;
+  await page.route("**/api/v1/admin/publications", (route) =>
+    fulfillResult(route, {
+      json: [
+        {
+          ...draft,
+          coverFileId: "cover-test",
+          categoryName: "AI 编程",
+          cover: {
+            url: "http://localhost:3200/test-cover.svg?v=initial",
+            expiresAt: "2099-01-01T00:00:00Z",
+          },
+        },
+      ],
+    }),
+  );
+  await page.route("**/api/v1/admin/media/cover-test/url", (route) => {
+    reads++;
+    return fulfillResult(route, {
+      json: { url: `http://localhost:3200/test-cover.svg?v=${reads}` },
+    });
+  });
+  await page.route("**/test-cover.svg?*", (route) =>
+    broken
+      ? route.abort()
+      : route.fulfill({
+          contentType: "image/svg+xml",
+          body: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20"><rect width="20" height="20" fill="blue"/></svg>',
+        }),
+  );
+  await page.goto("/admin/publications");
+  await expect(
+    page.getByRole("button", { name: "重试加载素材" }),
+  ).toBeVisible();
+  expect(reads).toBe(0);
+  await page.clock.fastForward(12 * 60 * 1000);
+  expect(reads).toBe(0);
+  broken = false;
+  await page.getByRole("button", { name: "重试加载素材" }).click();
+  const cover = page.getByRole("img", { name: `${draft.title}封面` });
+  await expect(cover).toBeVisible();
+  await expect
+    .poll(() =>
+      cover.evaluate((image) => (image as HTMLImageElement).naturalWidth),
+    )
+    .toBe(20);
+  expect(reads).toBe(1);
+  const zoom = page.getByRole("button", { name: `放大查看${draft.title}封面` });
+  await zoom.click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("img")).toHaveAttribute(
+    "src",
+    /test-cover/,
+  );
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(zoom).toBeFocused();
+  expect(reads).toBe(1);
+  await page.clock.fastForward(12 * 60 * 1000);
+  await page.getByLabel("搜索内容").fill("从想法");
+  expect(reads).toBe(1);
+});

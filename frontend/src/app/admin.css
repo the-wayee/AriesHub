@@ -935,12 +935,7 @@
   border-radius: 2px;
   background: #222;
 }
-.chart-legend span:nth-child(2) i {
-  background: #999;
-}
-.chart-legend span:nth-child(3) i {
-  background: #ddd;
-}
+
 .activity-chart {
   display: flex;
   justify-content: space-between;
@@ -966,19 +961,14 @@
   height: 160px;
   margin-bottom: 9px;
 }
-.chart-bars > div {
+.chart-bars > span {
   background: #222;
   width: 12px;
   max-width: 28%;
   min-height: 2px;
   border-radius: 3px 3px 0 0;
 }
-.chart-bars > div:nth-child(2) {
-  background: #999;
-}
-.chart-bars > div:nth-child(3) {
-  background: #ddd;
-}
+
 .chart-day small {
   background: white;
   font-size: 9px;
@@ -1275,10 +1265,21 @@
   font-size: 10px;
   line-height: 1.5;
 }
+/* 发布状态使用稳定语义色；名称同时保留，避免仅凭颜色识别。 */
 .ops-status-published {
-  color: #333;
-  background: #f0f0f0;
-  border-color: #eee;
+  color: #26755e;
+  background: #edf8f1;
+  border-color: #cce8d9;
+}
+.ops-status-draft {
+  color: #96651d;
+  background: #fff6e5;
+  border-color: #eedab4;
+}
+.ops-status-archived {
+  color: #9a495c;
+  background: #fbeef1;
+  border-color: #edcdd5;
 }
 .ops-text-button,
 .ops-row-actions button {
@@ -2129,7 +2130,7 @@
   .chart-bars {
     gap: 2px;
   }
-  .chart-bars > div {
+  .chart-bars > span {
     width: 8px;
   }
   .ops-table-panel {
@@ -2676,4 +2677,298 @@
   .category-insertion-slot {
     transition: none;
   }
+}
+
+/* 运营指标的色彩在图标、柱形、图例和提示中保持一致。 */
+.ops-page [data-tone="blue"] {
+  --metric-color: #4269d0;
+  --metric-tint: #edf2ff;
+}
+.ops-page [data-tone="green"] {
+  --metric-color: #23866e;
+  --metric-tint: #eaf7f1;
+}
+.ops-page [data-tone="purple"] {
+  --metric-color: #9161c7;
+  --metric-tint: #f4edfb;
+}
+.ops-page [data-tone="amber"] {
+  --metric-color: #b47a20;
+  --metric-tint: #fff5e3;
+}
+.ops-stat {
+  position: relative;
+  border-top: 3px solid var(--metric-color);
+}
+.ops-stat > strong {
+  color: var(--metric-color);
+}
+.ops-stat > div > span:first-child {
+  color: #555b69;
+}
+.ops-metric-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  color: var(--metric-color);
+  background: var(--metric-tint);
+  cursor: help;
+}
+.ops-metric-icon:focus-visible {
+  outline: 2px solid var(--metric-color);
+  outline-offset: 3px;
+}
+.ops-metric-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  padding: 12px 14px;
+  background: #fff;
+  color: #30384a;
+  font-size: 12px;
+  line-height: 1.7;
+  border: 1px solid #e2e7ef;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px #2435571a;
+  visibility: hidden;
+  z-index: 10;
+}
+.ops-metric-icon:hover + .ops-metric-tooltip,
+.ops-metric-icon:focus + .ops-metric-tooltip {
+  visibility: visible;
+}
+.chart-legend {
+  color: #596174;
+}
+.chart-legend i,
+.chart-bars > span {
+  background: var(--metric-color);
+}
+.chart-day {
+  position: relative;
+}
+.chart-day-trigger {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: crosshair;
+  border-radius: 7px;
+}
+.chart-day-trigger:focus-visible {
+  outline: 2px solid #4269d0;
+  outline-offset: 4px;
+}
+.chart-day[data-active="true"] .chart-day-trigger {
+  background: #edf2ff80;
+}
+.chart-day[data-active="true"] .chart-day-trigger > small {
+  color: #3457ac;
+  font-weight: 600;
+}
+.activity-tooltip {
+  position: absolute;
+  z-index: 8;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 170px;
+  padding: 13px 15px;
+  border: 1px solid #e2e7ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 32px #24355720;
+  text-align: left;
+  pointer-events: none;
+}
+.chart-day[data-tooltip-align="left"] .activity-tooltip {
+  left: 0;
+  transform: none;
+}
+.chart-day[data-tooltip-align="right"] .activity-tooltip {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.activity-tooltip > strong {
+  display: block;
+  font-size: 12px;
+  color: #30384a;
+  margin-bottom: 10px;
+}
+.activity-tooltip > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 7px;
+  font-size: 12px;
+  color: #596174;
+}
+.activity-tooltip i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--metric-color);
+}
+.activity-tooltip b {
+  margin-left: auto;
+  color: var(--metric-color);
+  font-variant-numeric: tabular-nums;
+}
+.activity-tooltip b small {
+  margin-left: 4px;
+  color: #737d8f;
+  font-weight: 400;
+}
+
+.ops-content-table .ops-category-label {
+  margin-top: 7px;
+  color: #596b89;
+}
+.publication-cover-trigger {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+  display: block;
+}
+.publication-cover-trigger > svg {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  color: #fff;
+  background: #172335b3;
+  border-radius: 4px;
+  padding: 2px;
+  width: 18px;
+  height: 18px;
+}
+.publication-cover-trigger:focus-visible {
+  outline: 2px solid #4967a9;
+  outline-offset: -2px;
+}
+.publication-cover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #101625bf;
+  backdrop-filter: blur(5px);
+}
+.publication-cover-dialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 101;
+  width: min(1100px, 94vw);
+  max-height: 92dvh;
+  padding: 16px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 24px 80px #0005;
+  overflow: auto;
+}
+.publication-cover-dialog header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.publication-cover-dialog h2 {
+  margin: 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.publication-cover-dialog header button {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: #f0f2f6;
+  cursor: pointer;
+}
+.publication-cover-full {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 76dvh;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f5f6f8;
+}
+
+/* 内容表格以排版与少量语义色建立层次，不给普通元数据添加边框或底色。 */
+.ops-content-type {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #343945;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ops-content-type svg {
+  color: #7b8493;
+  stroke-width: 1.6;
+}
+.ops-content-table .ops-category-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 8px;
+  padding-left: 23px;
+  color: #7b8290;
+}
+.ops-category-label i,
+.ops-publication-status i {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ops-publication-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #555e6b;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.ops-publication-status[data-status="PUBLISHED"] i {
+  background: #318570;
+}
+.ops-publication-status[data-status="DRAFT"] i {
+  background: #bd8b3b;
+}
+.ops-publication-status[data-status="ARCHIVED"] i {
+  background: #a07383;
+}
+.ops-access-free {
+  color: #397969;
+  font-size: 12px;
+}
+.ops-access-credit {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.ops-access-credit b {
+  font-size: 14px;
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+  color: #8a6836;
+}
+.ops-access-credit > span {
+  color: #858b96;
+  font-size: 11px;
 }

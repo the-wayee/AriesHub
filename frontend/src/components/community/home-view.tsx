@@ -110,9 +110,11 @@ export function HomeView() {
                     <p>{spotlight.publication.summary}</p>
                     <div className="home-feature-tags">
                       <PublicationFormBadge
+                        minimal
                         type={spotlight.publication.publicationType}
                       />
                       <PublicationAccessBadge
+                        minimal
                         access={spotlight.publication.accessType}
                         credits={spotlight.publication.creditPrice}
                       />
@@ -221,7 +223,17 @@ export function HomeView() {
               </div>
               <div className="home-content-gallery">
                 {gallery.map((item) => (
-                  <PublishedContentCard key={item.publication.id} item={item} />
+                  <PublishedContentCard
+                    key={item.publication.id}
+                    item={item}
+                    categoryColor={
+                      data.categories.find(
+                        (category) =>
+                          category.slug === item.publication.categorySlug,
+                      )?.color
+                    }
+                    minimal
+                  />
                 ))}
               </div>
               {!gallery.length && (
@@ -239,8 +251,15 @@ export function HomeView() {
                 <div className="home-content-gallery">
                   {data.continueReading.slice(1).map((item) => (
                     <PublishedContentCard
+                      minimal
                       key={item.publication.id}
                       item={item}
+                      categoryColor={
+                        data.categories.find(
+                          (category) =>
+                            category.slug === item.publication.categorySlug,
+                        )?.color
+                      }
                     />
                   ))}
                 </div>

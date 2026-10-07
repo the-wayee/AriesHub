@@ -7,7 +7,10 @@ import static com.aries.backend.catalog.application.exception.CatalogErrorCode.P
 import com.aries.backend.catalog.application.command.SavePublicationCommand;
 import com.aries.backend.catalog.application.port.AdminCatalogReadPort;
 import com.aries.backend.catalog.application.port.CategoryWritePort;
+import com.aries.backend.catalog.application.port.PublicationCoverPort;
+import com.aries.backend.catalog.application.port.PublicationMediaPort.SignedUrl;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetail;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationListItem;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationSummary;
 import com.aries.backend.catalog.domain.model.Publication;
 import com.aries.backend.catalog.domain.repository.PublicationRepository;
@@ -21,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 /** 管理员内容用例：编辑始终保存完整快照，发布和下架使用显式动作。 */
@@ -28,13 +33,25 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AdminCatalogService {
     private final AdminCatalogReadPort catalog;
+    private final PublicationCoverPort covers;
     private final CategoryWritePort categories;
     private final PublicationRepository publications;
     private final PublicationMediaService media;
 
     @Transactional(readOnly = true)
-    public List<AdminPublicationSummary> publications() {
-        return catalog.publications();
+    public List<AdminPublicationListItem> publications() {
+        List<AdminPublicationSummary> items = catalog.publications();
+        // ADMIN 守卫已验证权限；复用批量元数据读取，避免逐张封面的额外 HTTP 请求。
+        Map<String, SignedUrl> urls =
+                covers.sign(
+                        items.stream()
+                                .map(AdminPublicationSummary::coverFileId)
+                                .filter(Objects::nonNull)
+                                .distinct()
+                                .toList());
+        return items.stream()
+                .map(item -> new AdminPublicationListItem(item, urls.get(item.coverFileId())))
+                .toList();
     }
 
     @Transactional(readOnly = true)

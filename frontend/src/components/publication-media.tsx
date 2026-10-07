@@ -1,20 +1,27 @@
 "use client";
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { FileDown, RotateCw } from "lucide-react";
+import { Dialog } from "@base-ui/react/dialog";
+import { FileDown, RotateCw, ZoomIn, X } from "lucide-react";
 import { apiRequest } from "@/lib/api";
+const MEDIA_URL_REFRESH_INTERVAL_MS = 4 * 60 * 1000;
+
 export function PublicationMedia({
   id,
   label,
   kind = "IMAGE",
   admin = false,
   publicationId,
+  signedUrl,
+  preview = false,
 }: {
   id: string;
   label: string;
   kind?: "IMAGE" | "VIDEO" | "ATTACHMENT";
   admin?: boolean;
   publicationId?: string;
+  signedUrl?: string;
+  preview?: boolean;
 }) {
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
@@ -22,6 +29,8 @@ export function PublicationMedia({
   useEffect(() => {
     let active = true;
     if (!admin && !publicationId) return;
+    // 列表已携带签名地址时直接展示；仅用户明确重试才重新请求单素材地址。
+    if (signedUrl && retry === 0) return;
     const refresh = () => {
       void apiRequest<{ url: string }>(
         admin
@@ -36,12 +45,18 @@ export function PublicationMedia({
       });
     };
     refresh();
-    const timer = setInterval(refresh, 240000);
+    // 图片下载完成后不再依赖签名有效期，定时换 URL 只会让列表持续请求并重载封面。
+    // 视频后续分段请求与附件下载仍需有效签名，暂保留其原有续期行为。
+    const timer =
+      kind === "IMAGE"
+        ? undefined
+        : setInterval(refresh, MEDIA_URL_REFRESH_INTERVAL_MS);
     return () => {
       active = false;
       clearInterval(timer);
     };
-  }, [id, admin, publicationId, retry]);
+  }, [id, admin, publicationId, retry, kind, signedUrl]);
+  const resolvedUrl = signedUrl && retry === 0 ? signedUrl : url;
   if (error)
     return (
       <span className="publication-media-error">
@@ -55,7 +70,7 @@ export function PublicationMedia({
         </button>
       </span>
     );
-  if (!url)
+  if (!resolvedUrl)
     return (
       <span className="publication-media-loading">
         正在加载
@@ -66,7 +81,7 @@ export function PublicationMedia({
     return (
       <a
         className="publication-attachment"
-        href={url}
+        href={resolvedUrl}
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -79,7 +94,7 @@ export function PublicationMedia({
     return (
       <video
         className="publication-video"
-        src={url}
+        src={resolvedUrl}
         controls
         playsInline
         preload="metadata"
@@ -87,15 +102,49 @@ export function PublicationMedia({
         onError={() => setError("视频暂时无法播放")}
       />
     );
-  return (
+  const picture = (
     <Image
       className="publication-image"
       unoptimized
-      src={url}
+      src={resolvedUrl}
       width={900}
       height={600}
       alt={label}
       onError={() => setError("图片暂时无法加载")}
     />
+  );
+  if (!preview) return picture;
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger
+        className="publication-cover-trigger"
+        aria-label={`放大查看${label}`}
+      >
+        {picture}
+        <ZoomIn size={14} aria-hidden="true" />
+      </Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Backdrop className="publication-cover-backdrop" />
+        <Dialog.Popup className="publication-cover-dialog">
+          <header>
+            <Dialog.Title>{label}</Dialog.Title>
+            <Dialog.Close aria-label="关闭封面预览">
+              <X size={22} />
+            </Dialog.Close>
+          </header>
+          <Dialog.Description className="sr-only">
+            封面大图预览，按 Escape 或点击遮罩关闭。
+          </Dialog.Description>
+          <Image
+            unoptimized
+            src={resolvedUrl}
+            width={1600}
+            height={1200}
+            alt={label}
+            className="publication-cover-full"
+          />
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

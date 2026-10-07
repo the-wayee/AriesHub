@@ -2,7 +2,7 @@ package com.aries.backend.catalog.interfaces.rest;
 
 import com.aries.backend.catalog.application.service.AdminCatalogService;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetail;
-import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationSummary;
+import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationListItem;
 import com.aries.backend.catalog.interfaces.rest.request.AdminPublicationRequest;
 import com.aries.backend.shared.interfaces.rest.Result;
 
@@ -31,7 +31,7 @@ public class AdminCatalogController {
     private final AdminCatalogService service;
 
     @GetMapping("/publications")
-    public Result<List<AdminPublicationSummary>> publications() {
+    public Result<List<AdminPublicationListItem>> publications() {
         return Result.success(service.publications());
     }
 
