@@ -13,7 +13,6 @@ public final class CatalogViews {
     // 此投影用于公开接口，禁止追加私有正文和对象存储 key。
     public record PublicationSummary(
             String id,
-            String slug,
             String title,
             String summary,
             String categorySlug,

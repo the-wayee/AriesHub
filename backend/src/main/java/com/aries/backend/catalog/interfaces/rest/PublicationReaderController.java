@@ -10,6 +10,7 @@ import com.aries.backend.catalog.application.view.PublicationReaderViews.Interac
 import com.aries.backend.catalog.application.view.PublicationReaderViews.Progress;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.PublicationCardView;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.ShareLink;
+import com.aries.backend.catalog.domain.model.PublicationLibraryKind;
 import com.aries.backend.catalog.domain.model.PublicationReactionKind;
 import com.aries.backend.catalog.interfaces.rest.request.ConfirmPublicationShareRequest;
 import com.aries.backend.catalog.interfaces.rest.request.PublicationEventRequest;
@@ -86,7 +87,8 @@ public class PublicationReaderController {
 
     @GetMapping("/users/me/library")
     public Result<Page<PublicationCardView>> library(
-            @RequestParam(defaultValue = "BOOKMARK") @Pattern(regexp = "BOOKMARK|LIKE|HISTORY")
+            @RequestParam(defaultValue = PublicationLibraryKind.DEFAULT_CODE)
+                    @Pattern(regexp = PublicationLibraryKind.VALID_VALUES)
                     String kind,
             @RequestParam(defaultValue = "1") @Min(1) @Max(10000) int page,
             @RequestParam(defaultValue = "9") @Min(1) @Max(24) int size) {

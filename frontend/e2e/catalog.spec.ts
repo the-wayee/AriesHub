@@ -14,7 +14,7 @@ test("landing uses static examples and opens their labeled previews", async ({
     .locator(".reader-landing-gallery")
     .getByRole("heading", { name: "从零做一个可上线的网站", exact: true })
     .click();
-  await expect(page).toHaveURL(/\/publications\/website-from-zero$/);
+  await expect(page).toHaveURL(/\/preview\/publications\/1$/);
   await expect(
     page.getByText("界面预览 · 示例文章", { exact: true }),
   ).toBeVisible();
@@ -36,9 +36,9 @@ test("category and search filters use the server card contract", async ({
 });
 
 test("free publication opens the reading prototype", async ({ page }) => {
-  await page.goto("/publications/personal-knowledge");
+  await page.goto("/preview/publications/4");
   await page.getByRole("link", { name: "开始阅读" }).click();
-  await expect(page).toHaveURL(/\/learn\/personal-knowledge$/);
+  await expect(page).toHaveURL(/\/learn\/4$/);
   await expect(
     page.getByRole("heading", { name: "梳理已有资料" }),
   ).toBeVisible();

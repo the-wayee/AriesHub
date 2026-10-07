@@ -161,7 +161,7 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.publication.id").value(id))
                 .andExpect(jsonPath("$.data.publication.title").value("修改后的标题"));
         mvc.perform(get("/api/v1/publications/999999999999999999999999999999"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isBadRequest());
         mvc.perform(get("/api/v1/publications/" + id + "/content").cookie(admin))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.markdown").value("完整正文"));
@@ -175,7 +175,7 @@ class AdminCatalogIntegrationTests extends IntegrationTestSupport {
         mvc.perform(post("/api/v1/admin/publications/13/publish").cookie(admin))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("PUBLICATION_CONTENT_REQUIRED"));
-        mvc.perform(get("/api/v1/publications/draft-case")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/publications/13")).andExpect(status().isNotFound());
         assertThat(database.publicationStatus(13)).isEqualTo("DRAFT");
     }
 

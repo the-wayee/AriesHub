@@ -24,11 +24,10 @@ public record SavePublicationCommand(
         previewMarkdown = PublicationTrial.preview(accessType, fullMarkdown, previewMarkdown);
     }
 
-    /** 兼容旧数据的内部标识由用例提供，不接受客户端指定或修改文章地址。 */
-    public Publication.Draft toDraft(String stableSlug, String contentVersion) {
+    /** 正文版本由用例生成；文章地址只使用数据库分配的 ID。 */
+    public Publication.Draft toDraft(String contentVersion) {
         return new Publication.Draft(
                 categoryId,
-                stableSlug,
                 title,
                 summary,
                 Publication.PublicationType.valueOf(publicationType),

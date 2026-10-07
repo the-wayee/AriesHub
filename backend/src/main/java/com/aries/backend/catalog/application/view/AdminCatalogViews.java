@@ -10,7 +10,6 @@ public final class AdminCatalogViews {
 
     public record AdminPublicationSummary(
             String id,
-            String slug,
             String title,
             String categoryName,
             String categoryColor,
@@ -27,7 +26,6 @@ public final class AdminCatalogViews {
     /** 列表响应在查询投影上补齐临时封面地址，不将签名写入数据库。 */
     public record AdminPublicationListItem(
             String id,
-            String slug,
             String title,
             String categoryName,
             String categoryColor,
@@ -44,7 +42,6 @@ public final class AdminCatalogViews {
         public AdminPublicationListItem(AdminPublicationSummary item, SignedUrl cover) {
             this(
                     item.id(),
-                    item.slug(),
                     item.title(),
                     item.categoryName(),
                     item.categoryColor(),
@@ -64,7 +61,6 @@ public final class AdminCatalogViews {
     public record AdminPublicationDetailRow(
             String id,
             String categoryId,
-            String slug,
             String title,
             String summary,
             String publicationType,
@@ -85,7 +81,6 @@ public final class AdminCatalogViews {
     public record AdminPublicationDetail(
             String id,
             String categoryId,
-            String slug,
             String title,
             String summary,
             String publicationType,
@@ -106,7 +101,6 @@ public final class AdminCatalogViews {
             this(
                     row.id(),
                     row.categoryId(),
-                    row.slug(),
                     row.title(),
                     row.summary(),
                     row.publicationType(),

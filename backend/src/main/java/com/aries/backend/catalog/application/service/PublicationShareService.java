@@ -2,6 +2,7 @@ package com.aries.backend.catalog.application.service;
 
 import static com.aries.backend.catalog.application.exception.CatalogErrorCode.PUBLICATION_NOT_FOUND;
 
+import com.aries.backend.catalog.application.event.PublicationActivityOccurred;
 import com.aries.backend.catalog.application.port.PublicationCoverPort;
 import com.aries.backend.catalog.application.port.PublicationMediaPort;
 import com.aries.backend.catalog.application.port.PublicationReaderIdentity;
@@ -13,12 +14,14 @@ import com.aries.backend.catalog.application.view.CatalogViews.PublicationDetail
 import com.aries.backend.catalog.application.view.PublicationReaderViews.Interaction;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.ShareLink;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.SharedPublication;
+import com.aries.backend.catalog.domain.model.Publication.AccessType;
 import com.aries.backend.catalog.domain.model.PublicationEventKind;
 import com.aries.backend.shared.application.exception.BusinessException;
 import com.aries.backend.shared.application.port.SiteAddress;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,7 +39,9 @@ public class PublicationShareService {
     private final PublicationCoverPort covers;
     private final PublicationMediaService media;
     private final SiteAddress site;
+    private final ApplicationEventPublisher events;
 
+    /** 生成当前用户对该文章的专属分享令牌；重复获取复用授权，不在此处增加分享计数。 */
     @Transactional
     public ShareLink link(long id) {
         long user = identity.requireUserId();
@@ -54,6 +59,7 @@ public class PublicationShareService {
                 detail.publication().summary());
     }
 
+    /** 确认当前用户拥有此令牌后按唯一授权计数，不能替别人确认或重复刷次数。 */
     @Transactional
     public Interaction confirm(long id, String token) {
         long user = identity.requireUserId();
@@ -62,17 +68,24 @@ public class PublicationShareService {
         if (share.publicationId() != id || share.userId() != user)
             throw new BusinessException(PUBLICATION_NOT_FOUND);
         // 点击分享按授权唯一计数：反复点击、复制、刷新或并发确认不会累加。
-        readers.event(user, id, PublicationEventKind.SHARE, "share:" + share.id());
+        if (readers.event(user, id, PublicationEventKind.SHARE, "share:" + share.id()))
+            events.publishEvent(
+                    new PublicationActivityOccurred(
+                            "share:" + share.id(),
+                            user,
+                            id,
+                            PublicationActivityOccurred.Kind.SHARE));
         return readers.interactions(List.of(id), user).get(Long.toString(id));
     }
 
+    /** 分享页公开展示文章信息与分享者；令牌不替代付费正文的账号权益。 */
     @Transactional(readOnly = true)
     public SharedPublication preview(String token) {
         Share share = requireShare(token);
         PublicationDetail detail = catalog.detail(share.publicationId());
         Long viewer = identity.optionalUserId();
         boolean canRead =
-                "FREE".equals(detail.publication().accessType())
+                AccessType.FREE.name().equals(detail.publication().accessType())
                         || (viewer != null && readers.unlocked(viewer, share.publicationId()));
         String coverId = detail.publication().coverFileId();
         return new SharedPublication(
@@ -88,7 +101,7 @@ public class PublicationShareService {
         Share share = requireShare(token);
         PublicationDetail detail = catalog.detail(share.publicationId());
         // 令牌只对免费内容授予匿名读取。付费内容始终走账号身份与已有解锁权益校验。
-        return "FREE".equals(detail.publication().accessType())
+        return AccessType.FREE.name().equals(detail.publication().accessType())
                 ? catalog.content(share.publicationId())
                 : catalog.memberContent(share.publicationId());
     }

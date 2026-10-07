@@ -5,7 +5,7 @@ import { fulfillResult } from "./api-result";
 const draft = {
   id: "41",
   categoryId: "1",
-  slug: "old-address",
+
   title: "我的 AI 实践",
   summary: "记录完整实践过程",
   publicationType: "ARTICLE",

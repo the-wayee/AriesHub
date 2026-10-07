@@ -98,7 +98,7 @@ test("server bookmarks and likes persist across reload and can be removed", asyn
 test("prototype chapter choices are not imported as real reading history", async ({
   page,
 }) => {
-  await page.goto("/learn/website-from-zero");
+  await page.goto("/learn/1");
   await page.getByRole("button", { name: /网站设计与页面实现/ }).click();
   await expect(
     page.getByRole("heading", { name: "这一节属于完整内容" }),

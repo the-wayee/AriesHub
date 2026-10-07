@@ -20,7 +20,7 @@ Java 聚合、数据库表、REST 路径、OpenAPI 和前端类型已统一迁�
 DiscussionTarget(type, key)
 ```
 
-当前内容以 `PUBLICATION + slug` 挂载。以后课程章节、社区动态、作品或其他功能只需要新增一个 `DiscussionTargetResolver` 实现并声明自己的 `targetType()`，不需要复制评论表，也不必改动 discussion 或 composition。
+当前内容以 `PUBLICATION + 文章 ID 的十进制字符串` 挂载。以后课程章节、社区动态、作品或其他功能只需要新增一个 `DiscussionTargetResolver` 实现并声明自己的 `targetType()`，不需要复制评论表，也不必改动 discussion 或 composition。
 
 `discussion_threads` 保证同一目标只有一个活动线程；`comments` 同时保存：
 

@@ -1,3 +1,66 @@
+.app-boot-content {
+  opacity: 0;
+}
+.app-boot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  background: #fafafa;
+}
+.app-boot-symbol {
+  width: 104px;
+  height: 104px;
+  overflow: visible;
+}
+.app-boot-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.app-boot-quote {
+  position: absolute;
+  top: 100%;
+  margin: 22px 0 0;
+  width: min(360px, calc(100vw - 48px));
+  text-align: center;
+}
+.app-boot-mark .animated-caption {
+  margin: 0;
+  color: #686371;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  line-height: 1.8;
+}
+.app-boot-quote-source {
+  display: block;
+  margin-top: 10px;
+  color: #96919e;
+  font-size: 11px;
+  line-height: 1.6;
+  opacity: 0;
+  transform: translateY(4px);
+}
+.animated-caption-character {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(6px);
+}
+.app-boot-symbol path {
+  fill: none;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.app-boot-outline {
+  stroke: #e5e2ec;
+}
+.app-boot-color {
+  stroke: #7862c5;
+}
+
 .page-skeleton {
   width: 100%;
   padding: 24px 0;

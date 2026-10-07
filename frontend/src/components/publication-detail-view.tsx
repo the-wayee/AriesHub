@@ -142,7 +142,7 @@ export function PublicationDetailView({
           </div>
           <PublicationComments
             publicationId={article.id}
-            targetKey={article.slug}
+            targetKey={article.id}
           />
         </section>
         <aside className="publication-sidebar" aria-label="文章目录与资源">

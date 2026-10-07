@@ -5,12 +5,14 @@ import com.aries.backend.catalog.application.port.PublicationMediaPort.SignedUrl
 import com.aries.backend.catalog.application.port.PublicationReaderIdentity;
 import com.aries.backend.catalog.application.port.PublicationReaderRepository;
 import com.aries.backend.catalog.application.query.PublicationSearchQuery;
+import com.aries.backend.catalog.application.query.PublicationSort;
 import com.aries.backend.catalog.application.view.CatalogViews.Page;
 import com.aries.backend.catalog.application.view.CatalogViews.PublicationSummary;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.Home;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.Interaction;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.Progress;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.PublicationCardView;
+import com.aries.backend.catalog.domain.model.PublicationLibraryKind;
 
 import lombok.RequiredArgsConstructor;
 
@@ -59,16 +61,30 @@ public class PublicationCardService {
                 cards(
                         catalog.list(
                                         new PublicationSearchQuery(
-                                                1, 4, "", "", "", "", "FEATURED", true))
+                                                1,
+                                                4,
+                                                "",
+                                                "",
+                                                "",
+                                                "",
+                                                PublicationSort.FEATURED.name(),
+                                                true))
                                 .items(),
                         user),
                 cards(
                         catalog.list(
                                         new PublicationSearchQuery(
-                                                1, 6, "", "", "", "", "LATEST", null))
+                                                1,
+                                                6,
+                                                "",
+                                                "",
+                                                "",
+                                                "",
+                                                PublicationSort.LATEST.name(),
+                                                null))
                                 .items(),
                         user),
-                cards(readers.library(user, "HISTORY", 1, 3), user));
+                cards(readers.library(user, PublicationLibraryKind.HISTORY.name(), 1, 3), user));
     }
 
     private List<PublicationCardView> cards(List<PublicationSummary> items, Long user) {

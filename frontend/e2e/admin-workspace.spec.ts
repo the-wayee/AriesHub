@@ -5,7 +5,7 @@ import { mockMemberSession } from "./member-session";
 const draft = {
   id: "41",
   categoryId: "1",
-  slug: "ai-workflow",
+
   title: "从想法到作品：AI 工作流",
   summary: "把实践过程写下来，让更多人能够复现。",
   publicationType: "ARTICLE",

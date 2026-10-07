@@ -14,7 +14,6 @@ public final class PublicationConverter {
                 .categoryId(row.getCategoryId())
                 .coverFileId(row.getCoverFileId())
                 .featured(Boolean.TRUE.equals(row.getFeatured()))
-                .slug(row.getSlug())
                 .title(row.getTitle())
                 .summary(row.getSummary())
                 .publicationType(Publication.PublicationType.valueOf(row.getPublicationType()))
@@ -37,7 +36,6 @@ public final class PublicationConverter {
         PublicationPO row = new PublicationPO();
         if (publication.getId() > 0) row.setId(publication.getId());
         row.setCategoryId(publication.getCategoryId());
-        row.setSlug(publication.getSlug());
         row.setCoverFileId(publication.getCoverFileId());
         row.setFeatured(publication.isFeatured());
         row.setTitle(publication.getTitle());

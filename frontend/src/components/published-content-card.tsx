@@ -8,6 +8,7 @@ import { PublicationMedia } from "./publication-media";
 import type { PublicationCardData } from "@/lib/publication-reader";
 import {
   PublicationAccessBadge,
+  PublicationFeaturedBadge,
   PublicationFormBadge,
   PublicationProgressBadge,
 } from "./publication-badges";
@@ -28,9 +29,11 @@ export function PublishedContentCard({
     <article
       className={`hub-content-card published-content-card hub-enter${compact ? " community-card-compact" : ""}`}
       data-form={p.publicationType}
+      data-publication-id={p.id}
     >
       <Link className="hub-content-image" href={`/publications/${p.id}`}>
         <PublishedCover key={p.coverFileId} item={item} />
+        {p.featured && <PublicationFeaturedBadge />}
         {!minimal && <PublicationFormBadge type={p.publicationType} />}
       </Link>
       <div className="hub-content-copy">

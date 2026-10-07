@@ -18,11 +18,32 @@ test("hover previews without counting and repeated share clicks count once", asy
 }, info) => {
   await mockMemberSession(page);
   let shares = 0;
-  await page.route("**/api/v1/publications/11/interaction", (route) =>
-    fulfillResult(route, { json: interaction }),
+  let interactionReads = 0;
+  let linkRequests = 0;
+  let attachmentReads = 0;
+  let progressReads = 0;
+  // 模拟网络延迟：分享授权的 POST 不能打断同页 GET 的严格模式合并。
+  await page.route("**/api/v1/publications/11/interaction", async (route) => {
+    interactionReads++;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await fulfillResult(route, { json: interaction });
+  });
+  await page.route("**/api/v1/publications/11/attachments", async (route) => {
+    attachmentReads++;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await fulfillResult(route, { json: [] });
+  });
+  await page.route(
+    "**/api/v1/publications/11/reading-progress",
+    async (route) => {
+      if (route.request().method() === "GET") progressReads++;
+      await fulfillResult(route, { json: null });
+    },
   );
-  await page.route("**/api/v1/publications/11/share-link", (route) =>
-    fulfillResult(route, {
+  await page.route("**/api/v1/publications/11/share-link", async (route) => {
+    linkRequests++;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await fulfillResult(route, {
       json: {
         publicationId: "11",
         url: `https://community.example.com/s/${shareToken}`,
@@ -33,8 +54,8 @@ test("hover previews without counting and repeated share clicks count once", asy
         },
         summary: "一次完整的创作实践。",
       },
-    }),
-  );
+    });
+  });
   await page.route("**/api/v1/publications/11/share", (route) => {
     expect(route.request().postDataJSON().token).toBe(shareToken);
     return fulfillResult(route, {
@@ -58,6 +79,11 @@ test("hover previews without counting and repeated share clicks count once", asy
   const actions = page.getByLabel("文章操作", { exact: true });
   const trigger = actions.getByRole("button", { name: "分享文章" });
   await expect(trigger).toBeEnabled();
+  await expect(page.getByLabel("文章统计")).toContainText("106 阅读");
+  expect(interactionReads).toBe(1);
+  expect(linkRequests).toBe(1);
+  expect(attachmentReads).toBe(1);
+  expect(progressReads).toBeLessThanOrEqual(1);
   if (info.project.name === "desktop") {
     await trigger.hover();
     await expect(page.locator(".share-preview-code svg")).toBeVisible();

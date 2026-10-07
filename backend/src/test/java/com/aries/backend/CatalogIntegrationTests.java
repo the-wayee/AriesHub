@@ -52,7 +52,7 @@ class CatalogIntegrationTests extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.data.total").value(1))
                 .andExpect(jsonPath("$.data.items[0].id").value("11"));
         mvc.perform(get("/api/v1/publications").param("size", "1").param("page", "2"))
-                .andExpect(jsonPath("$.data.items[0].slug").value("free-case"))
+                .andExpect(jsonPath("$.data.items[0].id").value("11"))
                 .andExpect(jsonPath("$.data.totalPages").value(2));
         mvc.perform(get("/api/v1/publications").param("page", "99"))
                 .andExpect(jsonPath("$.data.items", hasSize(0)))
@@ -70,7 +70,7 @@ class CatalogIntegrationTests extends IntegrationTestSupport {
 
     @Test
     void creditDetailsExposePreviewButNeverBody() throws Exception {
-        mvc.perform(get("/api/v1/publications/credit-publication"))
+        mvc.perform(get("/api/v1/publications/12"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.preview.previewMarkdown").value("公开预览"))
                 .andExpect(jsonPath("$.data.publication.creditPrice").value(199))
@@ -87,15 +87,28 @@ class CatalogIntegrationTests extends IntegrationTestSupport {
         mvc.perform(get("/api/v1/publications/11/content").cookie(reader))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.markdown").value("FREE_BODY"));
-        for (String slug :
-                new String[] {"draft-case", "archived-case", "suspended-case", "missing"}) {
-            mvc.perform(get("/api/v1/publications/" + slug)).andExpect(status().isNotFound());
+        for (String id : new String[] {"13", "14", "15", "999"}) {
+            mvc.perform(get("/api/v1/publications/" + id)).andExpect(status().isNotFound());
         }
         for (int id : new int[] {13, 14, 15, 999}) {
             mvc.perform(get("/api/v1/publications/" + id + "/content").cookie(reader))
                     .andExpect(status().isNotFound());
             assertThat(mapper.freeContent(id)).isNull();
         }
+    }
+
+    /** ID 详情与评论统一挂载；旧名称、溢出及非正数不能触发查询回退。 */
+    @Test
+    void detailRejectsNameAddressesAndInvalidIds() throws Exception {
+        for (String id : new String[] {"free-case", "0", "-1", "9223372036854775808"}) {
+            mvc.perform(get("/api/v1/publications/" + id))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+        }
+        mvc.perform(get("/api/v1/publications/11"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.publication.id").value("11"))
+                .andExpect(jsonPath("$.data.publication.slug").doesNotExist());
     }
 
     @Test
@@ -130,7 +143,7 @@ class CatalogIntegrationTests extends IntegrationTestSupport {
     @Test
     void unpublishingImmediatelyHidesDetailAndBody() throws Exception {
         database.updatePublicationStatus(11, "ARCHIVED");
-        mvc.perform(get("/api/v1/publications/free-case")).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/publications/11")).andExpect(status().isNotFound());
         mvc.perform(get("/api/v1/publications/11/content").cookie(reader))
                 .andExpect(status().isNotFound());
         mvc.perform(get("/api/v1/publications").param("access", "FREE"))
@@ -139,18 +152,18 @@ class CatalogIntegrationTests extends IntegrationTestSupport {
 
     @Test
     void bigintIdsAreReturnedAsStrings() throws Exception {
-        insert(9007199254740993L, 1, "large-id", "大 ID", "FREE", "PUBLISHED", "AVAILABLE", "body");
-        mvc.perform(get("/api/v1/publications/large-id"))
+        insert(9007199254740993L, 1, "大 ID", "FREE", "PUBLISHED", "AVAILABLE", "body");
+        mvc.perform(get("/api/v1/publications/9007199254740993"))
                 .andExpect(jsonPath("$.data.publication.id").value("9007199254740993"));
     }
 
     @Test
     void databaseRejectsInvalidCreditPricingAndAccessTypes() {
         // CREDIT 内容不能是 0 积分：约束已从 Java 的 Publication.validate() 下沉到数据库。
-        assertThatThrownBy(() -> database.updatePublicationCreditPrice("credit-publication", 0))
+        assertThatThrownBy(() -> database.updatePublicationCreditPrice(12, 0))
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
         // FREE 内容不能带价格。
-        assertThatThrownBy(() -> database.updatePublicationCreditPrice("free-case", 10))
+        assertThatThrownBy(() -> database.updatePublicationCreditPrice(11, 10))
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
         assertThatThrownBy(() -> database.updatePublicationAccessType(11, "PAID"))
                 .isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);

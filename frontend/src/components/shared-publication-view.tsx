@@ -153,7 +153,7 @@ export function SharedPublicationView({ token }: { token: string }) {
             )}
             <PublicationComments
               publicationId={article.id}
-              targetKey={article.slug}
+              targetKey={article.id}
               loginReturnTo={`/s/${token}`}
             />
           </article>

@@ -23,7 +23,7 @@ const initial: CommunityState = {
   history: {},
   topics: [],
 };
-const storageKey = "arieshub-community-preview-v1";
+const storageKey = "arieshub-community-preview-v2";
 const listeners = new Set<() => void>();
 let snapshot = initial;
 let loaded = false;
@@ -41,8 +41,8 @@ function read(): CommunityState {
       liked: strings(value.liked),
       history: Object.entries(value.history || {}).reduce<
         Record<string, number>
-      >((result, [slug, chapter]) => {
-        if (typeof chapter === "number" && chapter >= 0) result[slug] = chapter;
+      >((result, [id, chapter]) => {
+        if (typeof chapter === "number" && chapter >= 0) result[id] = chapter;
         return result;
       }, {}),
       topics: Array.isArray(value.topics) ? value.topics : [],
@@ -79,16 +79,16 @@ export function useCommunityState() {
   const state = useSyncExternalStore(subscribe, getSnapshot, () => initial);
   return {
     state,
-    toggle(field: "saved" | "liked", slug: string) {
+    toggle(field: "saved" | "liked", id: string) {
       update({
         ...state,
-        [field]: state[field].includes(slug)
-          ? state[field].filter((item) => item !== slug)
-          : [...state[field], slug],
+        [field]: state[field].includes(id)
+          ? state[field].filter((item) => item !== id)
+          : [...state[field], id],
       });
     },
-    remember(slug: string, chapter: number) {
-      update({ ...state, history: { ...state.history, [slug]: chapter } });
+    remember(id: string, chapter: number) {
+      update({ ...state, history: { ...state.history, [id]: chapter } });
     },
     addTopic(topic: LocalTopic) {
       update({ ...state, topics: [topic, ...state.topics] });

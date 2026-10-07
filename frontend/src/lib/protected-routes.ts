@@ -2,6 +2,7 @@ const memberRoutes = [
   "/home",
   "/discover",
   "/publications",
+  "/preview",
   "/community",
   "/my-content",
   "/members",

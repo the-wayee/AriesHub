@@ -8,9 +8,11 @@ import static com.aries.backend.discussion.application.exception.DiscussionError
 import static com.aries.backend.discussion.application.exception.DiscussionErrorCode.DISCUSSION_TARGET_NOT_FOUND;
 import static com.aries.backend.discussion.application.exception.DiscussionErrorCode.DISCUSSION_THREAD_CLOSED;
 
+import com.aries.backend.discussion.application.event.DiscussionActivityOccurred;
 import com.aries.backend.discussion.application.port.DiscussionIdentityProvider;
 import com.aries.backend.discussion.application.port.DiscussionReadPort;
 import com.aries.backend.discussion.application.query.CommentPageQuery;
+import com.aries.backend.discussion.application.view.DiscussionActivityTarget;
 import com.aries.backend.discussion.application.view.DiscussionViews.CommentPage;
 import com.aries.backend.discussion.application.view.DiscussionViews.CommentView;
 import com.aries.backend.discussion.application.view.DiscussionViews.ReplyPage;
@@ -23,6 +25,7 @@ import com.aries.backend.shared.application.exception.BusinessException;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * 评论用例。读取按「根评论分页 + 其下回复平铺」组织，写入覆盖发表、回复、点赞和三种审核动作。
@@ -47,8 +51,14 @@ public class DiscussionService {
     private final DiscussionReadPort reads;
     private final DiscussionIdentityProvider identities;
     private final DiscussionTargets targets;
+    private final ApplicationEventPublisher events;
 
-    /** 读评论同样要校验目标可见：否则内容下架或退回草稿后， 按原 slug 仍能读出它的全部评论。 */
+    @Transactional(readOnly = true)
+    public List<DiscussionActivityTarget> activityTargets(Set<Long> ids) {
+        return reads.activityTargets(ids);
+    }
+
+    /** 读评论同样要校验目标可见：否则内容下架或退回草稿后， 按文章 ID 仍能读出它的全部评论。 */
     @Transactional(readOnly = true)
     public CommentPage comments(DiscussionTarget target, CommentPageQuery query) {
         if (!targets.exists(target)) throw new BusinessException(DISCUSSION_TARGET_NOT_FOUND);
@@ -105,6 +115,14 @@ public class DiscussionService {
             throw new BusinessException(COMMENT_BODY_INVALID);
         }
         Comment saved = discussions.save(draft);
+        events.publishEvent(
+                new DiscussionActivityOccurred(
+                        "comment:" + saved.id(),
+                        authorId,
+                        saved.id(),
+                        parentId == null
+                                ? DiscussionActivityOccurred.Kind.COMMENTED
+                                : DiscussionActivityOccurred.Kind.REPLIED));
         return decorate(List.of(toView(saved)), authorId).getFirst();
     }
 
@@ -150,7 +168,15 @@ public class DiscussionService {
                     .filter(root -> root.status() != Comment.Status.HIDDEN)
                     .orElseThrow(() -> new BusinessException(COMMENT_NOT_FOUND));
         }
-        return discussions.toggleLike(commentId, userId);
+        boolean liked = discussions.toggleLike(commentId, userId);
+        if (liked)
+            events.publishEvent(
+                    new DiscussionActivityOccurred(
+                            "comment-like:" + UUID.randomUUID(),
+                            userId,
+                            commentId,
+                            DiscussionActivityOccurred.Kind.LIKED));
+        return liked;
     }
 
     // ---- 内部 ----

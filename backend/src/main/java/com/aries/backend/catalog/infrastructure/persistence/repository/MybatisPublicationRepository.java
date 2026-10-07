@@ -3,13 +3,15 @@ package com.aries.backend.catalog.infrastructure.persistence.repository;
 import com.aries.backend.catalog.domain.model.Publication;
 import com.aries.backend.catalog.domain.repository.PublicationRepository;
 import com.aries.backend.catalog.infrastructure.persistence.converter.PublicationConverter;
-import com.aries.backend.catalog.infrastructure.persistence.mapper.PublicationMapper;
 import com.aries.backend.catalog.infrastructure.persistence.mapper.PublicationContentMapper;
+import com.aries.backend.catalog.infrastructure.persistence.mapper.PublicationMapper;
 import com.aries.backend.catalog.infrastructure.persistence.po.PublicationContentPO;
 import com.aries.backend.catalog.infrastructure.persistence.po.PublicationPO;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Repository;
+
 import java.util.Optional;
 
 /** 领域仓储的数据库实现：简单查询用类型安全的 Lambda 条件构造器。 */
@@ -25,16 +27,11 @@ public class MybatisPublicationRepository implements PublicationRepository {
     }
 
     @Override
-    public Optional<Publication> findBySlug(String slug) {
-        return Optional.ofNullable(mapper.selectOne(Wrappers.<PublicationPO>lambdaQuery()
-                .eq(PublicationPO::getSlug, slug))).map(this::toDomain);
-    }
-
-    @Override
     public Optional<Publication> findForEditing(long id) {
         PublicationPO row = mapper.selectById(id);
-        return row == null ? Optional.empty() :
-                Optional.of(PublicationConverter.toDomain(row, contents.selectById(id)));
+        return row == null
+                ? Optional.empty()
+                : Optional.of(PublicationConverter.toDomain(row, contents.selectById(id)));
     }
 
     @Override

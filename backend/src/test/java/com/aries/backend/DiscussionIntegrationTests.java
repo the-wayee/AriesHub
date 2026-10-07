@@ -35,7 +35,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
     @Autowired FileStorageService files;
 
     private static final String TARGET =
-            "/api/v1/discussions/comments" + "?targetType=PUBLICATION&targetKey=free-case";
+            "/api/v1/discussions/comments" + "?targetType=PUBLICATION&targetKey=11";
 
     @Test
     void emojiBodyAndReplyRecipientSurvivePagination() throws Exception {
@@ -66,7 +66,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"这个方法很实用😊✨"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"这个方法很实用😊✨"}
                                         """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.body").value("这个方法很实用😊✨"))
@@ -79,7 +79,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","parentId":%d,"body":"谢谢分享👏"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","parentId":%d,"body":"谢谢分享👏"}
                                         """
                                                 .formatted(root)))
                 .andExpect(status().isCreated());
@@ -90,7 +90,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","parentId":%d,"body":"一起实践💪"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","parentId":%d,"body":"一起实践💪"}
                                         """
                                                 .formatted(parent)))
                 .andExpect(status().isCreated())
@@ -118,7 +118,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"这是一条评论"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"这是一条评论"}
                                         """))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("COMMENT_LOGIN_REQUIRED"));
@@ -134,7 +134,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"根评论"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"根评论"}
                                         """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.depth").value(0))
@@ -148,7 +148,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case",
+                                        {"targetType":"PUBLICATION","targetKey":"11",
                                          "parentId":%d,"body":"回复根评论"}
                                         """
                                                 .formatted(rootId)))
@@ -163,7 +163,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case",
+                                        {"targetType":"PUBLICATION","targetKey":"11",
                                          "parentId":%d,"body":"回复那条回复"}
                                         """
                                                 .formatted(replyId)))
@@ -190,8 +190,8 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
     void rootCommentsArePaginatedAndSortable() throws Exception {
         Cookie member = register("paging@example.com", "paging1234", "分页成员");
         long authorId = database.userIdByEmail("paging@example.com");
-        database.insertThread("PUBLICATION", "free-case", "OPEN");
-        long threadId = database.threadId("PUBLICATION", "free-case");
+        database.insertThread("PUBLICATION", "11", "OPEN");
+        long threadId = database.threadId("PUBLICATION", "11");
 
         // 直接插库，created_at 按索引递减分钟：评论 1 最早，评论 30 最新。
         for (int i = 1; i <= 30; i++) {
@@ -233,8 +233,8 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
     void rootCommentsCarryReplyCountAndPreview() throws Exception {
         Cookie member = register("preview@example.com", "preview123", "预览成员");
         long authorId = database.userIdByEmail("preview@example.com");
-        database.insertThread("PUBLICATION", "free-case", "OPEN");
-        long threadId = database.threadId("PUBLICATION", "free-case");
+        database.insertThread("PUBLICATION", "11", "OPEN");
+        long threadId = database.threadId("PUBLICATION", "11");
 
         // minutesAgo 越大越早：有回复的这条更新，因此排在最前。
         database.insertRootComment(threadId, authorId, "有回复的根评论", 0);
@@ -265,7 +265,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"值得点赞"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"值得点赞"}
                                         """))
                 .andExpect(status().isCreated());
         Long commentId = database.commentIdByBody("值得点赞");
@@ -307,7 +307,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"公开可见"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"公开可见"}
                                         """))
                 .andExpect(status().isCreated());
         Long commentId = database.commentIdByBody("公开可见");
@@ -335,7 +335,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"会被删除"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"会被删除"}
                                         """))
                 .andExpect(status().isCreated());
         Long rootId = database.commentIdByBody("会被删除");
@@ -346,7 +346,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case",
+                                        {"targetType":"PUBLICATION","targetKey":"11",
                                          "parentId":%d,"body":"别人的回复"}
                                         """
                                                 .formatted(rootId)))
@@ -381,7 +381,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"待治理评论"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"待治理评论"}
                                         """))
                 .andExpect(status().isCreated());
         Long commentId = database.commentIdByBody("待治理评论");
@@ -410,10 +410,10 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case"}
+                                        {"targetType":"PUBLICATION","targetKey":"11"}
                                         """))
                 .andExpect(status().isOk());
-        assertThat(database.threadStatus(database.threadId("PUBLICATION", "free-case")))
+        assertThat(database.threadStatus(database.threadId("PUBLICATION", "11")))
                 .isEqualTo("LOCKED");
 
         mvc.perform(
@@ -422,7 +422,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"锁帖后的评论"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"锁帖后的评论"}
                                         """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("DISCUSSION_THREAD_CLOSED"));
@@ -431,7 +431,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
     @Test
     void adminsCanLockATargetBeforeItsFirstComment() throws Exception {
         Cookie admin = register("admin@example.com", "admin1234", "管理员");
-        assertThat(database.threadId("PUBLICATION", "free-case")).isNull();
+        assertThat(database.threadId("PUBLICATION", "11")).isNull();
 
         for (int attempt = 0; attempt < 2; attempt++) {
             mvc.perform(
@@ -440,11 +440,11 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                     .contentType("application/json")
                                     .content(
                                             """
-                                            {"targetType":"PUBLICATION","targetKey":"free-case"}
+                                            {"targetType":"PUBLICATION","targetKey":"11"}
                                             """))
                     .andExpect(status().isOk());
         }
-        assertThat(database.threadStatus(database.threadId("PUBLICATION", "free-case")))
+        assertThat(database.threadStatus(database.threadId("PUBLICATION", "11")))
                 .isEqualTo("LOCKED");
         mvc.perform(get(TARGET))
                 .andExpect(status().isOk())
@@ -455,7 +455,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"首次评论"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"首次评论"}
                                         """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("DISCUSSION_THREAD_CLOSED"));
@@ -493,7 +493,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"属于 A"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"属于 A"}
                                         """))
                 .andExpect(status().isCreated());
         Long rootId = database.commentIdByBody("属于 A");
@@ -504,7 +504,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"credit-publication",
+                                        {"targetType":"PUBLICATION","targetKey":"12",
                                          "parentId":%d,"body":"错误跨树"}
                                         """
                                                 .formatted(rootId)))
@@ -512,7 +512,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.code").value("COMMENT_NOT_FOUND"));
     }
 
-    /** 内容下架或退回草稿后，按原 slug 不能再读出评论，也不能按根评论 id 读出回复。 */
+    /** 内容下架或退回草稿后，按文章 ID 不能再读出评论，也不能按根评论 id 读出回复。 */
     @Test
     void commentsOfUnpublishedTargetsAreNotReadable() throws Exception {
         Cookie member = register("unpublished@example.com", "unpub1234", "下架测试");
@@ -522,7 +522,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"下架前的评论"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"下架前的评论"}
                                         """))
                 .andExpect(status().isCreated());
         Long rootId = database.commentIdByBody("下架前的评论");
@@ -546,10 +546,9 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
 
         // 草稿内容同理：即使库里已有线程和评论，也读不到。
         long authorId = database.userIdByEmail("unpublished@example.com");
-        database.insertThread("PUBLICATION", "draft-case", "OPEN");
-        database.insertRootComment(
-                database.threadId("PUBLICATION", "draft-case"), authorId, "草稿下的评论", 0);
-        mvc.perform(get("/api/v1/discussions/comments?targetType=PUBLICATION&targetKey=draft-case"))
+        database.insertThread("PUBLICATION", "13", "OPEN");
+        database.insertRootComment(database.threadId("PUBLICATION", "13"), authorId, "草稿下的评论", 0);
+        mvc.perform(get("/api/v1/discussions/comments?targetType=PUBLICATION&targetKey=13"))
                 .andExpect(status().isNotFound());
     }
 
@@ -563,7 +562,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"将被隐藏的根评论"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"将被隐藏的根评论"}
                                         """))
                 .andExpect(status().isCreated());
         Long rootId = database.commentIdByBody("将被隐藏的根评论");
@@ -573,7 +572,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case",
+                                        {"targetType":"PUBLICATION","targetKey":"11",
                                          "parentId":%d,"body":"它下面的回复"}
                                         """
                                                 .formatted(rootId)))
@@ -603,16 +602,16 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
     void likesRespectThreadVisibilityButRemainAvailableInLockedThreads() throws Exception {
         Cookie member = register("thread-likes@example.com", "thread1234", "线程点赞成员");
         long authorId = database.userIdByEmail("thread-likes@example.com");
-        database.insertThread("PUBLICATION", "free-case", "LOCKED");
-        Long lockedThread = database.threadId("PUBLICATION", "free-case");
+        database.insertThread("PUBLICATION", "11", "LOCKED");
+        Long lockedThread = database.threadId("PUBLICATION", "11");
         database.insertRootComment(lockedThread, authorId, "锁定线程内的评论", 0);
         Long lockedComment = database.commentIdByBody("锁定线程内的评论");
         mvc.perform(post("/api/v1/discussions/comments/" + lockedComment + "/like").cookie(member))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.liked").value(true));
 
-        database.insertThread("PUBLICATION", "credit-publication", "HIDDEN");
-        Long hiddenThread = database.threadId("PUBLICATION", "credit-publication");
+        database.insertThread("PUBLICATION", "12", "HIDDEN");
+        Long hiddenThread = database.threadId("PUBLICATION", "12");
         database.insertRootComment(hiddenThread, authorId, "隐藏线程内的评论", 0);
         Long hiddenComment = database.commentIdByBody("隐藏线程内的评论");
         mvc.perform(post("/api/v1/discussions/comments/" + hiddenComment + "/like").cookie(member))
@@ -632,7 +631,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"马上删除"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"马上删除"}
                                         """))
                 .andExpect(status().isCreated());
         Long rootId = database.commentIdByBody("马上删除");
@@ -645,7 +644,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case",
+                                        {"targetType":"PUBLICATION","targetKey":"11",
                                          "parentId":%d,"body":"正文本身没问题"}
                                         """
                                                 .formatted(rootId)))
@@ -664,7 +663,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"   "}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"   "}
                                         """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
@@ -675,7 +674,7 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case",
+                                        {"targetType":"PUBLICATION","targetKey":"11",
                                          "body":"%s"}
                                         """
                                                 .formatted("字".repeat(4001))))
@@ -696,12 +695,12 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case","body":"审计评论"}
+                                        {"targetType":"PUBLICATION","targetKey":"11","body":"审计评论"}
                                         """))
                 .andExpect(status().isCreated());
         Long commentId = database.commentIdByBody("审计评论");
         OffsetDateTime commentBefore = database.commentUpdatedAt(commentId);
-        OffsetDateTime threadBefore = database.threadUpdatedAt("PUBLICATION", "free-case");
+        OffsetDateTime threadBefore = database.threadUpdatedAt("PUBLICATION", "11");
         Thread.sleep(20);
 
         mvc.perform(delete("/api/v1/discussions/comments/" + commentId).cookie(author))
@@ -715,10 +714,10 @@ class DiscussionIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(
                                         """
-                                        {"targetType":"PUBLICATION","targetKey":"free-case"}
+                                        {"targetType":"PUBLICATION","targetKey":"11"}
                                         """))
                 .andExpect(status().isOk());
-        assertThat(database.threadUpdatedAt("PUBLICATION", "free-case")).isAfter(threadBefore);
+        assertThat(database.threadUpdatedAt("PUBLICATION", "11")).isAfter(threadBefore);
     }
 
     @Test

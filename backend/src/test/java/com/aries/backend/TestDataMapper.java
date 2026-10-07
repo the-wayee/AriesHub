@@ -33,15 +33,14 @@ interface TestDataMapper {
 
     @Insert(
             """
-            INSERT INTO publications(id, category_id, slug, title, summary, publication_type,
+            INSERT INTO publications(id, category_id, title, summary, publication_type,
                 access_type, credit_price, status, delivery_status, published_at)
-            VALUES (#{id}, #{categoryId}, #{slug}, #{title}, '内容摘要', 'CASE_STUDY',
+            VALUES (#{id}, #{categoryId}, #{title}, '内容摘要', 'CASE_STUDY',
                 #{accessType}, #{creditPrice}, #{status}, #{deliveryStatus}, '2026-09-28T00:00:00Z')
             """)
     void insertPublication(
             @Param("id") long id,
             @Param("categoryId") long categoryId,
-            @Param("slug") String slug,
             @Param("title") String title,
             @Param("accessType") String accessType,
             @Param("creditPrice") long creditPrice,
@@ -76,9 +75,8 @@ interface TestDataMapper {
     @Update("UPDATE publications SET status = #{status} WHERE id = #{id}")
     void updatePublicationStatus(@Param("id") long id, @Param("status") String status);
 
-    @Update("UPDATE publications SET credit_price = #{creditPrice} WHERE slug = #{slug}")
-    void updatePublicationCreditPrice(
-            @Param("slug") String slug, @Param("creditPrice") long creditPrice);
+    @Update("UPDATE publications SET credit_price = #{creditPrice} WHERE id = #{id}")
+    void updatePublicationCreditPrice(@Param("id") long id, @Param("creditPrice") long creditPrice);
 
     @Update("UPDATE publications SET access_type = #{accessType} WHERE id = #{id}")
     void updatePublicationAccessType(@Param("id") long id, @Param("accessType") String accessType);
@@ -89,8 +87,8 @@ interface TestDataMapper {
     @Select("SELECT status FROM publications WHERE id = #{id}")
     String publicationStatus(@Param("id") long id);
 
-    @Select("SELECT id FROM publications WHERE slug = #{slug}")
-    Long publicationIdBySlug(@Param("slug") String slug);
+    @Select("SELECT id FROM publications WHERE title = #{title}")
+    Long publicationIdByTitle(@Param("title") String title);
 
     @Select("SELECT id FROM comments WHERE body = #{body}")
     Long commentIdByBody(@Param("body") String body);

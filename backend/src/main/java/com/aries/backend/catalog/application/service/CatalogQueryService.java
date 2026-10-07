@@ -14,6 +14,7 @@ import com.aries.backend.catalog.application.view.CatalogViews.Preview;
 import com.aries.backend.catalog.application.view.CatalogViews.PublicationDetail;
 import com.aries.backend.catalog.application.view.CatalogViews.PublicationSummary;
 import com.aries.backend.catalog.domain.model.Publication;
+import com.aries.backend.catalog.domain.model.Publication.AccessType;
 import com.aries.backend.catalog.domain.repository.PublicationRepository;
 import com.aries.backend.shared.application.exception.BusinessException;
 
@@ -24,6 +25,7 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 /** 发布内容浏览用例：编排仓储与领域规则，不处理 HTTP，也不拼接 SQL。 可重复读确保列表数量、详情及访问规则在同一次查询用例中使用一致快照。 */
 @Service
@@ -35,26 +37,33 @@ public class CatalogQueryService {
     private final PublicationReaderIdentity identity;
     private final PublicationReaderRepository readers;
 
+    /** 批量查询文章 ID；缺失或不可见的文章不返回，用于动态目标过滤。 */
+    public List<PublicationSummary> publicSummaries(Set<Long> ids) {
+        return reads.publicSummaries(ids);
+    }
+
     /** 普通正文入口必须登录；付费内容额外验证当前账号既有解锁权益。 */
     public Content memberContent(long id) {
         long user = identity.requireUserId();
         PublicationDetail detail = detail(id);
-        if (!"FREE".equals(detail.publication().accessType()) && !readers.unlocked(user, id))
-            throw new BusinessException(CONTENT_LOCKED);
+        if (!AccessType.FREE.name().equals(detail.publication().accessType())
+                && !readers.unlocked(user, id)) throw new BusinessException(CONTENT_LOCKED);
         Content result = reads.authorizedContent(id);
         if (result == null) throw missing();
         return result;
     }
 
     /** 跨模块查询可见性时只暴露结果，领域聚合和仓储留在 catalog 内。 */
-    public boolean isPubliclyVisibleBySlug(String slug) {
-        return publications.findBySlug(slug).filter(Publication::isPubliclyVisible).isPresent();
+    public boolean isPubliclyVisibleById(long id) {
+        return publications.findById(id).filter(Publication::isPubliclyVisible).isPresent();
     }
 
+    /** 分类计数仅统计可公开浏览的文章，已删除分类不返回。 */
     public List<Category> categories() {
         return reads.categories();
     }
 
+    /** 使用同一事务快照查询数量与列表，避免翻页结果和总数不一致。 */
     public Page<PublicationSummary> list(PublicationSearchQuery query) {
         long total = reads.count(query);
         return new Page<>(
@@ -65,18 +74,7 @@ public class CatalogQueryService {
                 (total + query.getSize() - 1) / query.getSize());
     }
 
-    /** ID 为规范地址；旧 slug 只保留读取兼容，便于已有链接重定向。 */
-    public PublicationDetail detail(String reference) {
-        if (reference.matches("[0-9]+")) {
-            try {
-                return detail(Long.parseLong(reference));
-            } catch (NumberFormatException invalidId) {
-                throw missing();
-            }
-        }
-        return detailOf(publications.findBySlug(reference).orElseThrow(this::missing));
-    }
-
+    /** 按数据库 ID 读取详情；先校验可见性，再返回试读与不含正文的章节目录。 */
     public PublicationDetail detail(long id) {
         return detailOf(publications.findById(id).orElseThrow(this::missing));
     }

@@ -23,7 +23,7 @@ async function mockShare(page: Page, paid = false, canRead = !paid) {
         detail: {
           publication: {
             id: "11",
-            slug: "free-case",
+
             title: "把一个想法，变成作品",
             summary: "从一段提示词开始，记录一次完整的创作。",
             categoryName: "AI 创作",
@@ -79,13 +79,21 @@ test("free share reads just its article without a member session", async ({
   page,
 }, info) => {
   await mockShare(page);
+  const fileId = "11111111-1111-4111-8111-111111111111";
+  let imageRequests = 0;
+  await page.route(`**/api/v1/shares/${token}/media/${fileId}/url`, (route) => {
+    imageRequests++;
+    return fulfillResult(route, {
+      json: { url: "/concepts/automation-color.webp" },
+    });
+  });
   let fullRequests = 0;
   await page.route(`**/api/v1/shares/${token}/content`, (route) => {
     fullRequests++;
     return fulfillResult(route, {
       json: {
         publicationId: "11",
-        markdown: "## 完整创作过程\n仅此文章的完整正文。",
+        markdown: `## 完整创作过程\n仅此文章的完整正文。\n\n![实战流程图](media:${fileId})`,
         version: "1",
       },
     });
@@ -103,6 +111,22 @@ test("free share reads just its article without a member session", async ({
   });
   await expect(page.getByText("仅此文章的完整正文。")).toBeVisible();
   expect(fullRequests).toBe(1);
+  const zoom = page.getByRole("button", { name: "放大查看实战流程图" });
+  await zoom.click();
+  const dialog = page.getByRole("dialog", { name: "实战流程图" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("img")).toHaveAttribute(
+    "src",
+    /automation-color/,
+  );
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(zoom).toBeFocused();
+  await zoom.click();
+  await page.getByRole("button", { name: "关闭图片预览" }).click();
+  await expect(dialog).toHaveCount(0);
+  expect(imageRequests).toBe(1);
+
   await expect(page.getByRole("region", { name: "文章评论" })).toContainText(
     "这篇文章很有帮助。",
   );

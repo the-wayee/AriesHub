@@ -261,7 +261,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Public detail by stable database ID; legacy slug is read-only compatibility */
+    /** Public detail by database ID */
     get: operations["getPublication"];
     put?: never;
     post?: never;
@@ -916,7 +916,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Public detail by stable database ID; legacy slug is read-only compatibility */
+    /** Public detail by database ID */
     get: operations["getSharedPublication"];
     put?: never;
     post?: never;
@@ -952,6 +952,40 @@ export interface paths {
     };
     /** Published cover/preview is public; paid full media CONTENT_LOCKED; draft/unbound unavailable */
     get: operations["getSharedMediaUrl"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/community/activities": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** 社区跨领域动态 */
+    get: operations["getCommunityActivities"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/inspiration/quote": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Random philosophy quote from the background cache */
+    get: operations["getPhilosophyQuote"];
     put?: never;
     post?: never;
     delete?: never;
@@ -1062,7 +1096,6 @@ export interface components {
     PublicationSummary: {
       /** @description PostgreSQL bigint ID serialized as a string. */
       id: string;
-      slug: string;
       title: string;
       summary: string;
       categorySlug: string;
@@ -1127,7 +1160,6 @@ export interface components {
     };
     AdminPublicationSummary: {
       id: string;
-      slug: string;
       title: string;
       categoryName: string;
       accessType: components["schemas"]["AccessType"];
@@ -1155,7 +1187,6 @@ export interface components {
     };
     AdminPublicationDetail: {
       id: string;
-      slug: string;
       title: string;
       accessType: components["schemas"]["AccessType"];
       /** @enum {string} */
@@ -1528,6 +1559,41 @@ export interface components {
       /** @description 分享者的头像签名地址，未设置头像时为空 */
       sharedAvatarUrl?: string | null;
     };
+    /** @description 社区动态的安全公开投影 */
+    CommunityActivity: {
+      id: string;
+      actorId: string;
+      actorName: string;
+      /** @enum {string} */
+      kind:
+        | "MEMBER_JOINED"
+        | "PUBLICATION_PUBLISHED"
+        | "PUBLICATION_LIKE"
+        | "PUBLICATION_BOOKMARK"
+        | "PUBLICATION_SHARE"
+        | "DISCUSSION_COMMENTED"
+        | "DISCUSSION_REPLIED"
+        | "DISCUSSION_LIKED";
+      title: string;
+      actorAvatarUrl?: string | null;
+      href?: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      /** @description 当前可见评论或回复的短摘录；其他类型为 null */
+      content: string | null;
+    };
+    CommunityActivityPage: {
+      items: components["schemas"]["CommunityActivity"][];
+      /** @description Last scanned event ID; null when history is exhausted. */
+      nextCursor: string | null;
+    };
+    /** @enum {string} */
+    CommunityActivityFilter:
+      "ALL" | "COMMENTS" | "PUBLICATIONS" | "INTERACTIONS" | "MEMBERS";
+    PhilosophyQuoteView: {
+      text: string;
+      source: string | null;
+    };
   };
   responses: {
     /** @description Invalid request */
@@ -1566,7 +1632,7 @@ export interface components {
         "application/json": components["schemas"]["Error"];
       };
     };
-    /** @description Publication slug already exists */
+    /** @description Business state conflict */
     Conflict: {
       headers: {
         [name: string]: unknown;
@@ -2512,7 +2578,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
-        /** @description Canonical article ID, serialized as a decimal string. Existing legacy slug links remain readable for redirects. */
+        /** @description Article database ID, serialized as a decimal string. */
         id: string;
       };
       cookie?: never;
@@ -2539,7 +2605,7 @@ export interface operations {
           };
         };
       };
-      /** @description Invalid slug */
+      /** @description Invalid article ID */
       400: {
         headers: {
           "X-Request-Id"?: string;
@@ -4852,7 +4918,7 @@ export interface operations {
           };
         };
       };
-      /** @description Invalid slug */
+      /** @description Invalid article ID */
       400: {
         headers: {
           "X-Request-Id"?: string;
@@ -5039,6 +5105,86 @@ export interface operations {
       400: components["responses"]["Forbidden"];
       403: components["responses"]["Forbidden"];
       404: components["responses"]["Forbidden"];
+    };
+  };
+  getCommunityActivities: {
+    parameters: {
+      query?: {
+        size?: number;
+        filter?: components["schemas"]["CommunityActivityFilter"];
+        /** @description Exclusive event ID cursor; omitted for the newest page. */
+        before?: string;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Success */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["CommunityActivityPage"];
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
+      /** @description Publication unavailable */
+      404: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Error"];
+        };
+      };
+    };
+  };
+  getPhilosophyQuote: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Random cached philosophy quote; data is null until the first successful background refresh. Never calls Hitokoto on the request path. */
+      200: {
+        headers: {
+          "X-Request-Id"?: string;
+          "Cache-Control"?: "no-store";
+          /** @description Server-generated request trace ID; matches Result.traceId */
+          "X-Trace-Id"?: string;
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": {
+            /** @constant */
+            code: "SUCCESS";
+            msg: string;
+            data: components["schemas"]["PhilosophyQuoteView"] | null;
+            /** Format: uuid */
+            traceId: string;
+          };
+        };
+      };
     };
   };
 }

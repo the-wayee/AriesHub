@@ -6,7 +6,7 @@ import type {
 import type { Result } from "../src/lib/api";
 
 /** 浏览器到本机 Java 的只读联调；验证真实 ID 内容而非静态概念稿。 */
-test("published ID details show the stored body and legacy links redirect to the same ID", async ({
+test("published ID details show the stored body and old slug addresses are rejected", async ({
   page,
   request,
 }, info) => {
@@ -39,8 +39,10 @@ test("published ID details show the stored body and legacy links redirect to the
     path: info.outputPath("published-id.png"),
     fullPage: true,
   });
-  await page.goto(`/publications/${article.slug}`);
-  await expect(page).toHaveURL(new RegExp(`/publications/${article.id}$`));
+  await page.goto("/publications/free-case");
+  await expect(
+    page.getByRole("heading", { name: "这份内容暂时找不到了" }),
+  ).toBeVisible();
 });
 
 test("paid ID detail exposes only the preview and unknown IDs stay unavailable", async ({

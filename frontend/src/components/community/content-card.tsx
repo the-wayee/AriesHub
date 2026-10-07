@@ -12,8 +12,8 @@ import { useCommunityState } from "./local-state";
 
 export function ContentActions({ item }: { item: ConceptPublication }) {
   const { state, toggle } = useCommunityState();
-  const liked = state.liked.includes(item.slug);
-  const saved = state.saved.includes(item.slug);
+  const liked = state.liked.includes(item.id);
+  const saved = state.saved.includes(item.id);
   return (
     <div className="hub-content-actions">
       <Button
@@ -21,7 +21,7 @@ export function ContentActions({ item }: { item: ConceptPublication }) {
         size="icon"
         aria-label={`${liked ? "取消点赞" : "点赞"}：${item.title}`}
         aria-pressed={liked}
-        onClick={() => toggle("liked", item.slug)}
+        onClick={() => toggle("liked", item.id)}
       >
         <Heart fill={liked ? "currentColor" : "none"} />
       </Button>
@@ -30,12 +30,12 @@ export function ContentActions({ item }: { item: ConceptPublication }) {
         size="icon"
         aria-label={`${saved ? "取消收藏" : "收藏"}：${item.title}`}
         aria-pressed={saved}
-        onClick={() => toggle("saved", item.slug)}
+        onClick={() => toggle("saved", item.id)}
       >
         <Bookmark fill={saved ? "currentColor" : "none"} />
       </Button>
       <Link
-        href={`/community?about=${item.slug}`}
+        href={`/community?about=${item.id}`}
         aria-label={`讨论：${item.title}`}
       >
         <MessageCircle />
@@ -58,7 +58,10 @@ export function ContentCard({
     <article
       className={`hub-content-card hub-enter ${compact ? "is-compact" : ""}`}
     >
-      <Link className="hub-content-image" href={`/publications/${item.slug}`}>
+      <Link
+        className="hub-content-image"
+        href={`/preview/publications/${item.id}`}
+      >
         <Image
           src={item.image}
           alt={item.title}
@@ -70,7 +73,7 @@ export function ContentCard({
         <span>{type}</span>
       </Link>
       <div className="hub-content-copy">
-        <Link href={`/publications/${item.slug}`}>
+        <Link href={`/preview/publications/${item.id}`}>
           <h2>{item.shortTitle}</h2>
         </Link>
         <p>{item.summary}</p>

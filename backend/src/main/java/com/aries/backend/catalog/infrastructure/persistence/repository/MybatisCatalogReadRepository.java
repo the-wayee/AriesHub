@@ -13,12 +13,17 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Set;
 
 /** 查询端口适配器，让应用层无需依赖 MyBatis 类型或 SQL 细节。 */
 @Repository
 @RequiredArgsConstructor
 public class MybatisCatalogReadRepository implements CatalogReadPort {
     private final CatalogReadMapper mapper;
+
+    public List<PublicationSummary> publicSummaries(Set<Long> ids) {
+        return ids.isEmpty() ? List.of() : mapper.publicSummaries(ids);
+    }
 
     @Override
     public List<Category> categories() {

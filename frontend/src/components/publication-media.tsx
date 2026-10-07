@@ -132,12 +132,12 @@ export function PublicationMedia({
         <Dialog.Popup className="publication-cover-dialog">
           <header>
             <Dialog.Title>{label}</Dialog.Title>
-            <Dialog.Close aria-label="关闭封面预览">
+            <Dialog.Close aria-label="关闭图片预览">
               <X size={22} />
             </Dialog.Close>
           </header>
           <Dialog.Description className="sr-only">
-            封面大图预览，按 Escape 或点击遮罩关闭。
+            图片大图预览，按 Escape 或点击遮罩关闭。
           </Dialog.Description>
           <Image
             unoptimized

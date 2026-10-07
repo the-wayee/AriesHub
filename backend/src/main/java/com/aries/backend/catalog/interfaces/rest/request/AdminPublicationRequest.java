@@ -1,6 +1,8 @@
 package com.aries.backend.catalog.interfaces.rest.request;
 
 import com.aries.backend.catalog.application.command.SavePublicationCommand;
+import com.aries.backend.catalog.domain.model.Publication.AccessType;
+import com.aries.backend.catalog.domain.model.Publication.PublicationType;
 
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
@@ -17,8 +19,8 @@ public record AdminPublicationRequest(
         @Positive long categoryId,
         @NotBlank @Size(max = 160) String title,
         @NotBlank @Size(max = 500) String summary,
-        @NotBlank @Pattern(regexp = "CASE_STUDY|ARTICLE|COURSE") String publicationType,
-        @NotBlank @Pattern(regexp = "FREE|CREDIT") String accessType,
+        @NotBlank @Pattern(regexp = PublicationType.VALID_VALUES) String publicationType,
+        @NotBlank @Pattern(regexp = AccessType.VALID_VALUES) String accessType,
         @PositiveOrZero long creditPrice,
         @Size(max = 100_000) String previewMarkdown,
         @NotNull @Size(max = 500_000) String fullMarkdown,
@@ -30,8 +32,8 @@ public record AdminPublicationRequest(
                 List<@NotBlank @Pattern(regexp = "[0-9a-fA-F-]{36}") String> attachmentIds) {
     @AssertTrue(message = "免费内容积分价格必须为 0，积分内容价格必须大于 0")
     public boolean isPriceValid() {
-        return ("FREE".equals(accessType) && creditPrice == 0)
-                || ("CREDIT".equals(accessType) && creditPrice > 0);
+        return (AccessType.FREE.name().equals(accessType) && creditPrice == 0)
+                || (AccessType.CREDIT.name().equals(accessType) && creditPrice > 0);
     }
 
     public SavePublicationCommand toCommand() {

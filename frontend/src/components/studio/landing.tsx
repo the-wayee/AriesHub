@@ -170,9 +170,9 @@ export function Landing() {
         <p className="section-kicker">从工具开始，走向自己的作品</p>
         <h2>从好奇，到亲手实践。</h2>
         <div className="reader-landing-gallery">
-          <LandingPreviewCard key={cards[active].slug} item={cards[active]} />
+          <LandingPreviewCard key={cards[active].id} item={cards[active]} />
           <LandingPreviewCard
-            key={cards[(active + 1) % cards.length].slug}
+            key={cards[(active + 1) % cards.length].id}
             item={cards[(active + 1) % cards.length]}
           />
         </div>
@@ -207,7 +207,7 @@ export function Landing() {
         </h2>
         <div className="story-grid">
           {cards.slice(0, 2).map((item) => (
-            <LandingPreviewCard key={item.slug} item={item} />
+            <LandingPreviewCard key={item.id} item={item} />
           ))}
         </div>
         <p className="quiet-note">内容示例 · 部分深度内容需付费解锁</p>
@@ -302,7 +302,7 @@ function LandingPreviewCard({ item }: { item: ConceptPublication }) {
     <article className="landing-preview-card">
       <Link
         className="landing-preview-cover"
-        href={`/publications/${item.slug}`}
+        href={`/preview/publications/${item.id}`}
       >
         <Image
           src={item.image}
@@ -314,13 +314,13 @@ function LandingPreviewCard({ item }: { item: ConceptPublication }) {
         <span className="landing-preview-label">实践示例</span>
       </Link>
       <div className="landing-preview-copy">
-        <Link href={`/publications/${item.slug}`}>
+        <Link href={`/preview/publications/${item.id}`}>
           <h3>{item.shortTitle}</h3>
         </Link>
         <p>{item.summary}</p>
         <div className="landing-preview-meta">
           <span>{item.category}</span>
-          <Link href={`/publications/${item.slug}`}>
+          <Link href={`/preview/publications/${item.id}`}>
             查看示例 <ArrowUpRight size={14} />
           </Link>
         </div>

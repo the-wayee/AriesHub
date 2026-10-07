@@ -1,6 +1,7 @@
 package com.aries.backend.composition;
 
 import com.aries.backend.catalog.application.service.CatalogQueryService;
+import com.aries.backend.catalog.domain.model.Publication;
 import com.aries.backend.discussion.application.port.DiscussionTargetResolver;
 import com.aries.backend.discussion.domain.model.DiscussionTarget;
 
@@ -20,12 +21,18 @@ public class PublicationDiscussionTarget implements DiscussionTargetResolver {
 
     @Override
     public String targetType() {
-        return "PUBLICATION";
+        return Publication.TARGET_TYPE;
     }
 
-    /** 发布内容以 slug 作为 key；草稿、下架、暂停交付的内容不能评论。 */
+    /** 文章评论只接受正整数 ID；非法标识视为目标不存在，草稿、下架、暂停交付均不能评论。 */
     @Override
     public boolean exists(DiscussionTarget target) {
-        return publications.isPubliclyVisibleBySlug(target.key());
+        if (!target.key().matches("[1-9][0-9]{0,18}")) return false;
+        try {
+            return publications.isPubliclyVisibleById(Long.parseLong(target.key()));
+        } catch (NumberFormatException invalidId) {
+            // 超出 bigint 的输入来自外部请求，不让格式错误变成服务器异常。
+            return false;
+        }
     }
 }

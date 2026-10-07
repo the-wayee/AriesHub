@@ -13,19 +13,19 @@ export const metadata: Metadata = { title: "内容说明" };
 export function generateStaticParams() {
   return conceptPublications
     .filter((item) => item.creditPrice > 0)
-    .map((item) => ({ slug: item.slug }));
+    .map((item) => ({ id: item.id }));
 }
 export default async function CheckoutPage({
   params,
-}: PageProps<"/checkout/[slug]">) {
-  const { slug } = await params;
+}: PageProps<"/checkout/[id]">) {
+  const { id } = await params;
   const item = conceptPublications.find(
-    (entry) => entry.slug === slug && entry.creditPrice > 0,
+    (entry) => entry.id === id && entry.creditPrice > 0,
   );
   if (!item) notFound();
   return (
     <>
-      <Link className="hub-back" href={`/publications/${item.slug}`}>
+      <Link className="hub-back" href={`/preview/publications/${item.id}`}>
         ← 返回内容
       </Link>
       <header className="hub-page-heading hub-enter">
@@ -63,7 +63,7 @@ export default async function CheckoutPage({
           </div>
           <Button disabled>积分解锁准备中</Button>
           <small>暂未开放解锁，不会扣除积分；充值支付将在后续接入。</small>
-          <Link href={`/learn/${item.slug}`} className="hub-inline-link">
+          <Link href={`/learn/${item.id}`} className="hub-inline-link">
             先读免费章节 <ArrowRight />
           </Link>
         </section>

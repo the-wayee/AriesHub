@@ -34,6 +34,7 @@ export function Markdown({
                 admin={admin}
                 shareToken={shareToken}
                 publicationId={publicationId}
+                preview
               />
             ) : (
               <span className="image-placeholder">

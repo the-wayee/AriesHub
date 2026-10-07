@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.aries.backend.discussion.infrastructure.persistence.mapper.DiscussionReadMapper">
+    <!-- 删除/隐藏的评论及隐藏根评论、隐藏线程均不进入社区动态。 -->
+    <select id="activityTargets" resultType="com.aries.backend.discussion.application.view.DiscussionActivityTarget">
+        SELECT c.id AS comment_id, t.target_type, t.target_key,
+               left(regexp_replace(c.body, '\s+', ' ', 'g'), 180) AS excerpt
+        FROM comments c JOIN discussion_threads t ON t.id = c.thread_id
+        LEFT JOIN comments root ON root.id = c.root_id
+        WHERE c.is_deleted = false AND c.status = 'PUBLISHED'
+          AND t.is_deleted = false AND t.status &lt;&gt; 'HIDDEN'
+          AND (c.depth = 0 OR (root.is_deleted = false AND root.status &lt;&gt; 'HIDDEN'))
+          AND c.id IN <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
+    </select>
 
     <!--
       可见性规则集中在这里，只定义一次。早期版本在 SQL 里过滤 PUBLISHED、又在服务层重复判断 HIDDEN，

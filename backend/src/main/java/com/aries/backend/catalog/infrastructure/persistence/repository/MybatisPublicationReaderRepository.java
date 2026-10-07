@@ -5,6 +5,8 @@ import com.aries.backend.catalog.application.view.CatalogViews.PublicationSummar
 import com.aries.backend.catalog.application.view.PublicationReaderViews.Activity;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.Interaction;
 import com.aries.backend.catalog.application.view.PublicationReaderViews.Progress;
+import com.aries.backend.catalog.domain.model.Publication.DeliveryStatus;
+import com.aries.backend.catalog.domain.model.Publication.PublicationStatus;
 import com.aries.backend.catalog.domain.model.PublicationEventKind;
 import com.aries.backend.catalog.domain.model.PublicationReactionKind;
 import com.aries.backend.catalog.infrastructure.persistence.mapper.PublicationEventMapper;
@@ -56,13 +58,15 @@ public class MybatisPublicationReaderRepository implements PublicationReaderRepo
         return publications.selectOne(
                         Wrappers.<PublicationPO>lambdaQuery()
                                 .eq(PublicationPO::getId, id)
-                                .eq(PublicationPO::getStatus, "PUBLISHED")
-                                .eq(PublicationPO::getDeliveryStatus, "AVAILABLE")
+                                .eq(PublicationPO::getStatus, PublicationStatus.PUBLISHED.name())
+                                .eq(
+                                        PublicationPO::getDeliveryStatus,
+                                        DeliveryStatus.AVAILABLE.name())
                                 .last("FOR UPDATE"))
                 != null;
     }
 
-    public void reaction(long user, long id, PublicationReactionKind kind, boolean enabled) {
+    public boolean reaction(long user, long id, PublicationReactionKind kind, boolean enabled) {
         LambdaQueryWrapper<PublicationReactionPO> query =
                 Wrappers.<PublicationReactionPO>lambdaQuery()
                         .eq(PublicationReactionPO::getUserId, user)
@@ -70,9 +74,9 @@ public class MybatisPublicationReaderRepository implements PublicationReaderRepo
                         .eq(PublicationReactionPO::getKind, kind.name());
         if (!enabled) {
             reactions.delete(query);
-            return;
+            return false;
         }
-        if (reactions.selectCount(query) > 0) return;
+        if (reactions.selectCount(query) > 0) return false;
         PublicationReactionPO po = new PublicationReactionPO();
         po.setUserId(user);
         po.setPublicationId(id);
@@ -80,16 +84,17 @@ public class MybatisPublicationReaderRepository implements PublicationReaderRepo
         po.setCreatedAt(OffsetDateTime.now(ZoneOffset.UTC));
         reactions.insert(po);
         event(user, id, PublicationEventKind.valueOf(kind.name()), UUID.randomUUID().toString());
+        return true;
     }
 
     /** 调用方先持有文章行锁，去重检查和插入在同一事务中执行。 */
-    public void event(Long user, long id, PublicationEventKind kind, String key) {
+    public boolean event(Long user, long id, PublicationEventKind kind, String key) {
         if (events.selectCount(
                         Wrappers.<PublicationEventPO>lambdaQuery()
                                 .eq(PublicationEventPO::getPublicationId, id)
                                 .eq(PublicationEventPO::getKind, kind.name())
                                 .eq(PublicationEventPO::getDedupKey, key))
-                > 0) return;
+                > 0) return false;
         PublicationEventPO po = new PublicationEventPO();
         po.setPublicationId(id);
         po.setUserId(user);
@@ -97,6 +102,7 @@ public class MybatisPublicationReaderRepository implements PublicationReaderRepo
         po.setDedupKey(key);
         po.setCreatedAt(OffsetDateTime.now(ZoneOffset.UTC));
         events.insert(po);
+        return true;
     }
 
     public List<Activity> activity(int size) {

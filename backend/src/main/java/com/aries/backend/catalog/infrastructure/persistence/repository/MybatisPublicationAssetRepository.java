@@ -2,6 +2,7 @@ package com.aries.backend.catalog.infrastructure.persistence.repository;
 
 import com.aries.backend.catalog.application.port.PublicationAssetRepository;
 import com.aries.backend.catalog.application.port.PublicationMediaPort;
+import com.aries.backend.catalog.domain.model.PublicationMediaKind;
 import com.aries.backend.catalog.infrastructure.persistence.mapper.PublicationAssetMapper;
 import com.aries.backend.catalog.infrastructure.persistence.mapper.PublicationMediaBindingMapper;
 import com.aries.backend.catalog.infrastructure.persistence.po.PublicationAssetPO;
@@ -112,7 +113,9 @@ public class MybatisPublicationAssetRepository implements PublicationAssetReposi
                                 .in(PublicationAssetPO::getId, ids)
                                 .and(
                                         query -> {
-                                            query.eq(PublicationAssetPO::getKind, "ATTACHMENT");
+                                            query.eq(
+                                                    PublicationAssetPO::getKind,
+                                                    PublicationMediaKind.ATTACHMENT.name());
                                             if (!resources.isEmpty())
                                                 query.or().in(PublicationAssetPO::getId, resources);
                                         })

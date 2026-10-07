@@ -3,20 +3,23 @@ INSERT INTO categories (slug, name, sort_order) VALUES
 ('ai-ppt', 'AI 演示', 10), ('coding', 'AI 编程', 20), ('automation', '日常自动化', 30)
 ON CONFLICT (slug) DO NOTHING;
 
-INSERT INTO publications (category_id, slug, title, summary, publication_type, access_type, status, published_at)
-SELECT id, 'ai-ppt-outline', '把一个主题，整理成一份演示提纲',
+-- 演示文章使用固定 ID，使重复加载幂等；不建立名称地址。
+INSERT INTO publications (id, category_id, title, summary, publication_type, access_type, status, published_at)
+SELECT 1, id, '把一个主题，整理成一份演示提纲',
 '从听众、结论和证据出发，练习用 AI 构建清晰的 PPT 内容结构。', 'ARTICLE', 'FREE', 'PUBLISHED', '2026-09-28T09:00:00Z'
-FROM categories WHERE slug = 'ai-ppt' ON CONFLICT (slug) DO NOTHING;
+FROM categories WHERE slug = 'ai-ppt' ON CONFLICT (id) DO NOTHING;
 -- 价格必须写在 INSERT 里：CHECK 约束在 ON CONFLICT 判断之前执行，
 -- 先按默认值 0 插入、事后再 UPDATE 价格，会在约束检查时直接失败，即使这行已经存在。
-INSERT INTO publications (category_id, slug, title, summary, publication_type, access_type, credit_price, status, published_at)
-SELECT id, 'codex-focus-page', '用 Codex 做一个专注计时页面',
+-- 演示文章使用固定 ID，使重复加载幂等；不建立名称地址。
+INSERT INTO publications (id, category_id, title, summary, publication_type, access_type, credit_price, status, published_at)
+SELECT 2, id, '用 Codex 做一个专注计时页面',
 '把一个小需求拆成界面、交互和验收步骤，了解从想法到网页的过程。', 'CASE_STUDY', 'CREDIT', 199, 'PUBLISHED', '2026-09-27T09:00:00Z'
-FROM categories WHERE slug = 'coding' ON CONFLICT (slug) DO NOTHING;
-INSERT INTO publications (category_id, slug, title, summary, publication_type, access_type, status, published_at)
-SELECT id, 'organize-materials', '给散落的素材，建立一套整理规则',
+FROM categories WHERE slug = 'coding' ON CONFLICT (id) DO NOTHING;
+-- 演示文章使用固定 ID，使重复加载幂等；不建立名称地址。
+INSERT INTO publications (id, category_id, title, summary, publication_type, access_type, status, published_at)
+SELECT 3, id, '给散落的素材，建立一套整理规则',
 '先定义命名和分类规则，再用小批量样本验证，让素材更容易找到。', 'COURSE', 'FREE', 'PUBLISHED', '2026-09-26T09:00:00Z'
-FROM categories WHERE slug = 'automation' ON CONFLICT (slug) DO NOTHING;
+FROM categories WHERE slug = 'automation' ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO publication_contents (publication_id, preview_markdown, full_markdown)
 SELECT id, $$## 从一份清晰的任务说明开始
@@ -45,7 +48,7 @@ $$## 01 / 写出任务说明
 ## 使用说明
 
 本页面为演示教程，没有附件或收益承诺。请使用自己的资料，不要向外部工具上传保密信息。$$
-FROM publications WHERE slug = 'ai-ppt-outline' ON CONFLICT (publication_id) DO NOTHING;
+FROM publications WHERE id = 1 ON CONFLICT (publication_id) DO NOTHING;
 
 INSERT INTO publication_contents (publication_id, preview_markdown, full_markdown)
 SELECT id, $$## 一次只解决一个小问题
@@ -54,7 +57,7 @@ SELECT id, $$## 一次只解决一个小问题
 
 当前是付费预览演示，暂未开放购买，也没有可交付源码。$$,
 'PRIVATE_DEMO_BODY: 这是用于验证公开接口不会泄露付费正文的占位内容，不能作为商品出售。'
-FROM publications WHERE slug = 'codex-focus-page' ON CONFLICT (publication_id) DO NOTHING;
+FROM publications WHERE id = 2 ON CONFLICT (publication_id) DO NOTHING;
 
 INSERT INTO publication_contents (publication_id, preview_markdown, full_markdown)
 SELECT id, $$## 先定规则，再做自动化
@@ -79,4 +82,8 @@ $$## 01 / 建立一个小样本
 把确认过的规则提供给 AI，让它先输出改名计划。检查无误并备份后，再考虑执行脚本。
 
 这是方法演示，不包含可执行脚本或附件。$$
-FROM publications WHERE slug = 'organize-materials' ON CONFLICT (publication_id) DO NOTHING;
+FROM publications WHERE id = 3 ON CONFLICT (publication_id) DO NOTHING;
+
+-- 显式 ID 插入后同步序列，保留已有序列上界，后续新建文章不会撞到演示数据。
+SELECT setval(pg_get_serial_sequence('publications', 'id'),
+    GREATEST(COALESCE(pg_sequence_last_value(pg_get_serial_sequence('publications', 'id')::regclass), 1), (SELECT max(id) FROM publications)), true);

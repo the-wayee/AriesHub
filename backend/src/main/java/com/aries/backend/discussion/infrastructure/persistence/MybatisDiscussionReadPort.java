@@ -2,8 +2,10 @@ package com.aries.backend.discussion.infrastructure.persistence;
 
 import com.aries.backend.discussion.application.port.DiscussionReadPort;
 import com.aries.backend.discussion.application.query.CommentPageQuery;
+import com.aries.backend.discussion.application.view.DiscussionActivityTarget;
 import com.aries.backend.discussion.application.view.DiscussionViews.CommentView;
 import com.aries.backend.discussion.application.view.DiscussionViews.RootCommentView;
+import com.aries.backend.discussion.domain.model.Comment;
 import com.aries.backend.discussion.infrastructure.persistence.mapper.CommentMapper;
 import com.aries.backend.discussion.infrastructure.persistence.mapper.DiscussionReadMapper;
 import com.aries.backend.discussion.infrastructure.persistence.mapper.DiscussionReadMapper.CommentRow;
@@ -26,13 +28,17 @@ class MybatisDiscussionReadPort implements DiscussionReadPort {
     private final DiscussionReadMapper reads;
     private final CommentMapper comments;
 
+    public List<DiscussionActivityTarget> activityTargets(Set<Long> ids) {
+        return ids.isEmpty() ? List.of() : reads.activityTargets(ids);
+    }
+
     @Override
     public Map<String, Long> parentAuthors(Set<Long> parentIds) {
         if (parentIds.isEmpty()) return Map.of();
         Map<String, Long> result = new HashMap<>();
         for (CommentPO parent : comments.selectByIds(parentIds)) {
             // 隐藏评论的作者信息不借由 @回复泄露；自删评论仍保留回复关系。
-            if (!"HIDDEN".equals(parent.getStatus()))
+            if (!Comment.Status.HIDDEN.name().equals(parent.getStatus()))
                 result.put(Long.toString(parent.getId()), parent.getAuthorId());
         }
         return Map.copyOf(result);
@@ -97,11 +103,11 @@ class MybatisDiscussionReadPort implements DiscussionReadPort {
      * <p>被删除时同时清空正文和标识，避免把原始内容带出接口；作者与时间保留， 让回复仍能显示「回复 @某人」。
      */
     private String visibleBody(String status, String body) {
-        return "DELETED".equals(status) ? "" : body;
+        return Comment.Status.DELETED.name().equals(status) ? "" : body;
     }
 
     private boolean isDeleted(String status) {
-        return "DELETED".equals(status);
+        return Comment.Status.DELETED.name().equals(status);
     }
 
     private CommentView toView(CommentRow row) {

@@ -22,7 +22,7 @@ export async function mockReaderApi(page: Page) {
     ids.map((id, i) => ({
       publication: {
         id,
-        slug: `legacy-${id}`,
+
         title: titles[i],
         summary: "真实请求契约中的练习摘要",
         categoryName: i === 0 ? "AI 编程" : i === 1 ? "AI 演示" : "日常自动化",

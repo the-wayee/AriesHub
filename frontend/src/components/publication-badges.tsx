@@ -6,6 +6,7 @@ import {
   Sparkles,
   Layers,
   GraduationCap,
+  Star,
 } from "lucide-react";
 import type { AccessType, PublicationType } from "@/lib/catalog-types";
 import { CONTENT_FORM_LABELS } from "@/lib/publication-reader";
@@ -84,6 +85,16 @@ export function PublicationProgressBadge({
         {progress}
         <small>%</small>
       </strong>
+    </span>
+  );
+}
+
+/** 精选是文章的真实运营状态，与当前排序方式无关。 */
+export function PublicationFeaturedBadge() {
+  return (
+    <span className="publication-featured-badge">
+      <Star size={12} fill="currentColor" aria-hidden="true" />
+      精选
     </span>
   );
 }

@@ -22,7 +22,7 @@ function homeFixture(): MemberHome {
   const cards: PublicationCardData[] = titles.map((title, index) => ({
     publication: {
       id: String(index + 4),
-      slug: `example-${index}`,
+
       title,
       summary: demos[index].summary,
       categoryName: "AI 实践",
@@ -132,6 +132,14 @@ test("full-width home preserves reading, unique articles and responsive composit
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
+    await expect(
+      page.locator(".home-content-gallery .publication-featured-badge"),
+    ).toHaveCount(3);
+    await expect(
+      page.locator(
+        '.home-content-gallery [data-publication-id="7"] .publication-featured-badge',
+      ),
+    ).toHaveCount(0);
     await page.getByRole("button", { name: "最新发布", exact: true }).click();
     await expect(
       page.locator(".home-content-gallery .hub-content-card").first(),
@@ -140,6 +148,17 @@ test("full-width home preserves reading, unique articles and responsive composit
     await expect(
       page.locator(".home-content-gallery .hub-content-card").first(),
     ).toContainText(titles[2]);
+    await page.waitForTimeout(500);
+    const selected = await page
+      .getByRole("button", { name: "精选优先", exact: true })
+      .boundingBox();
+    const indicator = await page
+      .locator(".home-gallery-indicator")
+      .boundingBox();
+    expect(Math.abs((selected?.x ?? 0) - (indicator?.x ?? 0))).toBeLessThan(1);
+    expect(
+      Math.abs((selected?.width ?? 0) - (indicator?.width ?? 0)),
+    ).toBeLessThan(1);
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({
       path: testInfo.outputPath(`home-gallery-${width}.png`),
@@ -200,70 +219,374 @@ test("reading and access badges share semantic styles including completed articl
   ).toBe(true);
 });
 
-test("home rotates real interaction events and exposes article metrics", async ({
+test("community feed shows three rows and loops with typed icons", async ({
   page,
-}) => {
+}, info) => {
+  test.setTimeout(90000);
   await mockMemberSession(page);
-  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.route("**/api/v1/home", (route) =>
     fulfillResult(route, { json: homeFixture() }),
   );
-  const rows = [
-    {
-      id: "1",
-      publicationId: "11",
-      title: "阅读有回声",
-      userId: "9001",
-      actorName: "林舟",
-      kind: "LIKE",
-      createdAt: "2026-10-07T08:00:00Z",
-    },
-    {
-      id: "2",
-      publicationId: "12",
-      title: "把想法带给别人",
-      userId: "9002",
-      actorName: "程雨",
-      kind: "SHARE",
-      createdAt: "2026-10-07T07:00:00Z",
-    },
-    {
-      id: "3",
-      publicationId: "13",
-      title: "收藏下次实践",
-      userId: "9003",
-      actorName: "周晴",
-      kind: "BOOKMARK",
-      createdAt: "2026-10-07T06:00:00Z",
-    },
+  const row = (id: number, kind = "PUBLICATION_LIKE") => ({
+    id: String(id),
+    actorId: "9001",
+    actorName: `成员 ${id}`,
+    actorAvatarUrl: "/concepts/automation-color.webp",
+    kind,
+    title: `实践记录 ${id}`,
+    content: kind.startsWith("DISCUSSION_") ? `这是成员 ${id}的发言` : null,
+    href: `/publications/11`,
+    createdAt: new Date().toISOString(),
+  });
+  const kinds = [
+    "MEMBER_JOINED",
+    "PUBLICATION_PUBLISHED",
+    "DISCUSSION_COMMENTED",
+    "PUBLICATION_LIKE",
+    "PUBLICATION_BOOKMARK",
+    "DISCUSSION_REPLIED",
+    "PUBLICATION_SHARE",
+    "DISCUSSION_LIKED",
   ];
-  await page.route("**/api/v1/home/activity", (route) =>
-    fulfillResult(route, { json: rows }),
+  const first = Array.from({ length: 6 }, (_, index) =>
+    row(100 - index, kinds[index % kinds.length]),
   );
+  let olderAttempts = 0;
+  const requests: string[] = [];
+  await page.route("**/api/v1/community/activities?*", (route) => {
+    const url = new URL(route.request().url());
+    requests.push(url.search);
+    if (url.searchParams.get("filter") === "MEMBERS")
+      return fulfillResult(route, {
+        json: {
+          items: [
+            {
+              ...row(120, "MEMBER_JOINED"),
+              href: null,
+              title: "欢迎来到 AriesHub",
+            },
+          ],
+          nextCursor: null,
+        },
+      });
+    if (url.searchParams.get("filter") === "COMMENTS")
+      return fulfillResult(route, {
+        json: {
+          items: [
+            {
+              ...row(121, "DISCUSSION_REPLIED"),
+              href: "/publications/11#comments",
+            },
+          ],
+          nextCursor: null,
+        },
+      });
+    if (url.searchParams.get("filter") === "PUBLICATIONS")
+      return fulfillResult(route, { json: { items: [], nextCursor: null } });
+    if (url.searchParams.get("before")) {
+      olderAttempts++;
+      if (olderAttempts === 1)
+        return fulfillResult(route, {
+          status: 503,
+          json: { code: "TEMPORARILY_UNAVAILABLE", msg: "动态暂时无法加载" },
+        });
+      return fulfillResult(route, {
+        json: {
+          items: [
+            row(94, "PUBLICATION_SHARE"),
+            row(93, "PUBLICATION_BOOKMARK"),
+          ],
+          nextCursor: null,
+        },
+      });
+    }
+    return fulfillResult(route, { json: { items: first, nextCursor: "95" } });
+  });
+  await page.clock.install();
   await page.goto("/home");
-  const activity = page.getByLabel("社区互动动态");
-  await expect(activity).toContainText("林舟");
-  await expect(activity).toContainText("点赞了");
-  await activity.getByRole("button", { name: "下一条动态" }).click();
-  await expect(activity).toContainText("程雨");
-  await expect(activity).toContainText("分享了");
-  await expect(activity.locator("a")).toHaveAttribute(
-    "href",
-    "/publications/12",
+  const feed = page.getByRole("region", { name: "社区动态", exact: true });
+  await feed.scrollIntoViewIfNeeded();
+  await expect(feed.locator("article")).toHaveCount(4);
+  await expect(
+    page.locator(".home-explore-heading").getByLabel("社区动态"),
+  ).toHaveCount(0);
+  await expect(
+    feed.getByRole("img", { name: "成员 100的头像" }).locator("img"),
+  ).toHaveAttribute("src", /automation-color/);
+  const visibleRows = feed.locator('article:not([aria-hidden="true"])');
+  await expect(visibleRows).toHaveCount(3);
+  await expect(feed.locator(".community-event-icon svg")).toHaveCount(4);
+  await expect(
+    feed.getByRole("button", { name: /暂停动态|播放动态|下一条动态/ }),
+  ).toHaveCount(0);
+  const track = feed.locator(".community-feed-track");
+  const offset = () =>
+    track.evaluate(
+      (node) => new DOMMatrixReadOnly(getComputedStyle(node).transform).m42,
+    );
+  await page.mouse.move(0, 0);
+  const before = await offset();
+  await page.waitForTimeout(500);
+  expect(await offset()).toBeLessThan(before);
+  await feed.hover();
+  const stopped = await offset();
+  await page.waitForTimeout(700);
+  expect(await offset()).toBeCloseTo(stopped, 1);
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(500);
+  expect(await offset()).toBeLessThan(stopped);
+  // 加速浏览器时钟验收完整循环，仍使用真实轨道动画而非手动操作按钮。
+  for (let step = 0; step < 1; step++) {
+    const previous = await visibleRows.first().textContent();
+    await page.clock.runFor(5000);
+    await expect(visibleRows.first()).not.toHaveText(previous!);
+  }
+  await expect(feed.getByRole("alert")).toContainText("动态暂时无法加载");
+  await feed.getByRole("button", { name: "重试加载" }).click();
+  await expect(feed.getByRole("alert")).toHaveCount(0);
+  await page.mouse.move(0, 0);
+  await page
+    .locator(".home-explore-heading")
+    .click({ position: { x: 5, y: 5 } });
+  for (let step = 0; step < 7; step++) {
+    const previous = await visibleRows.first().textContent();
+    await page.clock.runFor(5000);
+    await expect(visibleRows.first()).not.toHaveText(previous!);
+  }
+  expect(requests.filter((query) => query.includes("before=95"))).toHaveLength(
+    2,
   );
-  await activity.getByRole("button", { name: "下一条动态" }).click();
-  await expect(activity).toContainText("收藏了");
-  await activity.getByRole("button", { name: "上一条动态" }).click();
-  await expect(activity).toContainText("程雨");
+  await expect(visibleRows).toHaveCount(3);
+  expect(
+    await feed.getByLabel("社区动态轮播").evaluate((node) => node.clientHeight),
+  ).toBe(276);
+  await feed.getByRole("tab", { name: "新成员" }).click();
+  await expect(feed.locator("article")).toHaveCount(1);
+  await expect(feed).toContainText("加入了社区");
+  await expect(feed.locator("article a")).toHaveCount(0);
+  await feed.getByRole("tab", { name: "评论与回复" }).click();
+  await expect(feed).toContainText("回复了");
+  await expect(feed).toContainText("这是成员 121的发言");
+  await expect(feed).not.toContainText("实践记录 121");
+  await expect(feed.locator("article a")).toHaveAttribute(
+    "href",
+    "/publications/11#comments",
+  );
+  await feed.getByRole("tab", { name: "新文章" }).click();
+  await expect(feed).toContainText("这里还没有动态");
+  await feed.getByRole("tab", { name: "新文章" }).press("ArrowRight");
   await expect(
-    page.locator(".home-content-gallery .publication-metrics").first(),
-  ).toContainText("134 阅读");
-  await expect(
-    page.locator(".home-content-gallery .publication-metrics").first(),
-  ).toContainText("6 分享");
+    feed.getByRole("tab", { name: "互动", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(feed.locator("article")).toHaveCount(4);
+  // 视觉验收等待入场动画结束，避免截图只捕获到淡入过程中的低透明度。
+  await feed.locator("article").evaluateAll(async (nodes) => {
+    await Promise.all(
+      nodes.flatMap((node) =>
+        node.getAnimations().map((animation) => animation.finished),
+      ),
+    );
+  });
+  await feed.hover();
+  await page.screenshot({ path: info.outputPath("community-feed.png") });
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+});
+
+test("community filtering waits for its one-second animation without collapsing the feed", async ({
+  page,
+}, info) => {
+  await mockMemberSession(page);
+  await page.route("**/api/v1/home", (route) =>
+    fulfillResult(route, { json: homeFixture() }),
+  );
+  const rows = (prefix: string) =>
+    Array.from({ length: 3 }, (_, index) => ({
+      id: String(300 + index),
+      actorId: "9001",
+      actorName: "读者",
+      actorAvatarUrl: null,
+      kind: "DISCUSSION_COMMENTED",
+      title: "文章标题",
+      content: `${prefix} ${index}`,
+      href: "/publications/11#comments",
+      createdAt: new Date().toISOString(),
+    }));
+  let requests = 0;
+  let releaseSlow!: () => void;
+  const slow = new Promise<void>((resolve) => {
+    releaseSlow = resolve;
+  });
+  await page.route("**/api/v1/community/activities?*", async (route) => {
+    requests++;
+    if (requests === 3) await slow;
+    if (requests === 4)
+      return fulfillResult(route, {
+        status: 503,
+        json: { code: "TEMPORARILY_UNAVAILABLE", msg: "刷新暂时失败" },
+      });
+    return fulfillResult(route, {
+      json: {
+        items: rows(
+          requests === 1
+            ? "原有动态"
+            : requests === 2
+              ? "更新后的发言"
+              : "慢请求动态",
+        ),
+        nextCursor: null,
+      },
+    });
+  });
+  await page.goto("/home");
+  const feed = page.getByRole("region", { name: "社区动态", exact: true });
+  const commentsTab = feed.getByRole("tab", {
+    name: "评论与回复",
+    exact: true,
+  });
+  const allTab = feed.getByRole("tab", { name: "全部动态", exact: true });
+  await expect(feed.getByRole("button", { name: "刷新社区动态" })).toHaveCount(
+    0,
+  );
+  await expect(feed).toContainText("原有动态");
+  await feed.hover();
+  const bounds = () =>
+    feed.evaluate((node) => ({
+      height: node.getBoundingClientRect().height,
+      nextTop: node.nextElementSibling
+        ? node.nextElementSibling.getBoundingClientRect().top + window.scrollY
+        : null,
+    }));
+  const initialBounds = await bounds();
+  const panel = feed.getByLabel("社区动态轮播");
+  const initialHeight = await panel.evaluate((node) => node.clientHeight);
+  const started = Date.now();
+  const response = page.waitForResponse((response) =>
+    response.url().includes("/community/activities"),
+  );
+  await commentsTab.click();
+  await response;
+  await expect(
+    feed.locator('.community-refresh-feedback[data-phase="loading"]'),
+  ).toBeVisible();
+  expect(await feed.locator(".community-refresh-feedback").textContent()).toBe(
+    "",
+  );
+  expect(
+    await feed
+      .locator(".community-refresh-symbol")
+      .evaluate((node) => node.getBoundingClientRect().width),
+  ).toBeGreaterThan(60);
+  await page.waitForTimeout(250);
+  await expect(feed).toContainText("原有动态");
+  await expect(feed).not.toContainText("更新后的发言");
+  expect(await panel.evaluate((node) => node.clientHeight)).toBe(initialHeight);
+  expect(await bounds()).toEqual(initialBounds);
+  await feed.screenshot({
+    path: info.outputPath("community-refresh-loading.png"),
+  });
+  await expect(
+    feed.locator('.community-refresh-feedback[data-phase="complete"]'),
+  ).toBeVisible();
+  await expect(feed).toContainText("原有动态");
+  await feed.screenshot({
+    path: info.outputPath("community-refresh-complete.png"),
+  });
+  await expect(feed).toContainText("更新后的发言");
+  await expect(feed.locator(".community-refresh-feedback")).toHaveCount(0);
+  expect(Date.now() - started).toBeGreaterThanOrEqual(1000);
+  expect(await bounds()).toEqual(initialBounds);
+  expect(requests).toBe(2);
+
+  // 慢接口必须等响应，动画完成不能先清空旧数据；失败也保留现有内容和高度。
+  await allTab.click();
+  await page.waitForTimeout(1200);
+  await expect(
+    feed.locator('.community-refresh-feedback[data-phase="loading"]'),
+  ).toBeVisible();
+  await expect(feed).toContainText("更新后的发言");
+  expect(await bounds()).toEqual(initialBounds);
+  releaseSlow();
+  await expect(feed).toContainText("慢请求动态");
+  await commentsTab.click();
+  await expect(feed.getByRole("alert")).toContainText("刷新暂时失败");
+  await expect(feed).toContainText("慢请求动态");
+  expect(await bounds()).toEqual(initialBounds);
+});
+
+test("community tabs animate in place and discard a superseded category response", async ({
+  page,
+}) => {
+  await mockMemberSession(page);
+  await page.route("**/api/v1/home", (route) =>
+    fulfillResult(route, { json: homeFixture() }),
+  );
+  let releaseMembers!: () => void;
+  const members = new Promise<void>((resolve) => {
+    releaseMembers = resolve;
+  });
+  await page.route("**/api/v1/community/activities?*", async (route) => {
+    const filter = new URL(route.request().url()).searchParams.get("filter");
+    if (filter === "MEMBERS") await members;
+    const name =
+      filter === "COMMENTS"
+        ? "评论分类中的发言"
+        : filter === "MEMBERS"
+          ? "过期的新成员响应"
+          : "原有列表中的发言";
+    return fulfillResult(route, {
+      json: {
+        items: [
+          {
+            id: "800",
+            actorId: "9001",
+            actorName: "读者",
+            actorAvatarUrl: null,
+            kind: "DISCUSSION_COMMENTED",
+            title: "文章标题",
+            content: name,
+            href: "/publications/11#comments",
+            createdAt: new Date().toISOString(),
+          },
+        ],
+        nextCursor: null,
+      },
+    });
+  });
+  await page.goto("/home");
+  const feed = page.getByRole("region", { name: "社区动态", exact: true });
+  await expect(feed).toContainText("原有列表中的发言");
+  await feed.scrollIntoViewIfNeeded();
+  const height = await feed.evaluate(
+    (node) => node.getBoundingClientRect().height,
+  );
+  await expect(feed.getByRole("button", { name: "刷新社区动态" })).toHaveCount(
+    0,
+  );
+  await feed.getByRole("tab", { name: "新成员", exact: true }).click();
+  await expect(
+    feed.locator('.community-refresh-feedback[data-phase="loading"]'),
+  ).toBeVisible();
+  await feed.getByRole("tab", { name: "评论与回复", exact: true }).click();
+  await expect(feed).toContainText("原有列表中的发言");
+  expect(
+    await feed.evaluate((node) => node.getBoundingClientRect().height),
+  ).toBe(height);
+  await expect(
+    feed.locator('.community-refresh-feedback[data-phase="complete"]'),
+  ).toBeVisible();
+  await expect(feed).toContainText("评论分类中的发言");
+  await expect(feed.locator(".community-refresh-feedback")).toHaveCount(0);
+  releaseMembers();
+  await page.waitForTimeout(300);
+  await expect(feed).not.toContainText("过期的新成员响应");
+  await expect(
+    feed.getByRole("tab", { name: "评论与回复", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  expect(
+    await feed.evaluate((node) => node.getBoundingClientRect().height),
+  ).toBe(height);
 });

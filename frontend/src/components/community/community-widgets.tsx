@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { PublicationActivity } from "./publication-activity";
 import { useState } from "react";
 import {
   ArrowRight,
@@ -10,45 +9,11 @@ import {
   BookOpen,
   ArrowUpRight,
   UsersRound,
-  MessagesSquare,
   Sparkles,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 
-/** 社区活动接口接入前的独立展示数据，不写入真实评论、成员或文章关系。 */
-const ACTIVITY_PREVIEW = [
-  {
-    id: "comment-lin",
-    name: "林小雨",
-    avatar: "林",
-    action: "评论了",
-    title: "让 AI 写代码前，先把需求说清楚",
-    text: "验收清单真的很重要，我把异常场景也补进去以后，返工少了很多。",
-    time: "12 分钟前",
-    kind: "comment",
-  },
-  {
-    id: "publish-zhou",
-    name: "周以宁",
-    avatar: "周",
-    action: "分享了新文章",
-    title: "我的第一个自动化工作流，踩过的三个坑",
-    text: "把输入格式、失败重试和人工确认拆开，终于跑通了第一版。",
-    time: "28 分钟前",
-    kind: "publication",
-  },
-  {
-    id: "comment-song",
-    name: "宋言",
-    avatar: "宋",
-    action: "回复了",
-    title: "你们怎么维护个人知识库？",
-    text: "我现在只收录真正用过的资料，每周清理一次，比什么都存更有用。",
-    time: "43 分钟前",
-    kind: "comment",
-  },
-] as const;
 const MEMBERS_PREVIEW = [
   { name: "林小雨", avatar: "林", note: "AI 编程 · 正在做自己的第一款产品" },
   { name: "周以宁", avatar: "周", note: "自动化 · 喜欢把重复工作变成流程" },
@@ -121,71 +86,6 @@ function PreviewAvatar({ person }: { person: string }) {
         strokeLinecap="round"
       />
     </svg>
-  );
-}
-
-export function CommunityActivityFeed() {
-  const [filter, setFilter] = useState("all");
-  return (
-    <section className="community-activity-widget" aria-label="社区动态示例">
-      <div className="hub-section-heading">
-        <div>
-          <p className="hub-kicker">AROUND THE COMMUNITY</p>
-          <h2 className="community-title community-title-violet">
-            <MessagesSquare size={21} />
-            社区的此刻
-          </h2>
-        </div>
-        <span className="community-mock-label">动态示例</span>
-      </div>
-      <div className="community-widget-tabs" aria-label="动态类型筛选">
-        {[
-          { key: "all", label: "全部动态" },
-          { key: "comment", label: "评论与回复" },
-          { key: "publication", label: "新文章" },
-        ].map((tab) => (
-          <Button
-            key={tab.key}
-            variant="ghost"
-            aria-pressed={filter === tab.key}
-            onClick={() => setFilter(tab.key)}
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </div>
-      <div className="community-activity-list">
-        {ACTIVITY_PREVIEW.filter(
-          (item) => filter === "all" || item.kind === filter,
-        ).map((item) => (
-          <article key={item.id} data-kind={item.kind}>
-            <span
-              className={`community-member-mark member-${item.avatar}`}
-              aria-hidden="true"
-            >
-              <PreviewAvatar person={item.avatar} />
-            </span>
-            <div>
-              <p className="community-activity-byline">
-                <strong>{item.name}</strong>
-                <span>{item.action}</span>
-                <time>{item.time}</time>
-              </p>
-              <Link href="/community" className="community-activity-title">
-                {item.title}
-                <ArrowUpRight size={14} />
-              </Link>
-              <p className="community-activity-excerpt">{item.text}</p>
-              <Link href="/community" className="community-activity-link">
-                <MessageCircle size={14} />
-                去讨论里聊聊
-                <ArrowRight size={14} />
-              </Link>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
   );
 }
 
@@ -313,7 +213,7 @@ export function CommunityPreviewRail() {
   );
 }
 
-/** 互动轮播接入真实事件，其余尚未对接的成员场景保留明确示例标识。 */
+/** 尚未对接的成员场景保留明确示例标识，真实动态由「社区的此刻」列表展示。 */
 export function CommunityPulse() {
   return (
     <section
@@ -338,7 +238,6 @@ export function CommunityPulse() {
         </div>
         <ArrowRight size={15} />
       </Link>
-      <PublicationActivity />
       <Link href="/community">
         <span className="hub-activity-icon">
           <MessageCircle />

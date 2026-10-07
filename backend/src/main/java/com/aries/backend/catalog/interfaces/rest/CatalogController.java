@@ -10,7 +10,6 @@ import com.aries.backend.catalog.interfaces.rest.request.PublicationListRequest;
 import com.aries.backend.shared.interfaces.rest.Result;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 
 import lombok.RequiredArgsConstructor;
@@ -42,8 +41,7 @@ public class CatalogController {
     }
 
     @GetMapping("/publications/{id}")
-    public Result<PublicationDetail> detail(
-            @PathVariable @Pattern(regexp = "[a-z0-9-]{1,120}") String id) {
+    public Result<PublicationDetail> detail(@PathVariable @Positive long id) {
         return Result.success(service.detail(id));
     }
 

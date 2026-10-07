@@ -5,14 +5,14 @@ import { conceptPublications } from "@/lib/concept-publications";
 
 export const metadata: Metadata = { title: "阅读" };
 export function generateStaticParams() {
-  return conceptPublications.map((item) => ({ slug: item.slug }));
+  return conceptPublications.map((item) => ({ id: item.id }));
 }
 export default async function LearnPage({
   params,
   searchParams,
-}: PageProps<"/learn/[slug]">) {
-  const [{ slug }, query] = await Promise.all([params, searchParams]);
-  const item = conceptPublications.find((entry) => entry.slug === slug);
+}: PageProps<"/learn/[id]">) {
+  const [{ id }, query] = await Promise.all([params, searchParams]);
+  const item = conceptPublications.find((entry) => entry.id === id);
   if (!item) notFound();
   const value = typeof query.chapter === "string" ? Number(query.chapter) : 0;
   return (

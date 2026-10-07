@@ -47,7 +47,7 @@ export function PublicationCard({
       delay={(index % 3) * 0.06}
     >
       <Link
-        href={`/publications/${item.slug}`}
+        href={`/preview/publications/${item.id}`}
         className="archive-publication-link"
       >
         <div className="archive-index">

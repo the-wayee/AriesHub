@@ -205,7 +205,7 @@ test("member comments survive failed submissions and support replies likes and d
     comments.getByText("我会用自己的项目再试一遍。", { exact: true }),
   ).toBeVisible();
   expect(requests[0].targetType).toBe("PUBLICATION");
-  expect(requests[0].targetKey).toBeTruthy();
+  expect(requests[0].targetKey).toBe("11");
   const first = comments.locator(".comment-thread").first();
   await first.getByRole("button", { name: "点赞 林舟 的评论" }).click();
   await expect(

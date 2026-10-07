@@ -34,6 +34,7 @@ com.aries.backend
 │   └── infrastructure/persistence   # 评论写入仓储与只读投影
 ├── storage                          # 私有文件上传、归属与临时下载；S3 SDK 位于 infrastructure
 ├── composition                      # 唯一允许组合多个业务模块的适配层
+├── activity                         # 社区事件事实、幂等写入与公开动态投影
 └── shared
     ├── application/exception        # 与 HTTP 无关的业务失败
     ├── interfaces/rest              # 错误响应、请求追踪、健康接口
@@ -86,7 +87,7 @@ com.aries.backend
 ## MyBatis-Plus 约定
 
 - 使用 **3.5.17 的 Spring Boot 4 starter**，不再同时引入 MyBatis 原始 starter。
-- 简单单表查询用 `BaseMapper` 和 `LambdaQueryWrapper`。例如仓储按 ID 查询用 `selectById`，按 slug 查询使用 `PublicationPO::getSlug`。
+- 简单单表查询用 `BaseMapper` 和 `LambdaQueryWrapper`。例如仓储按 ID 查询用 `selectById`；文章不提供 slug 查询或回退。
 - 联表、统计和权限敏感投影使用 XML，明确列清单，便于审查；不为了避免 SQL 堆砌多次查询。
 - 生产单表增删改查统一使用 `BaseMapper`、Lambda Wrapper 和 `Page`，不直接注入 `JdbcTemplate`，也不为普通筛选编写 XML/注解 SQL。联表和跨表统计投影集中在 XML；特殊原子语句见下述例外。测试夹具的原始 SQL 只用于构造数据库事实。
 - 成员单表分页使用 MyBatis-Plus `Page` 与 PostgreSQL 分页拦截器，配套 `mybatis-plus-jsqlparser` 依赖；每页最多 100 条，越界页返回空列表。既有联表投影保留绑定参数的 `LIMIT/OFFSET`，不在仓储拼接 SQL。
@@ -137,3 +138,11 @@ V12 新增 `publication_reactions` 与 `publication_reading_progress`。收藏�
 分类管理的读取和创建统一归属 `AdminCategoryController`，由 `AdminCategoryService` 编排独立的 `CategoryReadPort` / `CategoryWritePort`。分类返回模型使用 `CategoryViews`，不再混入文章后台 DTO。文章用例通过分类读取端口校验引用，不承担分类创建职责。
 
 跨领域 review 已收紧两处桥接：评论身份适配器通过 `IdentityDirectoryService` 查询角色和批量昵称；评论目标适配器通过 `CatalogQueryService` 查询公开可见性。领域仓储留在所属模块，`ArchitectureTest` 新增 composition 不直接依赖领域仓储的规则。素材适配器保留在 composition，以调用存储应用服务并转换文件模型；不把头像或文章规则放入通用存储服务。
+
+## 哲学文案缓存（2026-10-07）
+
+独立 `inspiration` 模块提供匿名 `GET /api/v1/inspiration/quote`，使用统一 Result，空池时 `data=null`。应用层依赖文案池/供应商端口，基础设施负责一言 HTTP 与 Redis。
+
+启动一秒后后台预热，此后默认每 60 秒获取一条哲学文案（`c=k`），按正文去重，保留最近 60 条。Redis 的整池写入原子化且不设置 TTL，应用重启后恢复；内存不可变快照供用户随机读取，用户请求不访问 Redis 或上游。共享刷新租约在一个周期内最多允许一个实例拉取，即使上游失败也保留租约。上游超时、异常或 Redis 暂不可用不清空内存中的旧文案；首次预热失败时前端省略文案。
+
+全项目环境变量：`INSPIRATION_ENABLED`（默认 true）、`INSPIRATION_REFRESH_MS`（默认 60000，最小 10000）、`INSPIRATION_POOL_SIZE`（默认 60，范围 1–500）。供应商连接超时 2 秒、请求超时 3 秒；前端只访问本站接口，不再实时请求一言。

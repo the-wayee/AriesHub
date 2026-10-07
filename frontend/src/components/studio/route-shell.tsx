@@ -1,6 +1,6 @@
 "use client";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { PageMotion } from "@/components/page-motion";
 import { AuthSessionProvider } from "@/components/auth-session";
 import { LandingHeader } from "./landing-header";
@@ -8,6 +8,7 @@ import { CommunityShell } from "@/components/community/community-shell";
 import { SessionGate } from "@/components/session-gate";
 import { isProtectedRoute } from "@/lib/protected-routes";
 import { AdminShell } from "@/components/admin-shell";
+import { AppBootReveal } from "@/components/app-boot-reveal";
 export function RouteShell({
   children,
   header,
@@ -20,11 +21,20 @@ export function RouteShell({
   hasSession: boolean;
 }) {
   const path = usePathname();
+  const [entrance, setEntrance] = useState({ path, cycle: 0 });
+  if (entrance.path !== path) {
+    // 公开页/登录注册进入社区是一次品牌入场，社区内部导航不重复遮罩。
+    // 在渲染中更新路径快照，让新的遮罩和目标页同次提交，避免先露出页面。
+    const entersHome =
+      path === "/home" && ["/", "/login", "/register"].includes(entrance.path);
+    setEntrance({ path, cycle: entrance.cycle + (entersHome ? 1 : 0) });
+  }
   const auth = path === "/login" || path === "/register";
   const community = [
     "/home",
     "/discover",
     "/publications",
+    "/preview",
     "/learn",
     "/checkout",
     "/community",
@@ -68,7 +78,13 @@ export function RouteShell({
   }
   return (
     <AuthSessionProvider initialHasSession={hasSession}>
-      {isProtectedRoute(path) ? <SessionGate>{content}</SessionGate> : content}
+      <AppBootReveal key={entrance.cycle}>
+        {isProtectedRoute(path) ? (
+          <SessionGate>{content}</SessionGate>
+        ) : (
+          content
+        )}
+      </AppBootReveal>
     </AuthSessionProvider>
   );
 }

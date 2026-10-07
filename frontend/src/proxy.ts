@@ -21,6 +21,7 @@ export const config = {
     "/home/:path*",
     "/discover/:path*",
     "/publications/:path*",
+    "/preview/:path*",
     "/community/:path*",
     "/my-content/:path*",
     "/members/:path*",

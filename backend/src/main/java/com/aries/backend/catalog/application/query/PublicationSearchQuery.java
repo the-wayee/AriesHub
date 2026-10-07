@@ -17,7 +17,7 @@ public class PublicationSearchQuery {
 
     public PublicationSearchQuery(
             int page, int size, String q, String category, String type, String access) {
-        this(page, size, q, category, type, access, "FEATURED", null);
+        this(page, size, q, category, type, access, PublicationSort.FEATURED.name(), null);
     }
 
     public PublicationSearchQuery(

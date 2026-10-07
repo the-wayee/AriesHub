@@ -27,17 +27,17 @@ export function ReaderView({
   );
   const current = item.chapters[chapter];
   const locked = !current.free && item.creditPrice > 0;
-  const liked = state.liked.includes(item.slug);
-  const saved = state.saved.includes(item.slug);
+  const liked = state.liked.includes(item.id);
+  const saved = state.saved.includes(item.id);
   function choose(index: number) {
     setChapter(index);
-    remember(item.slug, index);
+    remember(item.id, index);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
   return (
     <div className="hub-reader">
       <aside className="hub-reader-toc">
-        <Link href={`/publications/${item.slug}`}>← 返回内容</Link>
+        <Link href={`/preview/publications/${item.id}`}>← 返回内容</Link>
         <p className="hub-kicker">内容目录</p>
         <nav>
           {item.chapters.map((entry, index) => (
@@ -96,7 +96,7 @@ export function ReaderView({
               <LockKeyhole />
               <h3>这一节属于完整内容</h3>
               <p>公开预览到这里。你仍可以查看内容结构、交付说明和社区讨论。</p>
-              <Link className="hub-primary" href={`/checkout/${item.slug}`}>
+              <Link className="hub-primary" href={`/checkout/${item.id}`}>
                 查看完整内容 <ArrowRight />
               </Link>
             </div>
@@ -131,7 +131,7 @@ export function ReaderView({
         </h2>
         <small>讨论示例</small>
         <p>第一版应该保留哪些功能？</p>
-        <Link href={`/community?about=${item.slug}`}>
+        <Link href={`/community?about=${item.id}`}>
           去讨论 <ArrowRight />
         </Link>
         <hr />
@@ -144,7 +144,7 @@ export function ReaderView({
         <Button
           variant="ghost"
           aria-pressed={liked}
-          onClick={() => toggle("liked", item.slug)}
+          onClick={() => toggle("liked", item.id)}
         >
           <Heart fill={liked ? "currentColor" : "none"} />
           点赞
@@ -152,12 +152,12 @@ export function ReaderView({
         <Button
           variant="ghost"
           aria-pressed={saved}
-          onClick={() => toggle("saved", item.slug)}
+          onClick={() => toggle("saved", item.id)}
         >
           <Bookmark fill={saved ? "currentColor" : "none"} />
           收藏
         </Button>
-        <Link href={`/community?about=${item.slug}`}>
+        <Link href={`/community?about=${item.id}`}>
           <MessageCircle />
           讨论
         </Link>

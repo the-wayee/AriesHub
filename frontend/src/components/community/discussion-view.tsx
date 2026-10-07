@@ -92,7 +92,7 @@ export function DiscussionView({ about }: { about?: string }) {
   const [creating, setCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const related = conceptPublications.find((item) => item.slug === about);
+  const related = conceptPublications.find((item) => item.id === about);
   const topics = useMemo(() => [...state.topics, ...samples], [state.topics]);
   function publish() {
     if (!title.trim() || !body.trim()) return;
@@ -180,7 +180,7 @@ export function DiscussionView({ about }: { about?: string }) {
           </p>
           <hr />
           <h3>讨论从这里开始</h3>
-          <Link href={`/publications/${conceptPublications[0].slug}`}>
+          <Link href={`/preview/publications/${conceptPublications[0].id}`}>
             先看一篇实战案例 <ArrowRight />
           </Link>
           <Link href="/members">

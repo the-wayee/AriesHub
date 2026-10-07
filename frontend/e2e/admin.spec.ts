@@ -19,7 +19,7 @@ test("administrator can browse publications and open the editor", async ({
         json: {
           id: "41",
           categoryId: "1",
-          slug: "codex-workflow",
+
           title: "Codex 实战工作流",
           summary: "把重复任务整理成可复现的工作流。",
           publicationType: "CASE_STUDY",
@@ -41,7 +41,7 @@ test("administrator can browse publications and open the editor", async ({
       json: [
         {
           id: "41",
-          slug: "codex-workflow",
+
           title: "Codex 实战工作流",
           categoryName: "Codex 编程",
           publicationType: "CASE_STUDY",

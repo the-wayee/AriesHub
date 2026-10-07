@@ -1901,7 +1901,7 @@
     "/publications/{id}": {
       "get": {
         "operationId": "getPublication",
-        "summary": "Public detail by stable database ID; legacy slug is read-only compatibility",
+        "summary": "Public detail by database ID",
         "responses": {
           "200": {
             "description": "Success",
@@ -1957,7 +1957,7 @@
             }
           },
           "400": {
-            "description": "Invalid slug",
+            "description": "Invalid article ID",
             "headers": {
               "X-Request-Id": {
                 "schema": {
@@ -2084,9 +2084,10 @@
             "required": true,
             "schema": {
               "type": "string",
-              "pattern": "^[a-z0-9-]{1,120}$"
+              "pattern": "^[1-9][0-9]{0,18}$",
+              "maxLength": 19
             },
-            "description": "Canonical article ID, serialized as a decimal string. Existing legacy slug links remain readable for redirects."
+            "description": "Article database ID, serialized as a decimal string."
           }
         ]
       }
@@ -7175,7 +7176,7 @@
     "/shares/{token}": {
       "get": {
         "operationId": "getSharedPublication",
-        "summary": "Public detail by stable database ID; legacy slug is read-only compatibility",
+        "summary": "Public detail by database ID",
         "responses": {
           "200": {
             "description": "Success",
@@ -7231,7 +7232,7 @@
             }
           },
           "400": {
-            "description": "Invalid slug",
+            "description": "Invalid article ID",
             "headers": {
               "X-Request-Id": {
                 "schema": {
@@ -7674,6 +7675,194 @@
           }
         ]
       }
+    },
+    "/community/activities": {
+      "get": {
+        "operationId": "getCommunityActivities",
+        "summary": "社区跨领域动态",
+        "responses": {
+          "200": {
+            "description": "Success",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/CommunityActivityPage"
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Publication unavailable",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 24,
+              "default": 12
+            }
+          },
+          {
+            "name": "filter",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/CommunityActivityFilter"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9][0-9]{0,18}$"
+            },
+            "description": "Exclusive event ID cursor; omitted for the newest page."
+          }
+        ]
+      }
+    },
+    "/inspiration/quote": {
+      "get": {
+        "operationId": "getPhilosophyQuote",
+        "summary": "Random philosophy quote from the background cache",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Random cached philosophy quote; data is null until the first successful background refresh. Never calls Hitokoto on the request path.",
+            "headers": {
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Trace-Id": {
+                "description": "Server-generated request trace ID; matches Result.traceId",
+                "schema": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "code",
+                    "msg",
+                    "data",
+                    "traceId"
+                  ],
+                  "properties": {
+                    "code": {
+                      "type": "string",
+                      "const": "SUCCESS"
+                    },
+                    "msg": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/PhilosophyQuoteView"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "traceId": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -8021,7 +8210,6 @@
         "additionalProperties": false,
         "required": [
           "id",
-          "slug",
           "title",
           "summary",
           "categorySlug",
@@ -8038,9 +8226,6 @@
             "type": "string",
             "pattern": "^[0-9]+$",
             "description": "PostgreSQL bigint ID serialized as a string."
-          },
-          "slug": {
-            "type": "string"
           },
           "title": {
             "type": "string"
@@ -8251,7 +8436,6 @@
         "type": "object",
         "required": [
           "id",
-          "slug",
           "title",
           "categoryName",
           "publicationType",
@@ -8268,9 +8452,6 @@
           "id": {
             "type": "string",
             "pattern": "^[0-9]+$"
-          },
-          "slug": {
-            "type": "string"
           },
           "title": {
             "type": "string"
@@ -8359,7 +8540,6 @@
         "type": "object",
         "required": [
           "id",
-          "slug",
           "title",
           "publicationType",
           "accessType",
@@ -8381,9 +8561,6 @@
           "id": {
             "type": "string",
             "pattern": "^[0-9]+$"
-          },
-          "slug": {
-            "type": "string"
           },
           "title": {
             "type": "string"
@@ -9697,6 +9874,119 @@
             "description": "分享者的头像签名地址，未设置头像时为空"
           }
         }
+      },
+      "CommunityActivity": {
+        "type": "object",
+        "description": "社区动态的安全公开投影",
+        "required": [
+          "id",
+          "actorId",
+          "actorName",
+          "kind",
+          "title",
+          "createdAt",
+          "content"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "actorId": {
+            "type": "string"
+          },
+          "actorName": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "MEMBER_JOINED",
+              "PUBLICATION_PUBLISHED",
+              "PUBLICATION_LIKE",
+              "PUBLICATION_BOOKMARK",
+              "PUBLICATION_SHARE",
+              "DISCUSSION_COMMENTED",
+              "DISCUSSION_REPLIED",
+              "DISCUSSION_LIKED"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "actorAvatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "href": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "content": {
+            "type": "string",
+            "nullable": true,
+            "description": "当前可见评论或回复的短摘录；其他类型为 null"
+          }
+        }
+      },
+      "CommunityActivityPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "nextCursor"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommunityActivity"
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Last scanned event ID; null when history is exhausted."
+          }
+        }
+      },
+      "CommunityActivityFilter": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "COMMENTS",
+          "PUBLICATIONS",
+          "INTERACTIONS",
+          "MEMBERS"
+        ]
+      },
+      "PhilosophyQuoteView": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "text",
+          "source"
+        ],
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
       }
     },
     "parameters": {
@@ -9753,7 +10043,7 @@
         }
       },
       "Conflict": {
-        "description": "Publication slug already exists",
+        "description": "Business state conflict",
         "content": {
           "application/json": {
             "schema": {

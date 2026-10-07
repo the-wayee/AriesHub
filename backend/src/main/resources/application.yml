@@ -53,6 +53,10 @@ sa-token:
     secure: ${AUTH_COOKIE_SECURE:false}
     same-site: Lax
 app:
+  inspiration:
+    enabled: ${INSPIRATION_ENABLED:true}
+    refresh-ms: ${INSPIRATION_REFRESH_MS:60000}
+    pool-size: ${INSPIRATION_POOL_SIZE:60}
   site-url: ${SITE_URL:http://localhost:3200}
   email:
     provider: resend

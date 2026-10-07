@@ -1,14 +1,22 @@
 package com.aries.backend.identity.application.service;
 
+import static com.aries.backend.identity.application.exception.IdentityErrorCode.ACCOUNT_DISABLED;
+import static com.aries.backend.identity.application.exception.IdentityErrorCode.EMAIL_ALREADY_REGISTERED;
+import static com.aries.backend.identity.application.exception.IdentityErrorCode.INVALID_CREDENTIALS;
+
+import com.aries.backend.identity.application.event.MemberJoined;
 import com.aries.backend.identity.application.port.RegistrationRolePolicy;
 import com.aries.backend.identity.application.port.SessionManager;
 import com.aries.backend.identity.application.view.IdentityViews.CurrentUser;
-import com.aries.backend.identity.domain.model.UserAccount;
 import com.aries.backend.identity.domain.model.Email;
+import com.aries.backend.identity.domain.model.UserAccount;
 import com.aries.backend.identity.domain.model.VerificationPurpose;
 import com.aries.backend.identity.domain.repository.UserRepository;
 import com.aries.backend.shared.application.exception.BusinessException;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,8 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-
-import static com.aries.backend.identity.application.exception.IdentityErrorCode.*;
 
 /** 注册、登录和退出用例。 */
 @Service
@@ -29,6 +35,7 @@ public class AuthApplicationService {
     private final RegistrationRolePolicy registrationRolePolicy;
     private final SessionManager sessions;
     private final AuthTrafficGuard trafficGuard;
+    private final ApplicationEventPublisher events;
 
     @Transactional
     public CurrentUser register(String email, String password, String nickname, String code) {
@@ -38,18 +45,22 @@ public class AuthApplicationService {
             throw new BusinessException(EMAIL_ALREADY_REGISTERED);
         }
         verification.verify(normalizedEmail, VerificationPurpose.REGISTER, code);
-        UserAccount pending = UserAccount.builder()
-                .email(normalizedEmail)
-                .passwordHash(passwordEncoder.encode(password))
-                .nickname(nickname.trim())
-                .role(registrationRolePolicy.isAdmin(normalizedEmail)
-                        ? UserAccount.Role.ADMIN : UserAccount.Role.USER)
-                .status(UserAccount.Status.ACTIVE)
-                .emailVerified(true)
-                .build();
+        UserAccount pending =
+                UserAccount.builder()
+                        .email(normalizedEmail)
+                        .passwordHash(passwordEncoder.encode(password))
+                        .nickname(nickname.trim())
+                        .role(
+                                registrationRolePolicy.isAdmin(normalizedEmail)
+                                        ? UserAccount.Role.ADMIN
+                                        : UserAccount.Role.USER)
+                        .status(UserAccount.Status.ACTIVE)
+                        .emailVerified(true)
+                        .build();
         try {
             UserAccount user = users.save(pending);
             sessions.login(user.getId());
+            events.publishEvent(new MemberJoined(user.getId()));
             return CurrentUser.from(user);
         } catch (DuplicateKeyException error) {
             throw new BusinessException(EMAIL_ALREADY_REGISTERED);
@@ -60,8 +71,9 @@ public class AuthApplicationService {
     public CurrentUser login(String email, String password) {
         Email normalizedEmail = EmailInput.parse(email);
         trafficGuard.checkLoginEmail(normalizedEmail);
-        UserAccount user = users.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new BusinessException(INVALID_CREDENTIALS));
+        UserAccount user =
+                users.findByEmail(normalizedEmail)
+                        .orElseThrow(() -> new BusinessException(INVALID_CREDENTIALS));
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new BusinessException(INVALID_CREDENTIALS);
         }
@@ -77,5 +89,4 @@ public class AuthApplicationService {
     public void logout() {
         sessions.logout();
     }
-
 }

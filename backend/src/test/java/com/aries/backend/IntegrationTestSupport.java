@@ -42,6 +42,8 @@ abstract class IntegrationTestSupport {
         // 容器测试在高负载 CI 中容许更长响应；不改变生产的 2 秒超时。
         registry.add("spring.data.redis.timeout", () -> "10s");
         registry.add("app.security.admin-emails", () -> "admin@example.com");
+        // 容器测试不访问真实一言，缓存行为由独立测试控制上游。
+        registry.add("app.inspiration.enabled", () -> "false");
     }
 
     @org.springframework.test.context.bean.override.mockito.MockitoBean
@@ -65,35 +67,11 @@ abstract class IntegrationTestSupport {
                         });
         emailSender.clear();
         database.insertCategories();
-        insert(11, 1, "free-case", "免费 AI 工具", "FREE", "PUBLISHED", "AVAILABLE", "FREE_BODY");
-        insert(
-                12,
-                2,
-                "credit-publication",
-                "积分 PPT 实战",
-                "CREDIT",
-                "PUBLISHED",
-                "AVAILABLE",
-                "CREDIT_SECRET_SENTINEL");
-        insert(13, 1, "draft-case", "草稿", "FREE", "DRAFT", "AVAILABLE", "DRAFT_SECRET_SENTINEL");
-        insert(
-                14,
-                1,
-                "archived-case",
-                "下架",
-                "FREE",
-                "ARCHIVED",
-                "AVAILABLE",
-                "ARCHIVED_SECRET_SENTINEL");
-        insert(
-                15,
-                1,
-                "suspended-case",
-                "停用",
-                "FREE",
-                "PUBLISHED",
-                "SUSPENDED",
-                "SUSPENDED_SECRET_SENTINEL");
+        insert(11, 1, "免费 AI 工具", "FREE", "PUBLISHED", "AVAILABLE", "FREE_BODY");
+        insert(12, 2, "积分 PPT 实战", "CREDIT", "PUBLISHED", "AVAILABLE", "CREDIT_SECRET_SENTINEL");
+        insert(13, 1, "草稿", "FREE", "DRAFT", "AVAILABLE", "DRAFT_SECRET_SENTINEL");
+        insert(14, 1, "下架", "FREE", "ARCHIVED", "AVAILABLE", "ARCHIVED_SECRET_SENTINEL");
+        insert(15, 1, "停用", "FREE", "PUBLISHED", "SUSPENDED", "SUSPENDED_SECRET_SENTINEL");
     }
 
     String requestCode(String email, VerificationPurpose purpose) throws Exception {
@@ -131,15 +109,13 @@ abstract class IntegrationTestSupport {
     void insert(
             long id,
             int category,
-            String slug,
             String title,
             String access,
             String status,
             String delivery,
             String content) {
         long creditPrice = "CREDIT".equals(access) ? 199 : 0;
-        database.insertPublication(
-                id, category, slug, title, access, creditPrice, status, delivery);
+        database.insertPublication(id, category, title, access, creditPrice, status, delivery);
         database.insertPublicationContent(id, content);
     }
 }

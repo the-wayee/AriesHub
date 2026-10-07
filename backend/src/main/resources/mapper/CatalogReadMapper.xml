@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.aries.backend.catalog.infrastructure.persistence.mapper.CatalogReadMapper">
     <sql id="publicColumns">
-        p.id::text AS id, p.slug, p.title, p.summary, cat.slug AS category_slug,
+        p.id::text AS id, p.title, p.summary, cat.slug AS category_slug,
         cat.name AS category_name, p.access_type, p.publication_type,
         p.credit_price, p.published_at, p.cover_file_id, p.featured
     </sql>
@@ -39,6 +39,12 @@
         SELECT <include refid="publicColumns"/>
         FROM publications p JOIN categories cat ON cat.id = p.category_id
         WHERE cat.is_deleted = false AND <include refid="visible"/> AND p.id = #{id}
+    </select>
+    <select id="publicSummaries" resultType="com.aries.backend.catalog.application.view.CatalogViews$PublicationSummary">
+        SELECT <include refid="publicColumns"/>
+        FROM publications p JOIN categories cat ON cat.id = p.category_id
+        WHERE cat.is_deleted = false AND <include refid="visible"/>
+          AND p.id IN <foreach collection="ids" item="id" open="(" separator="," close=")">#{id}</foreach>
     </select>
     <select id="preview" resultType="com.aries.backend.catalog.application.view.CatalogViews$Preview">
         SELECT body.preview_markdown,  body.version, body.updated_at

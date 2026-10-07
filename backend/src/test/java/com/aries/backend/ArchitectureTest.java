@@ -6,16 +6,36 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import com.aries.backend.shared.interfaces.rest.Result;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.core.importer.ImportOption;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.web.bind.annotation.RestController;
 
 /** 把模块边界写成构建时可执行的规则。 */
 class ArchitectureTest {
-    private final JavaClasses code = new ClassFileImporter().importPackages("com.aries.backend");
+    // 约束生产模块；迁移测试需用 JDBC 构造旧 schema，不能把测试工具当作业务层依赖。
+    private final JavaClasses code =
+            new ClassFileImporter()
+                    .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                    .importPackages("com.aries.backend");
 
     @Test
     void businessModulesDoNotDependOnEachOther() {
+        noClasses()
+                .that()
+                .resideInAPackage("..activity..")
+                .should()
+                .dependOnClassesThat()
+                .resideInAnyPackage("..identity..", "..catalog..", "..discussion..", "..storage..")
+                .because("社区动态通过端口和组合层接入来源业务")
+                .check(code);
+        noClasses()
+                .that()
+                .resideInAnyPackage("..identity..", "..catalog..", "..discussion..", "..shared..")
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage("..activity..")
+                .check(code);
         noClasses()
                 .that()
                 .resideInAPackage("..operations..")

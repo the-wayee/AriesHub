@@ -1,6 +1,6 @@
-/** Visual prototype content. Replace with the revised catalog contract after design sign-off. */
+/** 落地页与独立预览使用的静态示例；ID 仅在 /preview 下有效，不对应数据库文章。 */
 export type ConceptPublication = {
-  slug: string;
+  id: string;
   title: string;
   shortTitle: string;
   summary: string;
@@ -17,7 +17,7 @@ export type ConceptPublication = {
 
 export const conceptPublications: ConceptPublication[] = [
   {
-    slug: "website-from-zero",
+    id: "1",
     title: "从零做一个可上线的网站",
     shortTitle: "从零做一个可上线的网站",
     summary: "从想法、设计到开发与部署，跟着一个完整项目把 AI 协作真正用起来。",
@@ -42,7 +42,7 @@ export const conceptPublications: ConceptPublication[] = [
     ],
   },
   {
-    slug: "ai-ppt-delivery",
+    id: "2",
     title: "AI PPT：从想法到交付",
     shortTitle: "用 AI 做一套高质感演示文稿",
     summary:
@@ -62,7 +62,7 @@ export const conceptPublications: ConceptPublication[] = [
     ],
   },
   {
-    slug: "ai-workflow",
+    id: "3",
     title: "构建自己的 AI 自动化流程",
     shortTitle: "搭建一个个人 AI 自动化助手",
     summary: "连接常用工具，让重复的信息收集、整理和推送形成真正可用的工作流。",
@@ -81,7 +81,7 @@ export const conceptPublications: ConceptPublication[] = [
     ],
   },
   {
-    slug: "personal-knowledge",
+    id: "4",
     title: "用 AI 整理个人知识库",
     shortTitle: "用 AI 整理个人知识库",
     summary: "从散乱笔记开始，建立能长期使用、方便检索的个人知识整理方法。",

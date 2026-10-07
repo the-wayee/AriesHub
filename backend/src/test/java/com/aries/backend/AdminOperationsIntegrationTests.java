@@ -113,9 +113,9 @@ class AdminOperationsIntegrationTests extends IntegrationTestSupport {
         mvc.perform(get("/api/v1/admin/operations/overview").cookie(member))
                 .andExpect(status().isForbidden());
         Cookie admin = register("admin@example.com", "admin1234", "管理员");
-        database.insertThread("PUBLICATION", "free-case", "OPEN");
+        database.insertThread("PUBLICATION", "11", "OPEN");
         database.insertRootComment(
-                database.threadId("PUBLICATION", "free-case"),
+                database.threadId("PUBLICATION", "11"),
                 database.userIdByEmail("member@example.com"),
                 "真实评论",
                 0);
@@ -207,7 +207,7 @@ class AdminOperationsIntegrationTests extends IntegrationTestSupport {
         mvc.perform(get("/api/v1/publications/" + id + "/media/" + cover + "/url"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.url").exists());
-        mvc.perform(get("/api/v1/publications/" + id + "/media/" + body + "/url"))
+        mvc.perform(get("/api/v1/publications/" + id + "/media/" + body + "/url").cookie(admin))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("CONTENT_LOCKED"));
         mvc.perform(
@@ -242,7 +242,7 @@ class AdminOperationsIntegrationTests extends IntegrationTestSupport {
                                 .contentType("application/json")
                                 .content(draft("正文", java.util.UUID.randomUUID().toString())))
                 .andExpect(status().isNotFound());
-        assertThat(database.publicationIdBySlug("media-course")).isNull();
+        assertThat(database.publicationIdByTitle("AI 实践课程")).isNull();
     }
 
     private String upload(Cookie admin, String kind, String name, String type, byte[] content)

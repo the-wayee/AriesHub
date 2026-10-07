@@ -50,7 +50,7 @@ export function ArticleView({ item }: { item: ConceptPublication }) {
             {item.chapters.map((chapter, index) => (
               <Link
                 key={chapter.title}
-                href={`/learn/${item.slug}?chapter=${index}`}
+                href={`/learn/${item.id}?chapter=${index}`}
               >
                 <span>{String(index + 1).padStart(2, "0")}</span>
                 <strong>{chapter.title}</strong>
@@ -72,12 +72,12 @@ export function ArticleView({ item }: { item: ConceptPublication }) {
           <p>
             {item.creditPrice ? "单篇内容 · 积分解锁" : "开放阅读，与大家分享"}
           </p>
-          <Link className="hub-primary" href={`/learn/${item.slug}`}>
+          <Link className="hub-primary" href={`/learn/${item.id}`}>
             {item.creditPrice ? "阅读免费预览" : "开始阅读"}
             <ArrowUpRight />
           </Link>
           {item.creditPrice > 0 && (
-            <Link className="hub-inline-link" href={`/checkout/${item.slug}`}>
+            <Link className="hub-inline-link" href={`/checkout/${item.id}`}>
               查看积分解锁信息 <ArrowRight />
             </Link>
           )}

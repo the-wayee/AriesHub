@@ -32,6 +32,7 @@ export function PublicationShare({ id, title }: { id: string; title: string }) {
     void apiRequest<components["schemas"]["PublicationShareLink"]>(
       `/api/v1/publications/${id}/share-link`,
       { method: "POST" },
+      { invalidateReads: false, idempotencyScope: userId },
     ).then((result) => {
       if (active)
         setSnapshot(

@@ -5,10 +5,12 @@ import static com.aries.backend.catalog.application.exception.CatalogErrorCode.C
 import static com.aries.backend.catalog.application.exception.CatalogErrorCode.PUBLICATION_CONTENT_REQUIRED;
 
 import com.aries.backend.catalog.application.command.SavePublicationCommand;
+import com.aries.backend.catalog.application.event.PublicationActivityOccurred;
 import com.aries.backend.catalog.application.port.AdminCatalogReadPort;
 import com.aries.backend.catalog.application.port.CategoryWritePort;
 import com.aries.backend.catalog.application.port.PublicationCoverPort;
 import com.aries.backend.catalog.application.port.PublicationMediaPort.SignedUrl;
+import com.aries.backend.catalog.application.port.PublicationReaderIdentity;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetail;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetailRow;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationListItem;
@@ -19,6 +21,7 @@ import com.aries.backend.shared.application.exception.BusinessException;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,6 +41,8 @@ public class AdminCatalogService {
     private final CategoryWritePort categories;
     private final PublicationRepository publications;
     private final PublicationMediaService media;
+    private final PublicationReaderIdentity identity;
+    private final ApplicationEventPublisher events;
 
     @Transactional(readOnly = true)
     public List<AdminPublicationListItem> publications() {
@@ -71,12 +76,9 @@ public class AdminCatalogService {
     public AdminPublicationDetail create(SavePublicationCommand command) {
         validateCategory(command.categoryId());
         media.validateReferences(0, command);
-        // 公开链接使用数据库唯一 ID；内部旧 slug 列仅为历史兼容，不由标题或客户端生成。
+        // 首次保存分配文章 ID，正文版本独立生成，用于判断阅读位置是否仍有效。
         Publication created =
-                publications.save(
-                        Publication.create(
-                                command.toDraft(
-                                        UUID.randomUUID().toString(), newContentVersion())));
+                publications.save(Publication.create(command.toDraft(newContentVersion())));
         media.bind(created.getId(), command);
         return detail(created.getId());
     }
@@ -92,7 +94,7 @@ public class AdminCatalogService {
                     Objects.equals(study.getContent().fullMarkdown(), command.fullMarkdown())
                             ? study.getContent().version()
                             : newContentVersion();
-            publications.save(study.edit(command.toDraft(study.getSlug(), contentVersion)));
+            publications.save(study.edit(command.toDraft(contentVersion)));
             media.bind(id, command);
             return detail(id);
         } catch (Publication.MissingContent error) {
@@ -103,7 +105,16 @@ public class AdminCatalogService {
     @Transactional
     public AdminPublicationDetail publish(long id) {
         try {
-            publications.save(editable(id).publish(OffsetDateTime.now(ZoneOffset.UTC)));
+            Publication publication = editable(id);
+            boolean firstPublication = publication.getPublishedAt() == null;
+            publications.save(publication.publish(OffsetDateTime.now(ZoneOffset.UTC)));
+            if (firstPublication)
+                events.publishEvent(
+                        new PublicationActivityOccurred(
+                                "publication:" + id,
+                                identity.requireUserId(),
+                                id,
+                                PublicationActivityOccurred.Kind.PUBLISHED));
         } catch (Publication.MissingContent error) {
             throw new BusinessException(PUBLICATION_CONTENT_REQUIRED);
         }

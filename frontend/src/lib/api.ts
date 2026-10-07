@@ -74,9 +74,17 @@ export async function readApiResponse<T>(
 const pendingReads = new Map<string, Promise<ApiResponse<unknown>>>();
 const shareableOptions = new Set(["method", "headers", "cache", "credentials"]);
 
+interface RequestPolicy {
+  /** 幂等的授权获取不改变已读取的数据；普通业务写入仍默认失效读取。 */
+  invalidateReads?: boolean;
+  /** 仅显式声明幂等的请求可合并，必须包含当前账号，不能用于普通写操作。 */
+  idempotencyScope?: string;
+}
+
 export function apiRequest<T>(
   path: string,
   init: RequestInit = {},
+  policy: RequestPolicy = {},
 ): Promise<ApiResponse<T>> {
   const headers = new Headers(init.headers);
   if (!headers.has("Accept")) headers.set("Accept", "application/json");
@@ -95,22 +103,29 @@ export function apiRequest<T>(
   };
   const browser = typeof window !== "undefined";
   const mutation = !["GET", "HEAD"].includes(method);
+  const invalidatesReads = mutation && policy.invalidateReads !== false;
 
   // 写操作开始和结束均失效在途读取，后续刷新不能复用写入前的旧结果。
-  if (browser && mutation) pendingReads.clear();
+  if (browser && invalidatesReads) pendingReads.clear();
   // 带独立取消信号或特殊 Fetch 选项的请求不共享，保留调用方的控制语义。
   const key =
     browser &&
-    method === "GET" &&
+    (method === "GET" || (policy.idempotencyScope && !invalidatesReads)) &&
     Object.keys(init).every((name) => shareableOptions.has(name))
-      ? JSON.stringify([path, init.cache ?? "default", [...headers.entries()]])
+      ? JSON.stringify([
+          method,
+          path,
+          init.cache ?? "default",
+          [...headers.entries()],
+          policy.idempotencyScope,
+        ])
       : null;
   if (key) {
     const pending = pendingReads.get(key);
     if (pending) return pending as Promise<ApiResponse<T>>;
   }
   const request = sendRequest<T>(path, options).finally(() => {
-    if (browser && mutation) pendingReads.clear();
+    if (browser && invalidatesReads) pendingReads.clear();
     // 写操作失效后可能已有同 URL 的新请求，旧请求不能删除新请求的记录。
     if (key && pendingReads.get(key) === request) pendingReads.delete(key);
   });

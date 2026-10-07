@@ -14,14 +14,15 @@ export function usePublicationMetrics(id: string, initial?: Interaction) {
     initial?: Interaction;
   }>();
   const key = `${id}:${user?.id ?? "anon"}`;
+  const sessionPending = hasSession && user === undefined;
   useEffect(() => {
-    if (hasSession && user === undefined) return;
+    if (sessionPending) return;
     let active = true;
     let updated = false;
     if (!initial)
-      void apiRequest<Interaction>(
-        `/api/v1/publications/${id}/interaction`,
-      ).then((r) => {
+      void apiRequest<Interaction>(`/api/v1/publications/${id}/interaction`, {
+        cache: "no-store",
+      }).then((r) => {
         if (active && !updated && r.ok)
           setSnapshot({ key, data: r.data, initial });
       });
@@ -37,7 +38,7 @@ export function usePublicationMetrics(id: string, initial?: Interaction) {
       active = false;
       window.removeEventListener("arieshub:publication", sync);
     };
-  }, [id, initial, key, user, hasSession]);
+  }, [id, initial, key, sessionPending]);
   return snapshot?.key === key && snapshot.initial === initial
     ? snapshot.data
     : initial;

@@ -9,6 +9,7 @@ import com.aries.backend.catalog.application.port.AdminCatalogReadPort;
 import com.aries.backend.catalog.application.port.CategoryWritePort;
 import com.aries.backend.catalog.application.port.PublicationCoverPort;
 import com.aries.backend.catalog.application.port.PublicationMediaPort.SignedUrl;
+import com.aries.backend.catalog.application.port.PublicationReaderIdentity;
 import com.aries.backend.catalog.application.service.AdminCatalogService;
 import com.aries.backend.catalog.application.service.PublicationMediaService;
 import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublicationDetailRow;
@@ -17,6 +18,7 @@ import com.aries.backend.catalog.application.view.AdminCatalogViews.AdminPublica
 import com.aries.backend.catalog.domain.repository.PublicationRepository;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
 import java.util.HashMap;
@@ -36,7 +38,9 @@ class AdminPublicationCoverTest {
                         covers,
                         mock(CategoryWritePort.class),
                         mock(PublicationRepository.class),
-                        mock(PublicationMediaService.class));
+                        mock(PublicationMediaService.class),
+                        mock(PublicationReaderIdentity.class),
+                        mock(ApplicationEventPublisher.class));
         when(reads.publications())
                 .thenReturn(
                         List.of(summary("1", "cover"), summary("2", "cover"), summary("3", null)));
@@ -74,7 +78,9 @@ class AdminPublicationCoverTest {
                         covers,
                         mock(CategoryWritePort.class),
                         mock(PublicationRepository.class),
-                        mock(PublicationMediaService.class));
+                        mock(PublicationMediaService.class),
+                        mock(PublicationReaderIdentity.class),
+                        mock(ApplicationEventPublisher.class));
         assertThat(service.detail(9).cover()).isEqualTo(signed);
         verify(covers).sign(List.of("cover"));
     }
@@ -82,7 +88,6 @@ class AdminPublicationCoverTest {
     private AdminPublicationSummary summary(String id, String cover) {
         return new AdminPublicationSummary(
                 id,
-                "slug-" + id,
                 "文章",
                 "分类",
                 "#4967A9",

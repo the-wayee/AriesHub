@@ -47,7 +47,7 @@ const COMMENT_EMOJIS = [
 ] as const;
 type Sort = "LATEST" | "HOT";
 
-/** 使用现有讨论领域的稳定 slug 键，保持历史评论与管理后台使用同一线程。 */
+/** 文章 ID 作为评论挂载键，与详情页、分享页和后台审核使用同一线程。 */
 export function PublicationComments({
   publicationId,
   targetKey,

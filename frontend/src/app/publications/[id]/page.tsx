@@ -1,17 +1,13 @@
 import type { Metadata } from "next";
-import { notFound, permanentRedirect } from "next/navigation";
-import { ArticleView } from "@/components/community/article-view";
+import { notFound } from "next/navigation";
 import { PublicationDetailView } from "@/components/publication-detail-view";
-import { conceptPublications } from "@/lib/concept-publications";
 import { getPublication, getContent } from "@/lib/catalog";
 
 export async function generateMetadata({
   params,
 }: PageProps<"/publications/[id]">): Promise<Metadata> {
   const { id } = await params;
-  const example = conceptPublications.find((item) => item.slug === id);
-  if (example)
-    return { title: example.title, robots: { index: false, follow: false } };
+  if (!isPublicationId(id)) return { title: "内容不存在" };
   const result = await getPublication(id);
   return result.ok
     ? {
@@ -28,15 +24,7 @@ export default async function PublicationPage({
   params,
 }: PageProps<"/publications/[id]">) {
   const { id } = await params;
-  // 旧概念稿保留明确的预览标识，绝不作为数据库中已发布的文章展示。
-  const example = conceptPublications.find((item) => item.slug === id);
-  if (example)
-    return (
-      <>
-        <p className="hub-preview-label">界面预览 · 示例文章</p>
-        <ArticleView item={example} />
-      </>
-    );
+  if (!isPublicationId(id)) notFound();
   const result = await getPublication(id);
   if (!result.ok) {
     if (result.status === 404 || result.status === 400) notFound();
@@ -48,8 +36,6 @@ export default async function PublicationPage({
       </section>
     );
   }
-  if (id !== result.data.publication.id)
-    permanentRedirect(`/publications/${result.data.publication.id}`);
   const content = await getContent(id);
   return (
     <PublicationDetailView
@@ -57,5 +43,12 @@ export default async function PublicationPage({
       content={content?.ok ? content.data : undefined}
       contentError={!content.ok && ![401, 403].includes(content.status)}
     />
+  );
+}
+
+/** 保留 bigint 的字符串表示，避免 JavaScript Number 截断文章 ID；拒绝旧名称地址。 */
+function isPublicationId(id: string): boolean {
+  return (
+    /^[1-9][0-9]{0,18}$/.test(id) && BigInt(id) <= BigInt("9223372036854775807")
   );
 }

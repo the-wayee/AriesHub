@@ -12,9 +12,11 @@ import java.time.OffsetDateTime;
 @Value
 @Builder(toBuilder = true)
 public class Publication {
+    /** 内容模块对外暴露的挂载目标编码；评论适配器与动态解析器共用。 */
+    public static final String TARGET_TYPE = "PUBLICATION";
+
     long id;
     long categoryId;
-    String slug;
     String title;
     String summary;
     PublicationType publicationType;
@@ -30,12 +32,17 @@ public class Publication {
     public enum PublicationType {
         CASE_STUDY,
         ARTICLE,
-        COURSE
+        COURSE;
+
+        /** HTTP 字符串校验的编译期常量，与枚举编码一致。 */
+        public static final String VALID_VALUES = "CASE_STUDY|ARTICLE|COURSE";
     }
 
     public enum AccessType {
         FREE,
-        CREDIT
+        CREDIT;
+
+        public static final String VALID_VALUES = "FREE|CREDIT";
     }
 
     public enum PublicationStatus {
@@ -53,7 +60,6 @@ public class Publication {
 
     public record Draft(
             long categoryId,
-            String slug,
             String title,
             String summary,
             PublicationType publicationType,
@@ -64,7 +70,6 @@ public class Publication {
             boolean featured) {
         public Draft(
                 long categoryId,
-                String slug,
                 String title,
                 String summary,
                 PublicationType publicationType,
@@ -73,7 +78,6 @@ public class Publication {
                 Content content) {
             this(
                     categoryId,
-                    slug,
                     title,
                     summary,
                     publicationType,
@@ -91,7 +95,6 @@ public class Publication {
         validate(draft);
         return Publication.builder()
                 .categoryId(draft.categoryId())
-                .slug(draft.slug())
                 .title(draft.title())
                 .summary(draft.summary())
                 .publicationType(draft.publicationType())
@@ -112,7 +115,6 @@ public class Publication {
         }
         return toBuilder()
                 .categoryId(draft.categoryId())
-                .slug(draft.slug())
                 .title(draft.title())
                 .summary(draft.summary())
                 .publicationType(draft.publicationType())
@@ -151,8 +153,6 @@ public class Publication {
                 || draft.publicationType() == null
                 || draft.accessType() == null
                 || draft.content() == null
-                || draft.slug() == null
-                || draft.slug().isBlank()
                 || draft.title() == null
                 || draft.title().isBlank()
                 || draft.summary() == null
